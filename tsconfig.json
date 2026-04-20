@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "@ardoise/shared": [
+        "./libs/shared/src"
+      ]
+    }
+  }
+}

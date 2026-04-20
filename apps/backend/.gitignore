@@ -1,0 +1,21 @@
+# Compiled output
+/dist
+
+# Node
+/node_modules
+npm-debug.log
+
+# Logs
+*.log
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Coverage
+/coverage
+
+# Prisma
+/prisma/*.db
+/prisma/*.db-journal
