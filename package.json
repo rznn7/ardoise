@@ -1,8 +1,6 @@
 {
   "name": "ardoise",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
   "scripts": {
     "dev:front": "pnpm --filter @ardoise/frontend start",
     "dev:back": "pnpm --filter @ardoise/backend start:dev",
@@ -11,9 +9,6 @@
     "lint": "pnpm -r lint",
     "test": "pnpm -r test"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "packageManager": "pnpm@10.33.0",
   "devDependencies": {
     "concurrently": "^9.2.1"
