@@ -20,7 +20,7 @@ libs/
 - **Auth** : Passport.js + Google OAuth + JWT in `httpOnly` cookie
 - **Validation** : `class-validator` + `class-transformer`
 - **Real-time** : SSE
-- **ORM** : Prisma + PostgreSQL
+- **ORM** : Drizzle + PostgreSQL
 - **Architecture** : Hexagonal (domain / application / infrastructure)
 
 ### Infra
@@ -36,35 +36,44 @@ libs/
 
 #### User
 ```
-id, googleId, email, name, avatarUrl, createdAt
+id, googleId, email, name, avatarUrl, role, createdAt
 ```
 
-#### Group
+#### ExpenseGroup
 ```
-id, name, currency, createdAt
-```
-
-#### Member *(User within a Group)*
-```
-id, userId, groupId, role (ADMIN | MEMBER), joinedAt
+id, name, currencyCode (ISO 4217), createdAt
 ```
 
-#### Expense
+#### Member *(User within an ExpenseGroup)*
 ```
-id, groupId, payerId, title, amount, splitType (EQUAL | FIXED | PERCENT), date, createdAt
-```
-
-#### ExpenseSplit *(each member's share of an expense)*
-```
-id, expenseId, memberId, amount
+id, userId, groupId, nickname, isAdmin, createdAt
+unique(userId, groupId)
 ```
 
-#### Settlement *(debt repayment)*
+#### Payment *(an expense)*
 ```
-id, groupId, fromMemberId, toMemberId, amount, settledAt
+id, groupId, payerMemberId, title, fullAmount (cents), paidAt, splitType (EQUAL | PERCENT | SHARES | EXACT), createdAt
 ```
 
-#### InviteLink
+#### PaymentShare *(each member's share of a payment)*
+```
+paymentId, memberId, inputValue, amount (cents)
+primaryKey(paymentId, memberId)
+```
+
+- `inputValue` = raw user intent, interpreted by `splitType`
+  - EQUAL → ignored
+  - PERCENT → basis points (5000 = 50%)
+  - SHARES → weight
+  - EXACT → cents
+- `amount` = computed final cents, frozen at save. Sum across shares == `Payment.fullAmount`.
+
+#### Settlement *(debt repayment — planned)*
+```
+id, groupId, fromMemberId, toMemberId, amount (cents), settledAt
+```
+
+#### InviteLink *(planned)*
 ```
 id, groupId, token (uuid), expiresAt (configurable, default 7d), createdAt
 ```
@@ -73,13 +82,15 @@ id, groupId, token (uuid), expiresAt (configurable, default 7d), createdAt
 
 ### Business rules
 
-- The sum of all `ExpenseSplit` amounts must always equal the `Expense` amount
-- For `EQUAL` splits: amount is divided evenly — rounding remainder goes to the payer
+- The sum of all `PaymentShare.amount` values must always equal `Payment.fullAmount`
+- Money stored as integer cents everywhere. No floats.
+- For `EQUAL` splits: amount divided evenly — rounding remainder goes to the payer
+- On payment edit: recompute `PaymentShare.amount` from `splitType` + `inputValue` against new total
 - The payer is excluded from their own debt calculation
-- A `Settlement` does not modify expenses — it overlays the balance calculation
-- Only an ADMIN can configure the group (currency, invite duration, removing members)
-- The group creator automatically becomes ADMIN
-- Any member can add an expense
+- A `Settlement` does not modify payments — it overlays the balance calculation
+- Only an admin (`Member.isAdmin = true`) can configure the group (currency, invite duration, removing members)
+- The group creator automatically becomes admin
+- Any member can add a payment
 
 ---
 
@@ -99,7 +110,7 @@ Rather than displaying all raw debts (A→B, B→C, A→C...), we minimize the n
 
 - Group creation with a fixed currency
 - Invitation via shareable link (configurable expiry)
-- Add expenses with equal, fixed, or percentage splits
+- Add payments with equal, exact, percentage, or share-based splits
 - Simplified balance view
 - Mark a debt as settled (Settlement)
 - Real-time updates via SSE for all connected members
