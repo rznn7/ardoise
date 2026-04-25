@@ -2,9 +2,12 @@
   "name": "ardoise",
   "private": true,
   "scripts": {
+    "dev": "concurrently -n front,back -c yellow,blue \"pnpm dev:front\" \"pnpm dev:back\"",
     "dev:front": "pnpm --filter @ardoise/frontend start",
     "dev:back": "pnpm --filter @ardoise/backend start:dev",
-    "dev": "concurrently -n front,back -c yellow,blue \"pnpm dev:front\" \"pnpm dev:back\"",
+    "dev:db": "docker compose -f apps/backend/docker-compose.yml up -d",
+    "dev:db:stop": "docker compose -f apps/backend/docker-compose.yml down",
+    "dev:db:reset": "docker compose -f apps/backend/docker-compose.yml down -v",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test"
