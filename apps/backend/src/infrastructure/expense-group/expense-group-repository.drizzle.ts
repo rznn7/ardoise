@@ -1,11 +1,11 @@
+import { Inject, Injectable } from '@nestjs/common';
+import { eq } from 'drizzle-orm';
+import { type ExpenseGroup } from 'src/domain/expense-group/expense-group';
+import { ExpenseGroupRepository } from 'src/domain/expense-group/expense-group-repository';
 import {
   DATABASE_CONNECTION,
   type Database,
 } from '../database/database.module';
-import { Inject, Injectable } from '@nestjs/common';
-import { type ExpenseGroup } from 'src/domain/expense-group/expense-group';
-import { ExpenseGroupRepository } from 'src/domain/expense-group/expense-group-repository';
-import { eq } from 'drizzle-orm';
 import { expenseGroup } from '../database/schema';
 
 @Injectable()

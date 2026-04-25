@@ -1,4 +1,4 @@
-import { User } from './user';
+import { type User } from './user';
 
 export const USER_REPOSITORY = Symbol('USER_REPOSITORY');
 

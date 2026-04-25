@@ -1,8 +1,8 @@
-import { DatabaseModule } from '../database/database.module';
-import { EXPENSE_GROUP_REPOSITORY } from 'src/domain/expense-group/expense-group-repository';
-import { ExpenseGroupController } from './expense-group.controller';
-import { ExpenseGroupRepositoryDrizzle } from './expense-group-repository.drizzle';
 import { Module } from '@nestjs/common';
+import { EXPENSE_GROUP_REPOSITORY } from 'src/domain/expense-group/expense-group-repository';
+import { DatabaseModule } from '../database/database.module';
+import { ExpenseGroupRepositoryDrizzle } from './expense-group-repository.drizzle';
+import { ExpenseGroupController } from './expense-group.controller';
 
 @Module({
   imports: [DatabaseModule],

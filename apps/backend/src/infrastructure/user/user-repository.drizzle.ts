@@ -1,11 +1,11 @@
+import { Inject, Injectable } from '@nestjs/common';
+import { eq } from 'drizzle-orm';
+import { User } from 'src/domain/user/user';
+import { UserRepository } from 'src/domain/user/user-repository';
 import {
   DATABASE_CONNECTION,
   type Database,
 } from '../database/database.module';
-import { Inject, Injectable } from '@nestjs/common';
-import { User } from 'src/domain/user/user';
-import { UserRepository } from 'src/domain/user/user-repository';
-import { eq } from 'drizzle-orm';
 import { users } from '../database/schema';
 
 @Injectable()
