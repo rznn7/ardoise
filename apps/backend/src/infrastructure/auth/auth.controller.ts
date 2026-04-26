@@ -1,8 +1,14 @@
+import {
+  type BeginRegistrationRequest,
+  beginRegistrationRequestSchema,
+  type CompleteRegistrationRequest,
+  completeRegistrationRequestSchema,
+} from '@ardoise/shared';
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import type { RegistrationResponseJSON } from '@simplewebauthn/server';
 import { BeginRegistrationUseCase } from 'src/application/auth/begin-registration.use-case';
 import { CompleteRegistrationUseCase } from 'src/application/auth/complete-registration.use-case';
-import { type RegistrationState } from 'src/domain/auth/registration-state';
+import { ZodValidationPipe } from '../http/zod-validation.pipe';
 
 @Controller('auth')
 export class AuthController {
@@ -12,20 +18,22 @@ export class AuthController {
   ) {}
 
   @Post('register/begin')
-  begin(@Body() body: { inviteToken: string }) {
+  begin(
+    @Body(new ZodValidationPipe(beginRegistrationRequestSchema))
+    body: BeginRegistrationRequest,
+  ) {
     return this.beginRegistration.execute({ inviteToken: body.inviteToken });
   }
 
   @Post('register/complete')
   @HttpCode(204)
   async complete(
-    @Body()
-    body: {
-      registrationState: RegistrationState;
-      attestation: RegistrationResponseJSON;
-      name: string;
-    },
+    @Body(new ZodValidationPipe(completeRegistrationRequestSchema))
+    body: CompleteRegistrationRequest,
   ) {
-    await this.completeRegistration.execute(body);
+    await this.completeRegistration.execute({
+      ...body,
+      attestation: body.attestation as RegistrationResponseJSON,
+    });
   }
 }

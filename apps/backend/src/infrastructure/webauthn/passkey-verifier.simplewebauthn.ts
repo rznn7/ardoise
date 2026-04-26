@@ -30,14 +30,14 @@ export class PasskeyVerifierSimpleWebauthn implements PasskeyVerifier {
 
   async verifyRegistration(input: {
     challenge: string;
-    attestation: RegistrationResponseJSON;
+    attestation: unknown;
   }): Promise<{
     credentialId: string;
     publicKey: Uint8Array;
     counter: number;
   }> {
     const { verified, registrationInfo } = await verifyRegistrationResponse({
-      response: input.attestation,
+      response: input.attestation as RegistrationResponseJSON,
       expectedChallenge: input.challenge,
       expectedOrigin: this.config.getOrThrow('EXPECTED_ORIGIN'),
       expectedRPID: this.config.getOrThrow('RP_ID'),

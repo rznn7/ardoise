@@ -1,11 +1,11 @@
 import { randomBytes } from 'crypto';
 import { Inject, Injectable } from '@nestjs/common';
+import { type RegistrationState } from '@ardoise/shared';
 import type { PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/server';
 import {
   PASSKEY_VERIFIER,
   type PasskeyVerifier,
 } from 'src/domain/auth/passkey-verifier';
-import { type RegistrationState } from 'src/domain/auth/registration-state';
 import {
   INVITE_LINK_REPOSITORY,
   type InviteLinkRepository,

@@ -1,10 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { type RegistrationState } from '@ardoise/shared';
 import type { RegistrationResponseJSON } from '@simplewebauthn/server';
 import {
   PASSKEY_VERIFIER,
   type PasskeyVerifier,
 } from 'src/domain/auth/passkey-verifier';
-import { type RegistrationState } from 'src/domain/auth/registration-state';
 import { UNIT_OF_WORK, type UnitOfWork } from 'src/domain/auth/unit-of-work';
 
 @Injectable()

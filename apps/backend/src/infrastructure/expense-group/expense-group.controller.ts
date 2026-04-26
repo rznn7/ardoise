@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { CreateExpenseGroupUseCase } from 'src/application/expense-group/create-expense-group.use-case';
 import { FindExpenseGroupUseCase } from 'src/application/expense-group/find-expense-group.use-case';
-import { ZodValidationPipe } from '../http/zod-validation.pipe';
+import { ZodValidationPipe } from 'src/infrastructure/http/zod-validation.pipe';
 
 @Controller('expense-groups')
 export class ExpenseGroupController {

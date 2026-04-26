@@ -12,7 +12,7 @@ export interface PasskeyVerifier {
 
   verifyRegistration(input: {
     challenge: string;
-    attestation: RegistrationResponseJSON;
+    attestation: unknown;
   }): Promise<{
     credentialId: string;
     publicKey: Uint8Array;
