@@ -3,10 +3,16 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ExpenseGroupModule } from './infrastructure/expense-group/expense-group.module';
+import { MemberModule } from './infrastructure/member/member.module';
 import { UserModule } from './infrastructure/user/user.module';
 
 @Module({
-  imports: [ConfigModule.forRoot(), UserModule, ExpenseGroupModule],
+  imports: [
+    ConfigModule.forRoot(),
+    UserModule,
+    ExpenseGroupModule,
+    MemberModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
