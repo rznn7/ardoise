@@ -3,10 +3,10 @@ import { and, eq, gt, isNull } from 'drizzle-orm';
 import { InviteLink } from 'src/domain/invite-link/invite-link';
 import { type InviteLinkRepository } from 'src/domain/invite-link/invite-link-repository';
 import {
-  DATABASE_CONNECTION,
   type Database,
-} from '../database/database.module';
-import { inviteLink } from '../database/schema';
+  DATABASE_CONNECTION,
+} from 'src/infrastructure/database/database.module';
+import { inviteLink } from 'src/infrastructure/database/schema';
 
 @Injectable()
 export class InviteLinkRepositoryDrizzle implements InviteLinkRepository {

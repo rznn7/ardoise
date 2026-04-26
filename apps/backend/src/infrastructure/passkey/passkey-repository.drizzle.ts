@@ -3,10 +3,10 @@ import { eq } from 'drizzle-orm';
 import { type Passkey } from 'src/domain/passkey/passkey';
 import { type PasskeyRepository } from 'src/domain/passkey/passkey-repository';
 import {
-  DATABASE_CONNECTION,
   type Database,
-} from '../database/database.module';
-import { passkey } from '../database/schema';
+  DATABASE_CONNECTION,
+} from 'src/infrastructure/database/database.module';
+import { passkey } from 'src/infrastructure/database/schema';
 
 @Injectable()
 export class PasskeyRepositoryDrizzle implements PasskeyRepository {

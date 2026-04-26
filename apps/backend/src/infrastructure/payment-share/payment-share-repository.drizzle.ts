@@ -3,10 +3,10 @@ import { eq } from 'drizzle-orm';
 import { type PaymentShare } from 'src/domain/payment-share/payment-share';
 import { PaymentShareRepository } from 'src/domain/payment-share/payment-share-repository';
 import {
-  DATABASE_CONNECTION,
   type Database,
-} from '../database/database.module';
-import { paymentShare } from '../database/schema';
+  DATABASE_CONNECTION,
+} from 'src/infrastructure/database/database.module';
+import { paymentShare } from 'src/infrastructure/database/schema';
 
 @Injectable()
 export class PaymentShareRepositoryDrizzle implements PaymentShareRepository {

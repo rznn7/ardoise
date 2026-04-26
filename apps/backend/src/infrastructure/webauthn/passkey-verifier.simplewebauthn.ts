@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
+  generateRegistrationOptions,
   type PublicKeyCredentialCreationOptionsJSON,
   type RegistrationResponseJSON,
-  generateRegistrationOptions,
   verifyRegistrationResponse,
 } from '@simplewebauthn/server';
 import { type PasskeyVerifier } from 'src/domain/auth/passkey-verifier';

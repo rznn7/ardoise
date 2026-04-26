@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
 import { FindMemberUseCase } from 'src/application/member/find-member.use-case';
 import { MEMBER_REPOSITORY } from 'src/domain/member/member-repository';
-import { DatabaseModule } from '../database/database.module';
-import { MemberRepositoryDrizzle } from './member-repository.drizzle';
+import { DatabaseModule } from 'src/infrastructure/database/database.module';
+
 import { MemberController } from './member.controller';
+import { MemberRepositoryDrizzle } from './member-repository.drizzle';
 
 @Module({
   imports: [DatabaseModule],

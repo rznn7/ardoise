@@ -3,10 +3,10 @@ import { eq } from 'drizzle-orm';
 import { User } from 'src/domain/user/user';
 import { UserRepository } from 'src/domain/user/user-repository';
 import {
-  DATABASE_CONNECTION,
   type Database,
-} from '../database/database.module';
-import { users } from '../database/schema';
+  DATABASE_CONNECTION,
+} from 'src/infrastructure/database/database.module';
+import { users } from 'src/infrastructure/database/schema';
 
 @Injectable()
 export class UserRepositoryDrizzle implements UserRepository {

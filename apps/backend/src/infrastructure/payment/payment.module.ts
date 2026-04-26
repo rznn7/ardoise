@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
 import { FindPaymentUseCase } from 'src/application/payment/find-payment.use-case';
 import { PAYMENT_REPOSITORY } from 'src/domain/payment/payment-repository';
-import { DatabaseModule } from '../database/database.module';
-import { PaymentRepositoryDrizzle } from './payment-repository.drizzle';
+import { DatabaseModule } from 'src/infrastructure/database/database.module';
+
 import { PaymentController } from './payment.controller';
+import { PaymentRepositoryDrizzle } from './payment-repository.drizzle';
 
 @Module({
   imports: [DatabaseModule],

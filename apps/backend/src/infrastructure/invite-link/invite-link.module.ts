@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { INVITE_LINK_REPOSITORY } from 'src/domain/invite-link/invite-link-repository';
-import { DatabaseModule } from '../database/database.module';
+import { DatabaseModule } from 'src/infrastructure/database/database.module';
+
 import { InviteLinkRepositoryDrizzle } from './invite-link-repository.drizzle';
 
 @Module({

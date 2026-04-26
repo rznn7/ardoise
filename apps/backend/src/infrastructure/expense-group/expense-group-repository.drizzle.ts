@@ -3,10 +3,10 @@ import { eq } from 'drizzle-orm';
 import { type ExpenseGroup } from 'src/domain/expense-group/expense-group';
 import { ExpenseGroupRepository } from 'src/domain/expense-group/expense-group-repository';
 import {
-  DATABASE_CONNECTION,
   type Database,
-} from '../database/database.module';
-import { expenseGroup } from '../database/schema';
+  DATABASE_CONNECTION,
+} from 'src/infrastructure/database/database.module';
+import { expenseGroup } from 'src/infrastructure/database/schema';
 
 @Injectable()
 export class ExpenseGroupRepositoryDrizzle implements ExpenseGroupRepository {

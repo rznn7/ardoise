@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+
 import { AuthModule } from './infrastructure/auth/auth.module';
 import { ExpenseGroupModule } from './infrastructure/expense-group/expense-group.module';
 import { MemberModule } from './infrastructure/member/member.module';

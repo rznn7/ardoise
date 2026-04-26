@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PASSKEY_REPOSITORY } from 'src/domain/passkey/passkey-repository';
-import { DatabaseModule } from '../database/database.module';
+import { DatabaseModule } from 'src/infrastructure/database/database.module';
+
 import { PasskeyRepositoryDrizzle } from './passkey-repository.drizzle';
 
 @Module({

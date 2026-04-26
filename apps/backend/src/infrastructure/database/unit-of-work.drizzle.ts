@@ -3,11 +3,12 @@ import {
   type TransactionalRepositories,
   type UnitOfWork,
 } from 'src/domain/auth/unit-of-work';
-import { InviteLinkRepositoryDrizzle } from '../invite-link/invite-link-repository.drizzle';
-import { MemberRepositoryDrizzle } from '../member/member-repository.drizzle';
-import { PasskeyRepositoryDrizzle } from '../passkey/passkey-repository.drizzle';
-import { UserRepositoryDrizzle } from '../user/user-repository.drizzle';
-import { DATABASE_CONNECTION, type Database } from './database.module';
+import { InviteLinkRepositoryDrizzle } from 'src/infrastructure/invite-link/invite-link-repository.drizzle';
+import { MemberRepositoryDrizzle } from 'src/infrastructure/member/member-repository.drizzle';
+import { PasskeyRepositoryDrizzle } from 'src/infrastructure/passkey/passkey-repository.drizzle';
+import { UserRepositoryDrizzle } from 'src/infrastructure/user/user-repository.drizzle';
+
+import { type Database, DATABASE_CONNECTION } from './database.module';
 
 @Injectable()
 export class UnitOfWorkDrizzle implements UnitOfWork {

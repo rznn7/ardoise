@@ -8,7 +8,7 @@ import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import type { RegistrationResponseJSON } from '@simplewebauthn/server';
 import { BeginRegistrationUseCase } from 'src/application/auth/begin-registration.use-case';
 import { CompleteRegistrationUseCase } from 'src/application/auth/complete-registration.use-case';
-import { ZodValidationPipe } from '../http/zod-validation.pipe';
+import { ZodValidationPipe } from 'src/infrastructure/http/zod-validation.pipe';
 
 @Controller('auth')
 export class AuthController {

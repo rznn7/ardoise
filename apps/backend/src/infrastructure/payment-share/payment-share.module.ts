@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
 import { FindPaymentSharesByPaymentUseCase } from 'src/application/payment-share/find-payment-shares-by-payment.use-case';
 import { PAYMENT_SHARE_REPOSITORY } from 'src/domain/payment-share/payment-share-repository';
-import { DatabaseModule } from '../database/database.module';
-import { PaymentShareRepositoryDrizzle } from './payment-share-repository.drizzle';
+import { DatabaseModule } from 'src/infrastructure/database/database.module';
+
 import { PaymentShareController } from './payment-share.controller';
+import { PaymentShareRepositoryDrizzle } from './payment-share-repository.drizzle';
 
 @Module({
   imports: [DatabaseModule],

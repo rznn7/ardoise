@@ -1,5 +1,5 @@
-import { Inject, Injectable } from '@nestjs/common';
 import { type RegistrationState } from '@ardoise/shared';
+import { Inject, Injectable } from '@nestjs/common';
 import type { RegistrationResponseJSON } from '@simplewebauthn/server';
 import {
   PASSKEY_VERIFIER,

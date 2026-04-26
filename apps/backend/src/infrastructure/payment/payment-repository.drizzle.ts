@@ -3,10 +3,10 @@ import { eq } from 'drizzle-orm';
 import { type Payment } from 'src/domain/payment/payment';
 import { PaymentRepository } from 'src/domain/payment/payment-repository';
 import {
-  DATABASE_CONNECTION,
   type Database,
-} from '../database/database.module';
-import { payment } from '../database/schema';
+  DATABASE_CONNECTION,
+} from 'src/infrastructure/database/database.module';
+import { payment } from 'src/infrastructure/database/schema';
 
 @Injectable()
 export class PaymentRepositoryDrizzle implements PaymentRepository {

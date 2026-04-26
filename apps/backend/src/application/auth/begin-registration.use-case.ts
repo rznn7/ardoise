@@ -1,7 +1,7 @@
-import { randomBytes } from 'crypto';
-import { Inject, Injectable } from '@nestjs/common';
 import { type RegistrationState } from '@ardoise/shared';
+import { Inject, Injectable } from '@nestjs/common';
 import type { PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/server';
+import { randomBytes } from 'crypto';
 import {
   PASSKEY_VERIFIER,
   type PasskeyVerifier,
