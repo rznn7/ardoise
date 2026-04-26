@@ -2,7 +2,8 @@
   "name": "ardoise",
   "private": true,
   "scripts": {
-    "dev": "concurrently -n front,back -c yellow,blue \"pnpm dev:front\" \"pnpm dev:back\"",
+    "dev": "pnpm --filter @ardoise/shared build && concurrently -n shared,front,back -c green,yellow,blue \"pnpm dev:shared\" \"pnpm dev:front\" \"pnpm dev:back\"",
+    "dev:shared": "pnpm --filter @ardoise/shared dev",
     "dev:front": "pnpm --filter @ardoise/frontend start",
     "dev:back": "pnpm --filter @ardoise/backend start:dev",
     "dev:db": "docker compose -f apps/backend/docker-compose.yml up -d",

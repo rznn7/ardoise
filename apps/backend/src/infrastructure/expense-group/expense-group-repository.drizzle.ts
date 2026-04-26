@@ -22,6 +22,21 @@ export class ExpenseGroupRepositoryDrizzle implements ExpenseGroupRepository {
     return row ? this.toDomain(row) : null;
   }
 
+  async create(input: {
+    name: string;
+    currencyCode: string;
+  }): Promise<ExpenseGroup> {
+    const [row] = await this.database
+      .insert(expenseGroup)
+      .values({
+        name: input.name,
+        currencyCode: input.currencyCode,
+      })
+      .returning();
+
+    return this.toDomain(row);
+  }
+
   private toDomain(row: typeof expenseGroup.$inferSelect): ExpenseGroup {
     return {
       id: row.id,
