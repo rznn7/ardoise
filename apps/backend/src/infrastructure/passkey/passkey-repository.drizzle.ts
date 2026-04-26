@@ -36,12 +36,9 @@ export class PasskeyRepositoryDrizzle implements PasskeyRepository {
     publicKey: Uint8Array;
     counter: number;
   }): Promise<Passkey> {
-    const inserted = await this.database
-      .insert(passkey)
-      .values(input)
-      .returning();
+    const [row] = await this.database.insert(passkey).values(input).returning();
 
-    return this.toDomain(inserted[0]);
+    return this.toDomain(row);
   }
 
   async markUsed(id: number, counter: number): Promise<void> {

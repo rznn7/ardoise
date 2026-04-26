@@ -31,12 +31,9 @@ export class UserRepositoryDrizzle implements UserRepository {
   }
 
   async create(input: { webauthnUserId: string; name: string }): Promise<User> {
-    const inserted = await this.database
-      .insert(users)
-      .values(input)
-      .returning();
+    const [row] = await this.database.insert(users).values(input).returning();
 
-    return this.toDomain(inserted[0]);
+    return this.toDomain(row);
   }
 
   private toDomain(row: typeof users.$inferSelect): User {
