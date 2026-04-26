@@ -1,0 +1,1 @@
+ALTER TABLE "member" RENAME COLUMN "is_admin" TO "is_moderator";

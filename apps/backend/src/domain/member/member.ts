@@ -3,5 +3,5 @@ export interface Member {
   userId: number;
   groupId: number;
   nickname: string | null;
-  isAdmin: boolean;
+  isModerator: boolean;
 }

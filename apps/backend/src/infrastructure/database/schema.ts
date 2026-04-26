@@ -21,7 +21,6 @@ export const userRoleEnum = pgEnum('user_role', ['user', 'admin']);
 export const users = pgTable('users', {
   id,
   name: varchar({ length: 255 }).notNull(),
-  email: varchar({ length: 255 }).notNull().unique(),
   role: userRoleEnum().default('user').notNull(),
   ...timestamps,
 });
@@ -44,7 +43,7 @@ export const member = pgTable(
       .references(() => expenseGroup.id)
       .notNull(),
     nickname: varchar({ length: 255 }),
-    isAdmin: boolean().default(false).notNull(),
+    isModerator: boolean().default(false).notNull(),
     ...timestamps,
   },
   (table) => [unique('member_user_group_uq').on(table.userId, table.groupId)],

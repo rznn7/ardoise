@@ -12,12 +12,12 @@ libs/
 ```
 
 ### Frontend — Angular
-- **Auth** : Google OAuth (redirect to backend)
+- **Auth** : Passkeys (WebAuthn) — registration via single-use invite link, login via browser/OS passkey prompt
 - **Real-time** : SSE (native EventSource)
 - **Validation** : shared types are sufficient (data comes from our own backend)
 
 ### Backend — NestJS
-- **Auth** : Passport.js + Google OAuth + JWT in `httpOnly` cookie
+- **Auth** : `@simplewebauthn/server` (WebAuthn) + JWT session in `httpOnly` cookie. No passwords, no third-party OAuth.
 - **Validation** : `class-validator` + `class-transformer`
 - **Real-time** : SSE
 - **ORM** : Drizzle + PostgreSQL
@@ -36,8 +36,17 @@ libs/
 
 #### User
 ```
-id, googleId, email, name, avatarUrl, role, createdAt
+id, displayName, role (user | admin), createdAt
 ```
+- `role = 'admin'` is the **app-level** admin (platform staff). Distinct from group moderators.
+- No password, no email. Identity is proven by passkey possession.
+
+#### Passkey *(WebAuthn credential bound to a User)*
+```
+id, userId, credentialId (unique), publicKey, counter, createdAt
+```
+- **v1 scope**: exactly one Passkey per User. Created at registration, never replaced.
+- Lost device = lost account. No recovery flow in v1. Multi-device and recovery are explicit non-goals until the basic flow works end-to-end.
 
 #### ExpenseGroup
 ```
@@ -46,9 +55,10 @@ id, name, currencyCode (ISO 4217), createdAt
 
 #### Member *(User within an ExpenseGroup)*
 ```
-id, userId, groupId, nickname, isAdmin, createdAt
+id, userId, groupId, nickname, isModerator, createdAt
 unique(userId, groupId)
 ```
+- `isModerator` is the **group-level** role. Renamed from `isAdmin` to avoid conflict with `User.role`.
 
 #### Payment *(an expense)*
 ```
@@ -75,8 +85,10 @@ id, groupId, fromMemberId, toMemberId, amount (cents), settledAt
 
 #### InviteLink *(planned)*
 ```
-id, groupId, token (uuid), expiresAt (configurable, default 7d), createdAt
+id, groupId, token (256-bit random, base64url), singleUse, consumedByUserId (nullable), consumedAt (nullable), expiresAt (configurable, default 7d), createdAt
 ```
+- A link grants the right to **either** register a new User (passkey + first membership) **or** join the group as an already-existing User.
+- `singleUse = true` for member invites; consumed on first successful join/registration.
 
 ---
 
@@ -88,8 +100,8 @@ id, groupId, token (uuid), expiresAt (configurable, default 7d), createdAt
 - On payment edit: recompute `PaymentShare.amount` from `splitType` + `inputValue` against new total
 - The payer is excluded from their own debt calculation
 - A `Settlement` does not modify payments — it overlays the balance calculation
-- Only an admin (`Member.isAdmin = true`) can configure the group (currency, invite duration, removing members)
-- The group creator automatically becomes admin
+- Only a moderator (`Member.isModerator = true`) can configure the group (currency, invite duration, removing members)
+- The group creator automatically becomes a moderator
 - Any member can add a payment
 
 ---
@@ -114,4 +126,4 @@ Rather than displaying all raw debts (A→B, B→C, A→C...), we minimize the n
 - Simplified balance view
 - Mark a debt as settled (Settlement)
 - Real-time updates via SSE for all connected members
-- Google OAuth (no password)
+- Passkey authentication (no password, no third-party identity provider) — v1: one passkey per user, no multi-device, no recovery

@@ -28,7 +28,7 @@ export class MemberRepositoryDrizzle implements MemberRepository {
       userId: row.userId,
       groupId: row.groupId,
       nickname: row.nickname,
-      isAdmin: row.isAdmin,
+      isModerator: row.isModerator,
     };
   }
 }
