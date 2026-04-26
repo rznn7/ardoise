@@ -1,18 +1,12 @@
-import { Controller, Get, Inject, Param, ParseIntPipe } from '@nestjs/common';
-import {
-  EXPENSE_GROUP_REPOSITORY,
-  type ExpenseGroupRepository,
-} from 'src/domain/expense-group/expense-group-repository';
+import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import { FindExpenseGroupUseCase } from 'src/application/expense-group/find-expense-group.use-case';
 
 @Controller('expense-groups')
 export class ExpenseGroupController {
-  constructor(
-    @Inject(EXPENSE_GROUP_REPOSITORY)
-    private readonly expenseGroups: ExpenseGroupRepository,
-  ) {}
+  constructor(private readonly findExpenseGroup: FindExpenseGroupUseCase) {}
 
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.expenseGroups.findById(id);
+    return this.findExpenseGroup.execute(id);
   }
 }

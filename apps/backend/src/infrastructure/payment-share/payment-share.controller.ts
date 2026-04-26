@@ -1,18 +1,14 @@
-import { Controller, Get, Inject, Param, ParseIntPipe } from '@nestjs/common';
-import {
-  PAYMENT_SHARE_REPOSITORY,
-  type PaymentShareRepository,
-} from 'src/domain/payment-share/payment-share-repository';
+import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import { FindPaymentSharesByPaymentUseCase } from 'src/application/payment-share/find-payment-shares-by-payment.use-case';
 
 @Controller('payment-shares')
 export class PaymentShareController {
   constructor(
-    @Inject(PAYMENT_SHARE_REPOSITORY)
-    private readonly paymentShares: PaymentShareRepository,
+    private readonly findByPayment: FindPaymentSharesByPaymentUseCase,
   ) {}
 
   @Get('by-payment/:paymentId')
-  findByPayment(@Param('paymentId', ParseIntPipe) paymentId: number) {
-    return this.paymentShares.findByPayment(paymentId);
+  findByPaymentRoute(@Param('paymentId', ParseIntPipe) paymentId: number) {
+    return this.findByPayment.execute(paymentId);
   }
 }

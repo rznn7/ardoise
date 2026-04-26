@@ -1,18 +1,12 @@
-import { Controller, Get, Inject, Param, ParseIntPipe } from '@nestjs/common';
-import {
-  PAYMENT_REPOSITORY,
-  type PaymentRepository,
-} from 'src/domain/payment/payment-repository';
+import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import { FindPaymentUseCase } from 'src/application/payment/find-payment.use-case';
 
 @Controller('payments')
 export class PaymentController {
-  constructor(
-    @Inject(PAYMENT_REPOSITORY)
-    private readonly payments: PaymentRepository,
-  ) {}
+  constructor(private readonly findPayment: FindPaymentUseCase) {}
 
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.payments.findById(id);
+    return this.findPayment.execute(id);
   }
 }

@@ -1,7 +1,5 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { AuthModule } from './infrastructure/auth/auth.module';
 import { ExpenseGroupModule } from './infrastructure/expense-group/expense-group.module';
 import { MemberModule } from './infrastructure/member/member.module';
@@ -19,7 +17,5 @@ import { UserModule } from './infrastructure/user/user.module';
     PaymentShareModule,
     UserModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}

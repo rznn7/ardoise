@@ -1,18 +1,12 @@
-import { Controller, Get, Inject, Param, ParseIntPipe } from '@nestjs/common';
-import {
-  MEMBER_REPOSITORY,
-  type MemberRepository,
-} from 'src/domain/member/member-repository';
+import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import { FindMemberUseCase } from 'src/application/member/find-member.use-case';
 
 @Controller('members')
 export class MemberController {
-  constructor(
-    @Inject(MEMBER_REPOSITORY)
-    private readonly members: MemberRepository,
-  ) {}
+  constructor(private readonly findMember: FindMemberUseCase) {}
 
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.members.findById(id);
+    return this.findMember.execute(id);
   }
 }
