@@ -1,0 +1,1 @@
+ALTER TABLE "invite_link" ALTER COLUMN "group_id" SET NOT NULL;

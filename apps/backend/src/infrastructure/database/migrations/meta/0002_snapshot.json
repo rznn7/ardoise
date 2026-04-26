@@ -1,6 +1,6 @@
 {
-  "id": "7b60a09e-3601-473b-b22b-7efb6c18fc3f",
-  "prevId": "4783588b-9b05-4a00-b253-0a030c3ca91f",
+  "id": "18f28e6e-e147-4bd9-9eb7-25fdc6ce3e94",
+  "prevId": "c02bfa3b-512e-4a56-b85d-2b75677dd2b3",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -55,6 +55,121 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.invite_link": {
+      "name": "invite_link",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "invite_link_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "group_id": {
+          "name": "group_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "single_use": {
+          "name": "single_use",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "consumed_by_user_id": {
+          "name": "consumed_by_user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "consumed_at": {
+          "name": "consumed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "invite_link_group_id_expense_group_id_fk": {
+          "name": "invite_link_group_id_expense_group_id_fk",
+          "tableFrom": "invite_link",
+          "tableTo": "expense_group",
+          "columnsFrom": [
+            "group_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "invite_link_consumed_by_user_id_users_id_fk": {
+          "name": "invite_link_consumed_by_user_id_users_id_fk",
+          "tableFrom": "invite_link",
+          "tableTo": "users",
+          "columnsFrom": [
+            "consumed_by_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "invite_link_token_unique": {
+          "name": "invite_link_token_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -163,6 +278,102 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.passkey": {
+      "name": "passkey",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "passkey_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "credential_id": {
+          "name": "credential_id",
+          "type": "varchar(1024)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "public_key": {
+          "name": "public_key",
+          "type": "bytea",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "counter": {
+          "name": "counter",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "last_used_at": {
+          "name": "last_used_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "passkey_user_id_users_id_fk": {
+          "name": "passkey_user_id_users_id_fk",
+          "tableFrom": "passkey",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "passkey_credentialId_unique": {
+          "name": "passkey_credentialId_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "credential_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.payment": {
       "name": "payment",
       "schema": "",
@@ -190,8 +401,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "expense_group_id": {
-          "name": "expense_group_id",
+        "group_id": {
+          "name": "group_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
@@ -250,12 +461,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "payment_expense_group_id_expense_group_id_fk": {
-          "name": "payment_expense_group_id_expense_group_id_fk",
+        "payment_group_id_expense_group_id_fk": {
+          "name": "payment_group_id_expense_group_id_fk",
           "tableFrom": "payment",
           "tableTo": "expense_group",
           "columnsFrom": [
-            "expense_group_id"
+            "group_id"
           ],
           "columnsTo": [
             "id"
@@ -377,6 +588,12 @@
           "notNull": true,
           "default": "'user'"
         },
+        "webauthn_user_id": {
+          "name": "webauthn_user_id",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -394,7 +611,15 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "users_webauthnUserId_unique": {
+          "name": "users_webauthnUserId_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "webauthn_user_id"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

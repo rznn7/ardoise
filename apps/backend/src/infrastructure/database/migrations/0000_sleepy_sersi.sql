@@ -8,15 +8,40 @@ CREATE TABLE "expense_group" (
 	"updated_at" timestamp
 );
 --> statement-breakpoint
+CREATE TABLE "invite_link" (
+	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "invite_link_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
+	"expense_group_id" integer,
+	"token" varchar(64) NOT NULL,
+	"single_use" boolean DEFAULT true NOT NULL,
+	"consumed_by_user_id" integer,
+	"consumed_at" timestamp,
+	"expires_at" timestamp NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp,
+	CONSTRAINT "invite_link_token_unique" UNIQUE("token")
+);
+--> statement-breakpoint
 CREATE TABLE "member" (
 	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "member_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
 	"user_id" integer NOT NULL,
 	"group_id" integer NOT NULL,
 	"nickname" varchar(255),
-	"is_admin" boolean DEFAULT false NOT NULL,
+	"is_moderator" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp,
 	CONSTRAINT "member_user_group_uq" UNIQUE("user_id","group_id")
+);
+--> statement-breakpoint
+CREATE TABLE "passkey" (
+	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "passkey_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
+	"user_id" integer NOT NULL,
+	"credential_id" varchar(1024) NOT NULL,
+	"public_key" "bytea" NOT NULL,
+	"counter" integer DEFAULT 0 NOT NULL,
+	"last_used_at" timestamp,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp,
+	CONSTRAINT "passkey_credentialId_unique" UNIQUE("credential_id")
 );
 --> statement-breakpoint
 CREATE TABLE "payment" (
@@ -42,15 +67,18 @@ CREATE TABLE "payment_share" (
 CREATE TABLE "users" (
 	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "users_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
 	"name" varchar(255) NOT NULL,
-	"email" varchar(255) NOT NULL,
 	"role" "user_role" DEFAULT 'user' NOT NULL,
+	"webauthn_user_id" varchar(64) NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp,
-	CONSTRAINT "users_email_unique" UNIQUE("email")
+	CONSTRAINT "users_webauthnUserId_unique" UNIQUE("webauthn_user_id")
 );
 --> statement-breakpoint
+ALTER TABLE "invite_link" ADD CONSTRAINT "invite_link_expense_group_id_expense_group_id_fk" FOREIGN KEY ("expense_group_id") REFERENCES "public"."expense_group"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "invite_link" ADD CONSTRAINT "invite_link_consumed_by_user_id_users_id_fk" FOREIGN KEY ("consumed_by_user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "member" ADD CONSTRAINT "member_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "member" ADD CONSTRAINT "member_group_id_expense_group_id_fk" FOREIGN KEY ("group_id") REFERENCES "public"."expense_group"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "passkey" ADD CONSTRAINT "passkey_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "payment" ADD CONSTRAINT "payment_payer_member_id_member_id_fk" FOREIGN KEY ("payer_member_id") REFERENCES "public"."member"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "payment" ADD CONSTRAINT "payment_expense_group_id_expense_group_id_fk" FOREIGN KEY ("expense_group_id") REFERENCES "public"."expense_group"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "payment_share" ADD CONSTRAINT "payment_share_payment_id_payment_id_fk" FOREIGN KEY ("payment_id") REFERENCES "public"."payment"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

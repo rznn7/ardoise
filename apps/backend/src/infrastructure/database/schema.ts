@@ -1,5 +1,6 @@
 import {
   boolean,
+  customType,
   integer,
   pgEnum,
   pgTable,
@@ -16,12 +17,46 @@ const timestamps = {
   updatedAt: timestamp().$onUpdate(() => new Date()),
 };
 
+const bytea = customType<{ data: Uint8Array; default: false }>({
+  dataType() {
+    return 'bytea';
+  },
+});
+
 export const userRoleEnum = pgEnum('user_role', ['user', 'admin']);
 
 export const users = pgTable('users', {
   id,
   name: varchar({ length: 255 }).notNull(),
   role: userRoleEnum().default('user').notNull(),
+  webauthnUserId: varchar({ length: 64 }).notNull().unique(),
+  ...timestamps,
+});
+
+export const passkey = pgTable('passkey', {
+  id,
+  userId: integer()
+    .references(() => users.id, { onDelete: 'cascade' })
+    .notNull(),
+  credentialId: varchar({ length: 1024 }).unique().notNull(),
+  publicKey: bytea().notNull(),
+  counter: integer().notNull().default(0),
+  lastUsedAt: timestamp(),
+  ...timestamps,
+});
+
+export const inviteLink = pgTable('invite_link', {
+  id,
+  groupId: integer()
+    .references(() => expenseGroup.id, {
+      onDelete: 'cascade',
+    })
+    .notNull(),
+  token: varchar({ length: 64 }).unique().notNull(),
+  singleUse: boolean().notNull().default(true),
+  consumedByUserId: integer().references(() => users.id),
+  consumedAt: timestamp(),
+  expiresAt: timestamp().notNull(),
   ...timestamps,
 });
 
@@ -61,7 +96,7 @@ export const payment = pgTable('payment', {
   payerMemberId: integer()
     .references(() => member.id)
     .notNull(),
-  expenseGroupId: integer()
+  groupId: integer()
     .references(() => expenseGroup.id)
     .notNull(),
   title: varchar({ length: 255 }).notNull(),

@@ -3,7 +3,7 @@ export type SplitType = 'equal' | 'percent' | 'shares' | 'exact';
 export interface Payment {
   id: number;
   payerMemberId: number;
-  expenseGroupId: number;
+  groupId: number;
   title: string;
   paidAt: Date;
   fullAmount: number;

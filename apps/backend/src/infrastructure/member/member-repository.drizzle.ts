@@ -22,6 +22,20 @@ export class MemberRepositoryDrizzle implements MemberRepository {
     return row ? this.toDomain(row) : null;
   }
 
+  async create(input: {
+    userId: number;
+    groupId: number;
+    nickname?: string;
+    isModerator?: boolean;
+  }): Promise<Member> {
+    const inserted = await this.database
+      .insert(member)
+      .values(input)
+      .returning();
+
+    return this.toDomain(inserted[0]);
+  }
+
   private toDomain(row: typeof member.$inferSelect): Member {
     return {
       id: row.id,

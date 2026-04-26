@@ -26,7 +26,7 @@ export class PaymentRepositoryDrizzle implements PaymentRepository {
     return {
       id: row.id,
       payerMemberId: row.payerMemberId,
-      expenseGroupId: row.expenseGroupId,
+      groupId: row.groupId,
       title: row.title,
       paidAt: row.paidAt,
       fullAmount: row.fullAmount,
