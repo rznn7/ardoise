@@ -1,3 +1,4 @@
+import { type SessionRepository } from 'src/domain/auth/session-repository';
 import { type InviteLinkRepository } from 'src/domain/invite-link/invite-link-repository';
 import { type MemberRepository } from 'src/domain/member/member-repository';
 import { type PasskeyRepository } from 'src/domain/passkey/passkey-repository';
@@ -10,6 +11,7 @@ export interface TransactionalRepositories {
   passkeys: PasskeyRepository;
   members: MemberRepository;
   inviteLinks: InviteLinkRepository;
+  sessions: SessionRepository;
 }
 
 export interface UnitOfWork {

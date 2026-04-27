@@ -3,6 +3,7 @@ import {
   type TransactionalRepositories,
   type UnitOfWork,
 } from 'src/domain/auth/unit-of-work';
+import { SessionRepositoryDrizzle } from 'src/infrastructure/auth/session-repository.drizzle';
 import { InviteLinkRepositoryDrizzle } from 'src/infrastructure/invite-link/invite-link-repository.drizzle';
 import { MemberRepositoryDrizzle } from 'src/infrastructure/member/member-repository.drizzle';
 import { PasskeyRepositoryDrizzle } from 'src/infrastructure/passkey/passkey-repository.drizzle';
@@ -24,6 +25,7 @@ export class UnitOfWorkDrizzle implements UnitOfWork {
         passkeys: new PasskeyRepositoryDrizzle(txDb),
         members: new MemberRepositoryDrizzle(txDb),
         inviteLinks: new InviteLinkRepositoryDrizzle(txDb),
+        sessions: new SessionRepositoryDrizzle(txDb),
       });
     });
   }

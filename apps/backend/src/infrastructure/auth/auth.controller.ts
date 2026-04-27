@@ -4,10 +4,13 @@ import {
   type CompleteRegistrationRequest,
   completeRegistrationRequestSchema,
 } from '@ardoise/shared';
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, Post, Res } from '@nestjs/common';
 import type { RegistrationResponseJSON } from '@simplewebauthn/server';
+import type { Response } from 'express';
 import { BeginRegistrationUseCase } from 'src/application/auth/begin-registration.use-case';
 import { CompleteRegistrationUseCase } from 'src/application/auth/complete-registration.use-case';
+import { LogoutUseCase } from 'src/application/auth/logout.use-case';
+import { Cookie } from 'src/infrastructure/http/cookie.decorator';
 import { ZodValidationPipe } from 'src/infrastructure/http/zod-validation.pipe';
 
 @Controller('auth')
@@ -15,6 +18,7 @@ export class AuthController {
   constructor(
     private readonly beginRegistration: BeginRegistrationUseCase,
     private readonly completeRegistration: CompleteRegistrationUseCase,
+    private readonly doLogout: LogoutUseCase,
   ) {}
 
   @Post('register/begin')
@@ -35,5 +39,15 @@ export class AuthController {
       ...body,
       attestation: body.attestation as RegistrationResponseJSON,
     });
+  }
+
+  @Post('logout')
+  @HttpCode(204)
+  async logout(
+    @Cookie('session_token') token: string | undefined,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    if (token) await this.doLogout.execute(token);
+    res.clearCookie('session_token', { path: '/' });
   }
 }

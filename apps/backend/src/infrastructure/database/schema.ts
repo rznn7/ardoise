@@ -13,8 +13,8 @@ import {
 const id = integer().primaryKey().generatedAlwaysAsIdentity();
 
 const timestamps = {
-  createdAt: timestamp().defaultNow().notNull(),
-  updatedAt: timestamp().$onUpdate(() => new Date()),
+  createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
 };
 
 const bytea = customType<{ data: Uint8Array; default: false }>({
@@ -41,7 +41,7 @@ export const passkey = pgTable('passkey', {
   credentialId: varchar({ length: 1024 }).unique().notNull(),
   publicKey: bytea().notNull(),
   counter: integer().notNull().default(0),
-  lastUsedAt: timestamp(),
+  lastUsedAt: timestamp({ withTimezone: true }),
   ...timestamps,
 });
 
@@ -55,9 +55,19 @@ export const inviteLink = pgTable('invite_link', {
   token: varchar({ length: 64 }).unique().notNull(),
   singleUse: boolean().notNull().default(true),
   consumedByUserId: integer().references(() => users.id),
-  consumedAt: timestamp(),
-  expiresAt: timestamp().notNull(),
+  consumedAt: timestamp({ withTimezone: true }),
+  expiresAt: timestamp({ withTimezone: true }).notNull(),
   ...timestamps,
+});
+
+export const session = pgTable('session', {
+  token: varchar({ length: 64 }).primaryKey(),
+  userId: integer()
+    .references(() => users.id, { onDelete: 'cascade' })
+    .notNull(),
+  issuedAt: timestamp({ withTimezone: true }).notNull(),
+  expiresAt: timestamp({ withTimezone: true }).notNull(),
+  revokedAt: timestamp({ withTimezone: true }),
 });
 
 export const expenseGroup = pgTable('expense_group', {
@@ -100,7 +110,7 @@ export const payment = pgTable('payment', {
     .references(() => expenseGroup.id)
     .notNull(),
   title: varchar({ length: 255 }).notNull(),
-  paidAt: timestamp().notNull(),
+  paidAt: timestamp({ withTimezone: true }).notNull(),
   fullAmount: integer().notNull(),
   splitType: splitTypeEnum().notNull(),
   ...timestamps,
