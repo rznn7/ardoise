@@ -1,7 +1,4 @@
-import type {
-  PublicKeyCredentialCreationOptionsJSON,
-  RegistrationResponseJSON,
-} from '@simplewebauthn/server';
+import type { PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/server';
 
 export const PASSKEY_VERIFIER = Symbol('PASSKEY_VERIFIER');
 

@@ -1,9 +1,9 @@
-export interface Passkey {
-  id: number;
-  userId: number;
-  credentialId: string;
-  publicKey: Uint8Array;
-  counter: number;
-  createdAt: Date;
-  lastUsedAt: Date | null;
-}
+export type Passkey = {
+  readonly id: number;
+  readonly userId: number;
+  readonly credentialId: string;
+  readonly publicKey: Uint8Array;
+  readonly counter: number;
+  readonly createdAt: Date;
+  readonly lastUsedAt: Date | null;
+};

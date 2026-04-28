@@ -1,7 +1,7 @@
-export interface Member {
-  id: number;
-  userId: number;
-  groupId: number;
-  nickname: string | null;
-  isModerator: boolean;
-}
+export type Member = {
+  readonly id: number;
+  readonly userId: number;
+  readonly groupId: number;
+  readonly nickname: string | null;
+  readonly isModerator: boolean;
+};

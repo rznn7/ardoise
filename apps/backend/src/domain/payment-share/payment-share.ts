@@ -1,6 +1,6 @@
-export interface PaymentShare {
-  paymentId: number;
-  memberId: number;
-  inputValue: number;
-  amount: number;
-}
+export type PaymentShare = {
+  readonly paymentId: number;
+  readonly memberId: number;
+  readonly inputValue: number;
+  readonly amount: number;
+};

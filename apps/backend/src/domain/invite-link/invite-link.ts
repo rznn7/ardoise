@@ -1,10 +1,10 @@
-export interface InviteLink {
-  id: number;
-  groupId: number;
-  token: string;
-  singleUse: boolean;
-  consumedByUserId: number | null;
-  expiresAt: Date;
-  consumedAt: Date | null;
-  createdAt: Date;
-}
+export type InviteLink = {
+  readonly id: number;
+  readonly groupId: number;
+  readonly token: string;
+  readonly singleUse: boolean;
+  readonly consumedByUserId: number | null;
+  readonly expiresAt: Date;
+  readonly consumedAt: Date | null;
+  readonly createdAt: Date;
+};

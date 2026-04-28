@@ -1,6 +1,6 @@
-export interface ExpenseGroup {
-  id: number;
-  name: string;
-  currencyCode: string;
-  createdAt: Date;
-}
+export type ExpenseGroup = {
+  readonly id: number;
+  readonly name: string;
+  readonly currencyCode: string;
+  readonly createdAt: Date;
+};

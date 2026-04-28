@@ -1,12 +1,12 @@
 export type SplitType = 'equal' | 'percent' | 'shares' | 'exact';
 
-export interface Payment {
-  id: number;
-  payerMemberId: number;
-  groupId: number;
-  title: string;
-  paidAt: Date;
-  fullAmount: number;
-  splitType: SplitType;
-  createdAt: Date;
-}
+export type Payment = {
+  readonly id: number;
+  readonly payerMemberId: number;
+  readonly groupId: number;
+  readonly title: string;
+  readonly paidAt: Date;
+  readonly fullAmount: number;
+  readonly splitType: SplitType;
+  readonly createdAt: Date;
+};
