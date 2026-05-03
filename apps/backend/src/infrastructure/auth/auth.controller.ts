@@ -22,6 +22,7 @@ export class AuthController {
   ) {}
 
   @Post('register/begin')
+  @HttpCode(200)
   begin(
     @Body(new ZodValidationPipe(beginRegistrationRequestSchema))
     body: BeginRegistrationRequest,
