@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { type PublicKeyCredentialRequestOptionsJSON } from '@simplewebauthn/server';
 import {
   PASSKEY_VERIFIER,
   type PasskeyVerifier,
@@ -12,10 +11,13 @@ export class BeginLoginUseCase {
   ) {}
 
   async execute(): Promise<{
-    options: PublicKeyCredentialRequestOptionsJSON;
+    options: unknown;
     loginState: { challenge: string };
   }> {
-    const options = await this.verifier.generateAuthenticationOptions();
-    return { options, loginState: { challenge: options.challenge } };
+    const authOpts = await this.verifier.generateAuthenticationOptions();
+    return {
+      loginState: { challenge: authOpts.challenge },
+      options: authOpts.raw,
+    };
   }
 }

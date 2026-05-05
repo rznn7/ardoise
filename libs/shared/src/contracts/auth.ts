@@ -41,6 +41,6 @@ export type BeginLoginResponse = z.infer<typeof beginLoginResponseSchema>;
 
 export const completeLoginRequestSchema = z.object({
   loginState: loginStateSchema,
-  assertion: z.unknown(),
+  assertion: z.object({ id: z.string() }).loose(),
 });
 export type CompleteLoginRequest = z.infer<typeof completeLoginRequestSchema>;

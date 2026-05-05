@@ -1,17 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
-  AuthenticationResponseJSON,
+  type AuthenticationResponseJSON,
   generateAuthenticationOptions,
   generateRegistrationOptions,
-  type PublicKeyCredentialCreationOptionsJSON,
-  PublicKeyCredentialRequestOptionsJSON,
   type RegistrationResponseJSON,
   verifyAuthenticationResponse,
   verifyRegistrationResponse,
 } from '@simplewebauthn/server';
 import { isoBase64URL } from '@simplewebauthn/server/helpers';
-import { type PasskeyVerifier } from 'src/domain/auth/passkey-verifier';
+import {
+  type Assertion,
+  type AuthenticationOptions,
+  type PasskeyVerifier,
+  type RegistrationOptions,
+} from 'src/domain/auth/passkey-verifier';
 
 @Injectable()
 export class PasskeyVerifierSimpleWebauthn implements PasskeyVerifier {
@@ -19,8 +22,8 @@ export class PasskeyVerifierSimpleWebauthn implements PasskeyVerifier {
 
   async generateRegistrationOptions(input: {
     webauthnUserId: string;
-  }): Promise<PublicKeyCredentialCreationOptionsJSON> {
-    return generateRegistrationOptions({
+  }): Promise<RegistrationOptions> {
+    const opts = await generateRegistrationOptions({
       rpName: this.config.getOrThrow('RP_NAME'),
       rpID: this.config.getOrThrow('RP_ID'),
       userID: new TextEncoder().encode(input.webauthnUserId),
@@ -31,6 +34,11 @@ export class PasskeyVerifierSimpleWebauthn implements PasskeyVerifier {
       },
       attestationType: 'none',
     });
+
+    return {
+      challenge: opts.challenge,
+      raw: opts,
+    };
   }
 
   async verifyRegistration(input: {
@@ -59,29 +67,35 @@ export class PasskeyVerifierSimpleWebauthn implements PasskeyVerifier {
     };
   }
 
-  generateAuthenticationOptions(): Promise<PublicKeyCredentialRequestOptionsJSON> {
-    return generateAuthenticationOptions({
+  async generateAuthenticationOptions(): Promise<AuthenticationOptions> {
+    const authOpts = await generateAuthenticationOptions({
       rpID: this.config.getOrThrow('RP_ID'),
       allowCredentials: [],
       userVerification: 'required',
     });
+
+    return {
+      challenge: authOpts.challenge,
+      raw: authOpts,
+    };
   }
 
   async verifyAuthentication(input: {
     challenge: string;
-    assertion: unknown;
+    assertion: Assertion;
     credential: { id: string; publicKey: Uint8Array; counter: number };
   }): Promise<{ newCounter: number; userHandle: string }> {
-    const assertion = input.assertion as AuthenticationResponseJSON;
+    const rawAssertion = input.assertion.raw as AuthenticationResponseJSON;
 
-    if (!assertion.response.userHandle) throw new Error('missing userHandle');
+    if (!rawAssertion.response.userHandle)
+      throw new Error('missing userHandle');
     const userHandle = new TextDecoder().decode(
-      isoBase64URL.toBuffer(assertion.response.userHandle),
+      isoBase64URL.toBuffer(rawAssertion.response.userHandle),
     );
 
     const { verified, authenticationInfo } = await verifyAuthenticationResponse(
       {
-        response: assertion,
+        response: rawAssertion,
         credential: {
           ...input.credential,
           publicKey: new Uint8Array(input.credential.publicKey),

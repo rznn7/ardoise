@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { AuthenticationResponseJSON } from '@simplewebauthn/server';
 import {
+  type Assertion,
   PASSKEY_VERIFIER,
   type PasskeyVerifier,
 } from 'src/domain/auth/passkey-verifier';
@@ -21,11 +21,12 @@ export class CompleteLoginUseCase {
 
   async execute(input: {
     loginState: { challenge: string };
-    assertion: unknown;
+    assertion: Assertion;
   }): Promise<{ token: string }> {
-    const assertion = input.assertion as AuthenticationResponseJSON;
     return this.uow.run(async (repos) => {
-      const passkey = await repos.passkeys.findByCredentialId(assertion.id);
+      const passkey = await repos.passkeys.findByCredentialId(
+        input.assertion.credentialId,
+      );
 
       if (!passkey) throw new Error('no passkey found');
 

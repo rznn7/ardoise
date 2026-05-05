@@ -63,7 +63,11 @@ export class AuthController {
     body: CompleteLoginRequest,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
-    const { token } = await this.completeLogin.execute(body);
+    const { token } = await this.completeLogin.execute({
+      loginState: body.loginState,
+      assertion: { credentialId: body.assertion.id, raw: body.assertion },
+    });
+
     res.cookie('session_token', token, {
       httpOnly: true,
       sameSite: 'strict',

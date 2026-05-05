@@ -1,6 +1,5 @@
 import { type RegistrationState } from '@ardoise/shared';
 import { Inject, Injectable } from '@nestjs/common';
-import type { PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/server';
 import { randomBytes } from 'crypto';
 import {
   PASSKEY_VERIFIER,
@@ -20,7 +19,7 @@ export class BeginRegistrationUseCase {
   ) {}
 
   async execute(input: { inviteToken: string }): Promise<{
-    options: PublicKeyCredentialCreationOptionsJSON;
+    options: unknown;
     registrationState: RegistrationState;
   }> {
     const invite = await this.inviteLinks.findUsableByToken(input.inviteToken);
@@ -28,14 +27,14 @@ export class BeginRegistrationUseCase {
       throw new Error(`no invite-link found for token [${input.inviteToken}]`);
 
     const webauthnUserId = randomBytes(32).toString('base64url');
-    const options = await this.verifier.generateRegistrationOptions({
+    const registrationOpts = await this.verifier.generateRegistrationOptions({
       webauthnUserId,
     });
 
     return {
-      options,
+      options: registrationOpts.raw,
       registrationState: {
-        challenge: options.challenge,
+        challenge: registrationOpts.challenge,
         webauthnUserId,
         inviteToken: input.inviteToken,
       },

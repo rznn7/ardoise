@@ -26,9 +26,12 @@ const fakeVerifier: PasskeyVerifier = {
   generateRegistrationOptions: ({ webauthnUserId }) =>
     Promise.resolve({
       challenge: 'test-challenge',
-      rp: { name: 'test', id: 'localhost' },
-      user: { id: webauthnUserId, name: 'x', displayName: 'x' },
-      pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+      raw: {
+        challenge: 'test-challenge',
+        rp: { name: 'test', id: 'localhost' },
+        user: { id: webauthnUserId, name: 'x', displayName: 'x' },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+      },
     }),
   verifyRegistration: () =>
     Promise.resolve({
@@ -39,8 +42,11 @@ const fakeVerifier: PasskeyVerifier = {
   generateAuthenticationOptions: () =>
     Promise.resolve({
       challenge: 'test-challenge',
-      rpId: 'localhost',
-      allowCredentials: [],
+      raw: {
+        challenge: 'test-challenge',
+        rpId: 'localhost',
+        allowCredentials: [],
+      },
     }),
   verifyAuthentication: () =>
     Promise.resolve({
