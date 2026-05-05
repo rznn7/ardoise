@@ -1,15 +1,21 @@
 import {
+  BeginLoginResponse,
   type BeginRegistrationRequest,
   beginRegistrationRequestSchema,
+  type CompleteLoginRequest,
+  completeLoginRequestSchema,
   type CompleteRegistrationRequest,
   completeRegistrationRequestSchema,
 } from '@ardoise/shared';
 import { Body, Controller, HttpCode, Post, Res } from '@nestjs/common';
 import type { RegistrationResponseJSON } from '@simplewebauthn/server';
 import type { Response } from 'express';
+import { BeginLoginUseCase } from 'src/application/auth/begin-login.use-case';
 import { BeginRegistrationUseCase } from 'src/application/auth/begin-registration.use-case';
+import { CompleteLoginUseCase } from 'src/application/auth/complete-login.use-case';
 import { CompleteRegistrationUseCase } from 'src/application/auth/complete-registration.use-case';
 import { LogoutUseCase } from 'src/application/auth/logout.use-case';
+import { SESSION_TTL_MS } from 'src/domain/auth/session';
 import { Cookie } from 'src/infrastructure/http/cookie.decorator';
 import { ZodValidationPipe } from 'src/infrastructure/http/zod-validation.pipe';
 
@@ -18,12 +24,14 @@ export class AuthController {
   constructor(
     private readonly beginRegistration: BeginRegistrationUseCase,
     private readonly completeRegistration: CompleteRegistrationUseCase,
+    private readonly beginLogin: BeginLoginUseCase,
+    private readonly completeLogin: CompleteLoginUseCase,
     private readonly doLogout: LogoutUseCase,
   ) {}
 
   @Post('register/begin')
   @HttpCode(200)
-  begin(
+  registerBegin(
     @Body(new ZodValidationPipe(beginRegistrationRequestSchema))
     body: BeginRegistrationRequest,
   ) {
@@ -32,13 +40,36 @@ export class AuthController {
 
   @Post('register/complete')
   @HttpCode(204)
-  async complete(
+  registerComplete(
     @Body(new ZodValidationPipe(completeRegistrationRequestSchema))
     body: CompleteRegistrationRequest,
   ) {
-    await this.completeRegistration.execute({
+    return this.completeRegistration.execute({
       ...body,
       attestation: body.attestation as RegistrationResponseJSON,
+    });
+  }
+
+  @Post('login/begin')
+  @HttpCode(200)
+  loginBegin(): Promise<BeginLoginResponse> {
+    return this.beginLogin.execute();
+  }
+
+  @Post('login/complete')
+  @HttpCode(204)
+  async loginComplete(
+    @Body(new ZodValidationPipe(completeLoginRequestSchema))
+    body: CompleteLoginRequest,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    const { token } = await this.completeLogin.execute(body);
+    res.cookie('session_token', token, {
+      httpOnly: true,
+      sameSite: 'strict',
+      path: '/',
+      secure: false, //TODO: enable secure for production environments
+      maxAge: SESSION_TTL_MS,
     });
   }
 

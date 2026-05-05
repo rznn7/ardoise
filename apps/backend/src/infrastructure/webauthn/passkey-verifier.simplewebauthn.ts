@@ -1,11 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
+  AuthenticationResponseJSON,
+  generateAuthenticationOptions,
   generateRegistrationOptions,
   type PublicKeyCredentialCreationOptionsJSON,
+  PublicKeyCredentialRequestOptionsJSON,
   type RegistrationResponseJSON,
+  verifyAuthenticationResponse,
   verifyRegistrationResponse,
 } from '@simplewebauthn/server';
+import { isoBase64URL } from '@simplewebauthn/server/helpers';
 import { type PasskeyVerifier } from 'src/domain/auth/passkey-verifier';
 
 @Injectable()
@@ -52,5 +57,51 @@ export class PasskeyVerifierSimpleWebauthn implements PasskeyVerifier {
       publicKey: credential.publicKey,
       counter: credential.counter,
     };
+  }
+
+  generateAuthenticationOptions(): Promise<PublicKeyCredentialRequestOptionsJSON> {
+    return generateAuthenticationOptions({
+      rpID: this.config.getOrThrow('RP_ID'),
+      allowCredentials: [],
+      userVerification: 'required',
+    });
+  }
+
+  async verifyAuthentication(input: {
+    challenge: string;
+    assertion: unknown;
+    credential: { id: string; publicKey: Uint8Array; counter: number };
+  }): Promise<{ newCounter: number; userHandle: string }> {
+    const assertion = input.assertion as AuthenticationResponseJSON;
+
+    if (!assertion.response.userHandle) throw new Error('missing userHandle');
+    const userHandle = new TextDecoder().decode(
+      isoBase64URL.toBuffer(assertion.response.userHandle),
+    );
+
+    const { verified, authenticationInfo } = await verifyAuthenticationResponse(
+      {
+        response: assertion,
+        credential: {
+          ...input.credential,
+          publicKey: new Uint8Array(input.credential.publicKey),
+        },
+        expectedChallenge: input.challenge,
+        expectedOrigin: this.config.getOrThrow('EXPECTED_ORIGIN'),
+        expectedRPID: this.config.getOrThrow('RP_ID'),
+        requireUserVerification: true,
+      },
+    );
+
+    if (!verified || !authenticationInfo)
+      throw new Error('passkey authentication not verified');
+
+    if (
+      input.credential.counter > 0 &&
+      authenticationInfo.newCounter <= input.credential.counter
+    )
+      throw new Error('passkey counter regression');
+
+    return { newCounter: authenticationInfo.newCounter, userHandle };
   }
 }

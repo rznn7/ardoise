@@ -1,7 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { BeginLoginUseCase } from 'src/application/auth/begin-login.use-case';
 import { BeginRegistrationUseCase } from 'src/application/auth/begin-registration.use-case';
+import { CompleteLoginUseCase } from 'src/application/auth/complete-login.use-case';
 import { CompleteRegistrationUseCase } from 'src/application/auth/complete-registration.use-case';
 import { LogoutUseCase } from 'src/application/auth/logout.use-case';
 import { PASSKEY_VERIFIER } from 'src/domain/auth/passkey-verifier';
@@ -28,6 +30,8 @@ import { TokenGeneratorCrypto } from './token-generator.crypto';
   providers: [
     BeginRegistrationUseCase,
     CompleteRegistrationUseCase,
+    BeginLoginUseCase,
+    CompleteLoginUseCase,
     LogoutUseCase,
     { provide: PASSKEY_VERIFIER, useClass: PasskeyVerifierSimpleWebauthn },
     { provide: UNIT_OF_WORK, useClass: UnitOfWorkDrizzle },

@@ -1,4 +1,7 @@
-import type { PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/server';
+import type {
+  PublicKeyCredentialCreationOptionsJSON,
+  PublicKeyCredentialRequestOptionsJSON,
+} from '@simplewebauthn/server';
 
 export const PASSKEY_VERIFIER = Symbol('PASSKEY_VERIFIER');
 
@@ -15,4 +18,12 @@ export interface PasskeyVerifier {
     publicKey: Uint8Array;
     counter: number;
   }>;
+
+  generateAuthenticationOptions(): Promise<PublicKeyCredentialRequestOptionsJSON>;
+
+  verifyAuthentication(input: {
+    challenge: string;
+    assertion: unknown;
+    credential: { id: string; publicKey: Uint8Array; counter: number };
+  }): Promise<{ newCounter: number; userHandle: string }>;
 }

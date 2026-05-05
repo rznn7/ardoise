@@ -29,3 +29,18 @@ export const beginRegistrationResponseSchema = z.object({
 export type BeginRegistrationResponse = z.infer<
   typeof beginRegistrationResponseSchema
 >;
+
+export const loginStateSchema = z.object({ challenge: z.string() });
+export type LoginState = z.infer<typeof loginStateSchema>;
+
+export const beginLoginResponseSchema = z.object({
+  options: z.unknown(),
+  loginState: loginStateSchema,
+});
+export type BeginLoginResponse = z.infer<typeof beginLoginResponseSchema>;
+
+export const completeLoginRequestSchema = z.object({
+  loginState: loginStateSchema,
+  assertion: z.unknown(),
+});
+export type CompleteLoginRequest = z.infer<typeof completeLoginRequestSchema>;
