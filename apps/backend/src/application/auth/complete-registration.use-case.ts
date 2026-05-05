@@ -17,7 +17,6 @@ export class CompleteRegistrationUseCase {
   async execute(input: {
     registrationState: RegistrationState;
     attestation: RegistrationResponseJSON;
-    name: string;
   }): Promise<void> {
     const { credentialId, publicKey, counter } =
       await this.verifier.verifyRegistration({
@@ -35,7 +34,7 @@ export class CompleteRegistrationUseCase {
         );
 
       const user = await repos.users.create({
-        name: input.name,
+        name: `user-${crypto.randomUUID()}`,
         webauthnUserId: input.registrationState.webauthnUserId,
       });
       await repos.passkeys.create({

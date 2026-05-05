@@ -112,7 +112,6 @@ describe('Authentication', () => {
         .send({
           registrationState: beginBody.registrationState,
           attestation: {},
-          name: 'john',
         })
         .expect(204);
 
@@ -133,7 +132,6 @@ describe('Authentication', () => {
       ).rows[0];
 
       expect(createdUser).toMatchObject({
-        name: 'john',
         role: 'user',
         webauthn_user_id: beginBody.registrationState.webauthnUserId,
       });
