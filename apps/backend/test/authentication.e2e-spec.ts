@@ -15,7 +15,7 @@ import { Client, Pool } from 'pg';
 import {
   PASSKEY_VERIFIER,
   type PasskeyVerifier,
-} from 'src/domain/auth/passkey-verifier';
+} from 'src/auth/domain/passkey-verifier';
 import request from 'supertest';
 import { type App } from 'supertest/types';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
@@ -75,7 +75,7 @@ describe('Authentication', () => {
     });
     const migrationDb = drizzle(migrationPool);
     await migrate(migrationDb, {
-      migrationsFolder: 'src/infrastructure/database/migrations',
+      migrationsFolder: 'src/shared/database/migrations',
     });
     await migrationPool.end();
 
