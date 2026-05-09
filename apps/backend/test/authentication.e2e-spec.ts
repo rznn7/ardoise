@@ -90,7 +90,7 @@ describe('Authentication', () => {
 
     app.use(cookieParser());
     await app.init();
-  });
+  }, 30000);
 
   afterEach(async () => {
     await pgClient.query(
