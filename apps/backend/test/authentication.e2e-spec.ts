@@ -69,7 +69,7 @@ describe('Authentication', () => {
       user: pgContainer.getUsername(),
       password: pgContainer.getPassword(),
     }).connect();
-    process.env.DATABASE_URL = pgContainer.getConnectionUri();
+    process.env['DATABASE_URL'] = pgContainer.getConnectionUri();
     const migrationPool = new Pool({
       connectionString: pgContainer.getConnectionUri(),
     });

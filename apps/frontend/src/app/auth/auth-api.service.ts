@@ -1,13 +1,13 @@
 import { HttpClient } from '@angular/common/http';
-import {
-  BeginLoginResponse,
-  BeginRegistrationRequest,
-  BeginRegistrationResponse,
-  CompleteLoginRequest,
-  CompleteRegistrationRequest,
-} from '@ardoise/shared';
-import { Observable } from 'rxjs';
 import { inject, Injectable } from '@angular/core';
+import {
+  type BeginLoginResponse,
+  type BeginRegistrationRequest,
+  type BeginRegistrationResponse,
+  type CompleteLoginRequest,
+  type CompleteRegistrationRequest,
+} from '@ardoise/shared';
+import { type Observable } from 'rxjs';
 
 const AUTH_ENDPOINT = '/api/auth';
 

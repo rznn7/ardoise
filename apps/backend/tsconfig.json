@@ -23,6 +23,11 @@
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
     "useUnknownInCatchVariables": true,
-    "noUncheckedIndexedAccess": true
+    "noUncheckedIndexedAccess": true,
+    "strictFunctionTypes": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true
   }
 }

@@ -1,12 +1,13 @@
 import { inject, Injectable } from '@angular/core';
-import { AuthApiService } from './auth-api.service';
 import {
-  startRegistration,
-  PublicKeyCredentialCreationOptionsJSON,
-  PublicKeyCredentialRequestOptionsJSON,
+  type PublicKeyCredentialCreationOptionsJSON,
+  type PublicKeyCredentialRequestOptionsJSON,
   startAuthentication,
+  startRegistration,
 } from '@simplewebauthn/browser';
-import { from, map, Observable, switchMap } from 'rxjs';
+import { from, map, type Observable, switchMap } from 'rxjs';
+
+import { AuthApiService } from './auth-api.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {

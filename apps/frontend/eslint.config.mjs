@@ -7,19 +7,14 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  {
-    ignores: ['eslint.config.mjs'],
-  },
+  { ignores: ['eslint.config.mjs'] },
   eslint.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   eslintPluginPrettierRecommended,
   {
     languageOptions: {
-      globals: {
-        ...globals.node,
-        ...globals.vitest,
-      },
-      sourceType: 'commonjs',
+      globals: { ...globals.browser, ...globals.vitest },
+      sourceType: 'module',
       parserOptions: {
         projectService: true,
         tsconfigRootDir: import.meta.dirname,
@@ -27,7 +22,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['test/**/*.ts'],
+    files: ['src/**/*.spec.ts'],
     rules: {
       '@typescript-eslint/no-non-null-assertion': 'off',
     },
@@ -45,6 +40,11 @@ export default tseslint.config(
         'error',
         { prefer: 'type-imports', fixStyle: 'inline-type-imports' },
       ],
+      '@typescript-eslint/no-invalid-void-type': 'off',
+      '@typescript-eslint/no-extraneous-class': [
+        'error',
+        { allowWithDecorator: true },
+      ],
       'simple-import-sort/imports': 'error',
       'simple-import-sort/exports': 'error',
       'import/no-cycle': 'error',
@@ -60,32 +60,6 @@ export default tseslint.config(
             },
           ],
         },
-      ],
-      'import/no-restricted-paths': [
-        'error',
-        {
-          zones: [
-            {
-              target: './src/domain',
-              from: './src/application',
-              message: 'Domain must not depend on application.',
-            },
-            {
-              target: './src/domain',
-              from: './src/infrastructure',
-              message: 'Domain must not depend on infrastructure.',
-            },
-            {
-              target: './src/application',
-              from: './src/infrastructure',
-              message: 'Application must not depend on infrastructure.',
-            },
-          ],
-        },
-      ],
-      '@typescript-eslint/no-extraneous-class': [
-        'error',
-        { allowWithDecorator: true },
       ],
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
     },
