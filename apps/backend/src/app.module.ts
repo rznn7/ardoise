@@ -7,6 +7,7 @@ import { ExpenseGroupModule } from './expense-group/infrastructure/expense-group
 import { MemberModule } from './member/infrastructure/member.module';
 import { PaymentModule } from './payment/infrastructure/payment.module';
 import { PaymentShareModule } from './payment-share/infrastructure/payment-share.module';
+import { InviteLinkExceptionFilter } from './shared/http/invite-link-exception.filter';
 import { SessionExceptionFilter } from './shared/http/session-exception.filter';
 import { UserModule } from './user/infrastructure/user.module';
 
@@ -20,6 +21,9 @@ import { UserModule } from './user/infrastructure/user.module';
     PaymentShareModule,
     UserModule,
   ],
-  providers: [{ provide: APP_FILTER, useClass: SessionExceptionFilter }],
+  providers: [
+    { provide: APP_FILTER, useClass: SessionExceptionFilter },
+    { provide: APP_FILTER, useClass: InviteLinkExceptionFilter },
+  ],
 })
 export class AppModule {}

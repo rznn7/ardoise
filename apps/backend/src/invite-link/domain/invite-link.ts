@@ -8,3 +8,5 @@ export type InviteLink = {
   readonly consumedAt: Date | null;
   readonly createdAt: Date;
 };
+
+export class InviteLinkNotFound extends Error {}

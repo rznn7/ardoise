@@ -5,6 +5,7 @@ import {
   PASSKEY_VERIFIER,
   type PasskeyVerifier,
 } from 'src/auth/domain/passkey-verifier';
+import { InviteLinkNotFound } from 'src/invite-link/domain/invite-link';
 import { UNIT_OF_WORK, type UnitOfWork } from 'src/auth/domain/unit-of-work';
 
 @Injectable()
@@ -28,10 +29,7 @@ export class CompleteRegistrationUseCase {
       const invite = await repos.inviteLinks.findUsableByToken(
         input.registrationState.inviteToken,
       );
-      if (!invite)
-        throw new Error(
-          `no invite-link found for token [${input.registrationState.inviteToken}]`,
-        );
+      if (!invite) throw new InviteLinkNotFound();
 
       const user = await repos.users.create({
         name: `user-${crypto.randomUUID()}`,

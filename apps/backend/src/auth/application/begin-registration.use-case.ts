@@ -5,6 +5,7 @@ import {
   PASSKEY_VERIFIER,
   type PasskeyVerifier,
 } from 'src/auth/domain/passkey-verifier';
+import { InviteLinkNotFound } from 'src/invite-link/domain/invite-link';
 import {
   INVITE_LINK_REPOSITORY,
   type InviteLinkRepository,
@@ -23,8 +24,7 @@ export class BeginRegistrationUseCase {
     registrationState: RegistrationState;
   }> {
     const invite = await this.inviteLinks.findUsableByToken(input.inviteToken);
-    if (!invite)
-      throw new Error(`no invite-link found for token [${input.inviteToken}]`);
+    if (!invite) throw new InviteLinkNotFound();
 
     const webauthnUserId = randomBytes(32).toString('base64url');
     const registrationOpts = await this.verifier.generateRegistrationOptions({

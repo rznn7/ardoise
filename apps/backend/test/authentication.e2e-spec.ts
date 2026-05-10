@@ -170,6 +170,37 @@ describe('Authentication', () => {
     expect(consumedInvite.consumed_at).not.toBeNull();
   });
 
+  it('rejects registration with an invalid invite token', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/register/begin')
+      .send({ inviteToken: 'does-not-exist' })
+      .expect(400);
+  });
+
+  it('rejects registration with a consumed invite token', async () => {
+    // GIVEN
+    const { rows } = await pgClient.query<{ id: number }>(
+      `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
+      ['john', 'webauthn-test'],
+    );
+    const groupId = (
+      await pgClient.query<{ id: number }>(
+        `INSERT INTO expense_group (name, currency_code) VALUES ($1, $2) RETURNING id`,
+        ['group', 'EUR'],
+      )
+    ).rows[0].id;
+    await pgClient.query(
+      `INSERT INTO invite_link (group_id, token, expires_at, consumed_by_user_id, consumed_at) VALUES ($1, $2, NOW() + INTERVAL '7 days', $3, NOW())`,
+      [groupId, 'consumed-token', rows[0].id],
+    );
+
+    // WHEN / THEN
+    await request(app.getHttpServer())
+      .post('/auth/register/begin')
+      .send({ inviteToken: 'consumed-token' })
+      .expect(400);
+  });
+
   it('logs in', async () => {
     // GIVEN
     const { rows } = await pgClient.query<{ id: number }>(
@@ -199,6 +230,7 @@ describe('Authentication', () => {
     expect(setCookie).toMatch(/session_token=/);
 
     const tokenMatch = setCookie.match(/session_token=([^;]+)/);
+    expect(tokenMatch).not.toBeNull();
     const token = tokenMatch![1];
 
     const sessionRow = (
@@ -240,7 +272,7 @@ describe('Authentication', () => {
     );
 
     // WHEN
-    await request(app.getHttpServer())
+    const logoutResponse = await request(app.getHttpServer())
       .post('/auth/logout')
       .set('Cookie', `session_token=c19b19f2d4fb4f499a281779498b3677`)
       .expect(204);
@@ -253,10 +285,33 @@ describe('Authentication', () => {
       )
     ).rows;
     expect(resRows[0].revoked_at).not.toBeNull();
+    expect(logoutResponse.headers['set-cookie'][0]).toMatch(/session_token=;/);
+  });
+
+  it('logs out without a cookie', async () => {
+    await request(app.getHttpServer()).post('/auth/logout').expect(204);
   });
 
   it('me: no cookie returns 401', async () => {
     await request(app.getHttpServer()).post('/auth/me').expect(401);
+  });
+
+  it('me: revoked session returns 401', async () => {
+    // GIVEN
+    const { rows } = await pgClient.query<{ id: number }>(
+      `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
+      ['john', 'webauthn-test'],
+    );
+    await pgClient.query(
+      `INSERT INTO session (token, user_id, issued_at, expires_at, revoked_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL '7 days', NOW() - INTERVAL '1 minute')`,
+      ['revoked-session-token', rows[0].id],
+    );
+
+    // WHEN / THEN
+    await request(app.getHttpServer())
+      .post('/auth/me')
+      .set('Cookie', `session_token=revoked-session-token`)
+      .expect(401);
   });
 
   it('me: expired session returns 401', async () => {
