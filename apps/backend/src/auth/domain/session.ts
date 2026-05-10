@@ -35,3 +35,4 @@ export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export class SessionNotFound extends Error {}
 export class SessionExpired extends Error {}
+export class UserHandleMismatch extends Error {}

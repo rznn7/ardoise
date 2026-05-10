@@ -8,6 +8,7 @@ import {
   SESSION_REPOSITORY,
   type SessionRepository,
 } from 'src/auth/domain/session-repository';
+import { UserNotFound } from 'src/user/domain/user';
 import {
   USER_REPOSITORY,
   type UserRepository,
@@ -27,7 +28,7 @@ export class MeUseCase {
     if (!Session.isValid(session, new Date())) throw new SessionExpired();
 
     const user = await this.users.findById(session.userId);
-    if (!user) throw new Error('no user found');
+    if (!user) throw new UserNotFound();
 
     return user;
   }

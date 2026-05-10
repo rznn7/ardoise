@@ -7,3 +7,5 @@ export type Passkey = {
   readonly createdAt: Date;
   readonly lastUsedAt: Date | null;
 };
+
+export class PasskeyNotFound extends Error {}

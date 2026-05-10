@@ -4,7 +4,8 @@ import {
   PASSKEY_VERIFIER,
   type PasskeyVerifier,
 } from 'src/auth/domain/passkey-verifier';
-import { Session, SESSION_TTL_MS } from 'src/auth/domain/session';
+import { Session, SESSION_TTL_MS, UserHandleMismatch } from 'src/auth/domain/session';
+import { PasskeyNotFound } from 'src/passkey/domain/passkey';
 import {
   TOKEN_GENERATOR,
   type TokenGenerator,
@@ -28,7 +29,7 @@ export class CompleteLoginUseCase {
         input.assertion.credentialId,
       );
 
-      if (!passkey) throw new Error('no passkey found');
+      if (!passkey) throw new PasskeyNotFound();
 
       const { newCounter, userHandle } =
         await this.verifier.verifyAuthentication({
@@ -43,7 +44,7 @@ export class CompleteLoginUseCase {
 
       const user = await repos.users.findByWebauthnUserId(userHandle);
 
-      if (user?.id !== passkey.userId) throw new Error('userHandle mismatch');
+      if (user?.id !== passkey.userId) throw new UserHandleMismatch();
 
       await repos.passkeys.markUsed(passkey.id, newCounter);
 

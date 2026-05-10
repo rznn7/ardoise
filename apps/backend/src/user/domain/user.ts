@@ -4,3 +4,5 @@ export type User = {
   readonly role: 'user' | 'admin';
   readonly webauthnUserId: string;
 };
+
+export class UserNotFound extends Error {}
