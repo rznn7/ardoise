@@ -13,7 +13,13 @@ import {
 import { PasskeyNotFound } from 'src/passkey/domain/passkey';
 import { UserNotFound } from 'src/user/domain/user';
 
-@Catch(SessionNotFound, SessionExpired, PasskeyNotFound, UserHandleMismatch, UserNotFound)
+@Catch(
+  SessionNotFound,
+  SessionExpired,
+  PasskeyNotFound,
+  UserHandleMismatch,
+  UserNotFound,
+)
 export class SessionExceptionFilter implements ExceptionFilter {
   catch(_: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();

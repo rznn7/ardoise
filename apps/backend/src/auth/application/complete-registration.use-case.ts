@@ -5,8 +5,8 @@ import {
   PASSKEY_VERIFIER,
   type PasskeyVerifier,
 } from 'src/auth/domain/passkey-verifier';
-import { InviteLinkNotFound } from 'src/invite-link/domain/invite-link';
 import { UNIT_OF_WORK, type UnitOfWork } from 'src/auth/domain/unit-of-work';
+import { InviteLinkNotFound } from 'src/invite-link/domain/invite-link';
 
 @Injectable()
 export class CompleteRegistrationUseCase {

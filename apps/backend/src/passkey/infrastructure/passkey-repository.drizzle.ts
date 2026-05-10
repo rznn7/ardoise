@@ -38,6 +38,7 @@ export class PasskeyRepositoryDrizzle implements PasskeyRepository {
   }): Promise<Passkey> {
     const [row] = await this.database.insert(passkey).values(input).returning();
 
+    if (!row) throw new Error('Passkey insert returned no row');
     return this.toDomain(row);
   }
 

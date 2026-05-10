@@ -4,13 +4,17 @@ import {
   PASSKEY_VERIFIER,
   type PasskeyVerifier,
 } from 'src/auth/domain/passkey-verifier';
-import { Session, SESSION_TTL_MS, UserHandleMismatch } from 'src/auth/domain/session';
-import { PasskeyNotFound } from 'src/passkey/domain/passkey';
+import {
+  Session,
+  SESSION_TTL_MS,
+  UserHandleMismatch,
+} from 'src/auth/domain/session';
 import {
   TOKEN_GENERATOR,
   type TokenGenerator,
 } from 'src/auth/domain/token-generator';
 import { UNIT_OF_WORK, type UnitOfWork } from 'src/auth/domain/unit-of-work';
+import { PasskeyNotFound } from 'src/passkey/domain/passkey';
 
 @Injectable()
 export class CompleteLoginUseCase {

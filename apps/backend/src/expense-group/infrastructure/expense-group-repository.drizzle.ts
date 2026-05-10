@@ -34,6 +34,7 @@ export class ExpenseGroupRepositoryDrizzle implements ExpenseGroupRepository {
       })
       .returning();
 
+    if (!row) throw new Error('ExpenseGroup insert returned no row');
     return this.toDomain(row);
   }
 

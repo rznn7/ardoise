@@ -112,7 +112,7 @@ describe('Authentication', () => {
           `INSERT INTO expense_group (name, currency_code) VALUES ($1, $2) RETURNING id`,
           ['summer trip 2026', 'EUR'],
         )
-      ).rows[0].id;
+      ).rows[0]!.id;
       await pgClient.query(
         `INSERT INTO invite_link (group_id, token, expires_at ) VALUES ($1, $2, NOW() + INTERVAL '7 days') RETURNING id`,
         [firstGroupId, 'registration-token-1'],
@@ -137,7 +137,7 @@ describe('Authentication', () => {
       // THEN
       const createdUser = (
         await pgClient.query<{ id: number }>(`SELECT * FROM users`)
-      ).rows[0];
+      ).rows[0]!;
       expect(createdUser).toMatchObject({
         role: 'user',
         webauthn_user_id: beginBody.registrationState.webauthnUserId,
@@ -145,7 +145,7 @@ describe('Authentication', () => {
 
       const createdPasskey = (
         await pgClient.query<object>(`SELECT * FROM passkey`)
-      ).rows[0];
+      ).rows[0]!;
       expect(createdPasskey).toMatchObject({
         user_id: createdUser.id,
         credential_id: 'cred-1',
@@ -155,7 +155,7 @@ describe('Authentication', () => {
 
       const createdMember = (
         await pgClient.query<object>(`SELECT * FROM member`)
-      ).rows[0];
+      ).rows[0]!;
       expect(createdMember).toMatchObject({
         user_id: createdUser.id,
         group_id: firstGroupId,
@@ -167,7 +167,7 @@ describe('Authentication', () => {
         await pgClient.query<{ consumed_at: string }>(
           `SELECT * FROM invite_link`,
         )
-      ).rows[0];
+      ).rows[0]!;
       expect(consumedInvite).toMatchObject({
         consumed_by_user_id: createdUser.id,
       });
@@ -192,10 +192,10 @@ describe('Authentication', () => {
           `INSERT INTO expense_group (name, currency_code) VALUES ($1, $2) RETURNING id`,
           ['group', 'EUR'],
         )
-      ).rows[0].id;
+      ).rows[0]!.id;
       await pgClient.query(
         `INSERT INTO invite_link (group_id, token, expires_at, consumed_by_user_id, consumed_at) VALUES ($1, $2, NOW() + INTERVAL '7 days', $3, NOW())`,
-        [groupId, 'consumed-token', rows[0].id],
+        [groupId, 'consumed-token', rows[0]!.id],
       );
 
       // WHEN / THEN
@@ -215,7 +215,7 @@ describe('Authentication', () => {
       );
       await pgClient.query(
         `INSERT INTO passkey (user_id, credential_id, public_key, counter) VALUES ($1, $2, $3, $4)`,
-        [rows[0].id, 'cred-1', Buffer.from([1, 2, 3, 4]), 0],
+        [rows[0]!.id, 'cred-1', Buffer.from([1, 2, 3, 4]), 0],
       );
 
       // WHEN
@@ -232,20 +232,20 @@ describe('Authentication', () => {
         .expect(204);
 
       // THEN
-      const setCookie = completeResponse.headers['set-cookie'][0];
+      const setCookie = completeResponse.headers['set-cookie']![0]!;
       expect(setCookie).toMatch(/session_token=/);
 
       const tokenMatch = setCookie.match(/session_token=([^;]+)/);
       expect(tokenMatch).not.toBeNull();
-      const token = tokenMatch![1];
+      const token = tokenMatch![1]!;
 
       const sessionRow = (
         await pgClient.query<object>(`SELECT * FROM session WHERE token=$1`, [
           token,
         ])
-      ).rows[0];
+      ).rows[0]!;
       expect(sessionRow).toMatchObject({
-        user_id: rows[0].id,
+        user_id: rows[0]!.id,
         revoked_at: null,
       });
 
@@ -253,7 +253,7 @@ describe('Authentication', () => {
         await pgClient.query<{ counter: number; last_used_at: string }>(
           `SELECT counter, last_used_at FROM passkey`,
         )
-      ).rows[0];
+      ).rows[0]!;
       expect(passkeyRow.counter).toBe(1);
       expect(passkeyRow.last_used_at).not.toBeNull();
     });
@@ -287,7 +287,7 @@ describe('Authentication', () => {
       );
       await pgClient.query(
         `INSERT INTO session (token, user_id, issued_at, expires_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL '7 days')`,
-        ['c19b19f2d4fb4f499a281779498b3677', rows[0].id],
+        ['c19b19f2d4fb4f499a281779498b3677', rows[0]!.id],
       );
 
       // WHEN
@@ -303,8 +303,8 @@ describe('Authentication', () => {
           ['c19b19f2d4fb4f499a281779498b3677'],
         )
       ).rows;
-      expect(resRows[0].revoked_at).not.toBeNull();
-      expect(logoutResponse.headers['set-cookie'][0]).toMatch(
+      expect(resRows[0]!.revoked_at).not.toBeNull();
+      expect(logoutResponse.headers['set-cookie']![0]).toMatch(
         /session_token=;/,
       );
     });
@@ -323,7 +323,7 @@ describe('Authentication', () => {
       );
       await pgClient.query(
         `INSERT INTO session (token, user_id, issued_at, expires_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL '7 days')`,
-        ['valid-session-token', rows[0].id],
+        ['valid-session-token', rows[0]!.id],
       );
 
       // WHEN
@@ -334,7 +334,7 @@ describe('Authentication', () => {
 
       /// THEN
       expect(response.body).toMatchObject({
-        id: rows[0].id,
+        id: rows[0]!.id,
         name: 'john',
         role: 'user',
         webauthnUserId: 'webauthn-test',
@@ -353,7 +353,7 @@ describe('Authentication', () => {
       );
       await pgClient.query(
         `INSERT INTO session (token, user_id, issued_at, expires_at, revoked_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL '7 days', NOW() - INTERVAL '1 minute')`,
-        ['revoked-session-token', rows[0].id],
+        ['revoked-session-token', rows[0]!.id],
       );
 
       // WHEN / THEN
@@ -371,7 +371,7 @@ describe('Authentication', () => {
       );
       await pgClient.query(
         `INSERT INTO session (token, user_id, issued_at, expires_at) VALUES ($1, $2, NOW() - INTERVAL '14 days', NOW() - INTERVAL '7 days')`,
-        ['expired-session-token', rows[0].id],
+        ['expired-session-token', rows[0]!.id],
       );
 
       // WHEN / THEN

@@ -56,8 +56,7 @@ export class PasskeyVerifierSimpleWebauthn implements PasskeyVerifier {
       expectedRPID: this.config.getOrThrow('RP_ID'),
     });
 
-    if (!verified || !registrationInfo)
-      throw new Error('passkey registration not verified');
+    if (!verified) throw new Error('passkey registration not verified');
 
     const { credential } = registrationInfo;
     return {
@@ -107,8 +106,7 @@ export class PasskeyVerifierSimpleWebauthn implements PasskeyVerifier {
       },
     );
 
-    if (!verified || !authenticationInfo)
-      throw new Error('passkey authentication not verified');
+    if (!verified) throw new Error('passkey authentication not verified');
 
     if (
       input.credential.counter > 0 &&

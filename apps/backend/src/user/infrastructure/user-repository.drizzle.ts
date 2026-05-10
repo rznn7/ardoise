@@ -33,6 +33,7 @@ export class UserRepositoryDrizzle implements UserRepository {
   async create(input: { webauthnUserId: string; name: string }): Promise<User> {
     const [row] = await this.database.insert(users).values(input).returning();
 
+    if (!row) throw new Error('User insert returned no row');
     return this.toDomain(row);
   }
 

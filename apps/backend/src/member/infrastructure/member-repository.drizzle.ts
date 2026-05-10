@@ -30,6 +30,7 @@ export class MemberRepositoryDrizzle implements MemberRepository {
   }): Promise<Member> {
     const [row] = await this.database.insert(member).values(input).returning();
 
+    if (!row) throw new Error('Member insert returned no row');
     return this.toDomain(row);
   }
 
