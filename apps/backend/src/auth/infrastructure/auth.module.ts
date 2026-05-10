@@ -14,8 +14,8 @@ import { UNIT_OF_WORK } from 'src/auth/domain/unit-of-work';
 import { PasskeyVerifierSimpleWebauthn } from 'src/auth/infrastructure/passkey-verifier.simplewebauthn';
 import { InviteLinkModule } from 'src/invite-link/infrastructure/invite-link.module';
 import { DatabaseModule } from 'src/shared/database/database.module';
-import { UserModule } from 'src/user/infrastructure/user.module';
 import { UnitOfWorkDrizzle } from 'src/shared/database/unit-of-work.drizzle';
+import { UserModule } from 'src/user/infrastructure/user.module';
 
 import { AuthController } from './auth.controller';
 import { SessionRepositoryDrizzle } from './session-repository.drizzle';

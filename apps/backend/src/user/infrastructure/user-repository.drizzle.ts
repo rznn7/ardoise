@@ -1,12 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import { User } from 'src/user/domain/user';
-import { UserRepository } from 'src/user/domain/user-repository';
 import {
   type Database,
   DATABASE_CONNECTION,
 } from 'src/shared/database/database.module';
 import { users } from 'src/shared/database/schema';
+import { User } from 'src/user/domain/user';
+import { UserRepository } from 'src/user/domain/user-repository';
 
 @Injectable()
 export class UserRepositoryDrizzle implements UserRepository {
