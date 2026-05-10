@@ -4,14 +4,17 @@
   "scripts": {
     "dev": "pnpm --filter @ardoise/shared build && concurrently -n shared,front,back -c green,yellow,blue \"pnpm dev:shared\" \"pnpm dev:front\" \"pnpm dev:back\"",
     "dev:shared": "pnpm --filter @ardoise/shared dev",
-    "dev:front": "pnpm --filter @ardoise/frontend start",
-    "dev:back": "pnpm --filter @ardoise/backend start:dev",
-    "dev:db": "docker compose -f apps/backend/docker-compose.yml up -d",
-    "dev:db:stop": "docker compose -f apps/backend/docker-compose.yml down",
-    "dev:db:reset": "docker compose -f apps/backend/docker-compose.yml down -v",
+    "dev:front": "pnpm --filter @ardoise/frontend dev",
+    "dev:back": "pnpm --filter @ardoise/backend dev",
     "build": "pnpm -r build",
-    "lint": "pnpm -r lint",
-    "test": "pnpm -r test"
+    "build:shared": "pnpm --filter @ardoise/shared build",
+    "build:front": "pnpm --filter @ardoise/frontend build",
+    "build:back": "pnpm --filter @ardoise/backend build",
+    "lint": "pnpm -r --if-present lint",
+    "format": "pnpm -r --if-present format",
+    "test": "pnpm -r test",
+    "test:cov": "pnpm -r --if-present test:cov",
+    "test:e2e": "pnpm -r --if-present test:e2e"
   },
   "packageManager": "pnpm@10.33.0",
   "devDependencies": {
