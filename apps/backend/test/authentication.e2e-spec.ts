@@ -215,6 +215,17 @@ describe('Authentication', () => {
     ).rows[0];
     expect(passkeyRow.counter).toBe(1);
     expect(passkeyRow.last_used_at).not.toBeNull();
+
+    const meResponse = await request(app.getHttpServer())
+      .post('/auth/me')
+      .set('Cookie', `session_token=${token}`)
+      .expect(200);
+    expect(meResponse.body).toMatchObject({
+      id: rows[0].id,
+      name: 'john',
+      role: 'user',
+      webauthnUserId: 'webauthn-test',
+    });
   });
 
   it('logs out', async () => {
@@ -242,5 +253,27 @@ describe('Authentication', () => {
       )
     ).rows;
     expect(resRows[0].revoked_at).not.toBeNull();
+  });
+
+  it('me: no cookie returns 401', async () => {
+    await request(app.getHttpServer()).post('/auth/me').expect(401);
+  });
+
+  it('me: expired session returns 401', async () => {
+    // GIVEN
+    const { rows } = await pgClient.query<{ id: number }>(
+      `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
+      ['john', 'webauthn-test'],
+    );
+    await pgClient.query(
+      `INSERT INTO session (token, user_id, issued_at, expires_at) VALUES ($1, $2, NOW() - INTERVAL '14 days', NOW() - INTERVAL '7 days')`,
+      ['expired-session-token', rows[0].id],
+    );
+
+    // WHEN / THEN
+    await request(app.getHttpServer())
+      .post('/auth/me')
+      .set('Cookie', `session_token=expired-session-token`)
+      .expect(401);
   });
 });

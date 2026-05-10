@@ -7,7 +7,14 @@ import {
   type CompleteRegistrationRequest,
   completeRegistrationRequestSchema,
 } from '@ardoise/shared';
-import { Body, Controller, HttpCode, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  Post,
+  Res,
+  UnauthorizedException,
+} from '@nestjs/common';
 import type { RegistrationResponseJSON } from '@simplewebauthn/server';
 import type { Response } from 'express';
 import { BeginLoginUseCase } from 'src/auth/application/begin-login.use-case';
@@ -15,6 +22,7 @@ import { BeginRegistrationUseCase } from 'src/auth/application/begin-registratio
 import { CompleteLoginUseCase } from 'src/auth/application/complete-login.use-case';
 import { CompleteRegistrationUseCase } from 'src/auth/application/complete-registration.use-case';
 import { LogoutUseCase } from 'src/auth/application/logout.use-case';
+import { MeUseCase } from 'src/auth/application/me.use-case';
 import { SESSION_TTL_MS } from 'src/auth/domain/session';
 import { Cookie } from 'src/shared/http/cookie.decorator';
 import { ZodValidationPipe } from 'src/shared/http/zod-validation.pipe';
@@ -27,6 +35,7 @@ export class AuthController {
     private readonly beginLogin: BeginLoginUseCase,
     private readonly completeLogin: CompleteLoginUseCase,
     private readonly doLogout: LogoutUseCase,
+    private readonly doMe: MeUseCase,
   ) {}
 
   @Post('register/begin')
@@ -85,5 +94,12 @@ export class AuthController {
   ): Promise<void> {
     if (token) await this.doLogout.execute(token);
     res.clearCookie('session_token', { path: '/' });
+  }
+
+  @Post('me')
+  @HttpCode(200)
+  async me(@Cookie('session_token') token: string | undefined) {
+    if (!token) throw new UnauthorizedException();
+    return await this.doMe.execute(token);
   }
 }

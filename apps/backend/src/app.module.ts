@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_FILTER } from '@nestjs/core';
 
 import { AuthModule } from './auth/infrastructure/auth.module';
 import { ExpenseGroupModule } from './expense-group/infrastructure/expense-group.module';
 import { MemberModule } from './member/infrastructure/member.module';
 import { PaymentModule } from './payment/infrastructure/payment.module';
 import { PaymentShareModule } from './payment-share/infrastructure/payment-share.module';
+import { SessionExceptionFilter } from './shared/http/session-exception.filter';
 import { UserModule } from './user/infrastructure/user.module';
 
 @Module({
@@ -18,5 +20,6 @@ import { UserModule } from './user/infrastructure/user.module';
     PaymentShareModule,
     UserModule,
   ],
+  providers: [{ provide: APP_FILTER, useClass: SessionExceptionFilter }],
 })
 export class AppModule {}
