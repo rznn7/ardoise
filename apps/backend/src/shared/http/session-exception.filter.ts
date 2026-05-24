@@ -5,12 +5,12 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import type { Response } from 'express';
+import { PasskeyNotFound } from 'src/passkey/domain/passkey';
 import {
   SessionExpired,
   SessionNotFound,
   UserHandleMismatch,
-} from 'src/auth/domain/session';
-import { PasskeyNotFound } from 'src/passkey/domain/passkey';
+} from 'src/session/domain/session';
 import { UserNotFound } from 'src/user/domain/user';
 
 @Catch(

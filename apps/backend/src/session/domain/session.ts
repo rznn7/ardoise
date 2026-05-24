@@ -32,6 +32,7 @@ export const Session = {
 };
 
 export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+export const SESSION_COOKIE_NAME = 'session_token';
 
 export class SessionNotFound extends Error {}
 export class SessionExpired extends Error {}

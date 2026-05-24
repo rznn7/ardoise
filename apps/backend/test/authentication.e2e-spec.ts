@@ -3,57 +3,15 @@ import {
   type BeginRegistrationResponse,
 } from '@ardoise/shared';
 import { type INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
-import {
-  PostgreSqlContainer,
-  type StartedPostgreSqlContainer,
-} from '@testcontainers/postgresql';
-import cookieParser from 'cookie-parser';
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { migrate } from 'drizzle-orm/node-postgres/migrator';
-import { Client, Pool } from 'pg';
-import {
-  PASSKEY_VERIFIER,
-  type PasskeyVerifier,
-} from 'src/auth/domain/passkey-verifier';
+import { type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { type Client } from 'pg';
+import { PASSKEY_VERIFIER } from 'src/auth/domain/passkey-verifier';
 import request from 'supertest';
 import { type App } from 'supertest/types';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import { AppModule } from './../src/app.module';
-
-const fakeVerifier: PasskeyVerifier = {
-  generateRegistrationOptions: ({ webauthnUserId }) =>
-    Promise.resolve({
-      challenge: 'test-challenge',
-      raw: {
-        challenge: 'test-challenge',
-        rp: { name: 'test', id: 'localhost' },
-        user: { id: webauthnUserId, name: 'x', displayName: 'x' },
-        pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
-      },
-    }),
-  verifyRegistration: () =>
-    Promise.resolve({
-      credentialId: 'cred-1',
-      publicKey: new Uint8Array([1, 2, 3]),
-      counter: 0,
-    }),
-  generateAuthenticationOptions: () =>
-    Promise.resolve({
-      challenge: 'test-challenge',
-      raw: {
-        challenge: 'test-challenge',
-        rpId: 'localhost',
-        allowCredentials: [],
-      },
-    }),
-  verifyAuthentication: () =>
-    Promise.resolve({
-      newCounter: 1,
-      userHandle: 'webauthn-test',
-    }),
-};
+import { fakePasskeyVerifier } from './helpers/fake-passkey-verifier';
+import { setupTestApp } from './helpers/test-app';
 
 describe('Authentication', () => {
   let app: INestApplication<App>;
@@ -61,35 +19,10 @@ describe('Authentication', () => {
   let pgClient: Client;
 
   beforeAll(async () => {
-    pgContainer = await new PostgreSqlContainer('postgres:16-alpine').start();
-    pgClient = await new Client({
-      host: pgContainer.getHost(),
-      port: pgContainer.getPort(),
-      database: pgContainer.getDatabase(),
-      user: pgContainer.getUsername(),
-      password: pgContainer.getPassword(),
-    }).connect();
-    process.env['DATABASE_URL'] = pgContainer.getConnectionUri();
-    const migrationPool = new Pool({
-      connectionString: pgContainer.getConnectionUri(),
-    });
-    const migrationDb = drizzle(migrationPool);
-    await migrate(migrationDb, {
-      migrationsFolder: 'src/shared/database/migrations',
-    });
-    await migrationPool.end();
-
-    const moduleFixture = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideProvider(PASSKEY_VERIFIER)
-      .useValue(fakeVerifier)
-      .compile();
-
-    app = moduleFixture.createNestApplication();
-
-    app.use(cookieParser());
-    await app.init();
+    ({ app, pgClient, pgContainer } = await setupTestApp({
+      overrides: (b) =>
+        b.overrideProvider(PASSKEY_VERIFIER).useValue(fakePasskeyVerifier),
+    }));
   }, 30000);
 
   afterEach(async () => {

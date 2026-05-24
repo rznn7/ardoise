@@ -32,6 +32,23 @@ export class InviteLinkRepositoryDrizzle implements InviteLinkRepository {
       .where(and(eq(inviteLink.id, id), this.isConsumable()));
   }
 
+  async create(input: {
+    token: string;
+    groupId: number;
+    expiresAt: Date;
+    singleUse: boolean;
+  }): Promise<InviteLink> {
+    const [row] = await this.database
+      .insert(inviteLink)
+      .values(input)
+      .returning();
+
+    if (row === undefined)
+      throw new Error('could not create invite link in database');
+
+    return this.toDomain(row);
+  }
+
   private toDomain(row: typeof inviteLink.$inferSelect): InviteLink {
     return {
       id: row.id,

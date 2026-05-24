@@ -3,11 +3,11 @@ import {
   Session,
   SessionExpired,
   SessionNotFound,
-} from 'src/auth/domain/session';
+} from 'src/session/domain/session';
 import {
   SESSION_REPOSITORY,
   type SessionRepository,
-} from 'src/auth/domain/session-repository';
+} from 'src/session/domain/session-repository';
 import { UserNotFound } from 'src/user/domain/user';
 import {
   USER_REPOSITORY,

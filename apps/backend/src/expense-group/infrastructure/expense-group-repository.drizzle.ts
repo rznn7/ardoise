@@ -28,10 +28,7 @@ export class ExpenseGroupRepositoryDrizzle implements ExpenseGroupRepository {
   }): Promise<ExpenseGroup> {
     const [row] = await this.database
       .insert(expenseGroup)
-      .values({
-        name: input.name,
-        currencyCode: input.currencyCode,
-      })
+      .values(input)
       .returning();
 
     if (!row) throw new Error('ExpenseGroup insert returned no row');

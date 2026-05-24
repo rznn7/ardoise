@@ -1,7 +1,7 @@
-import { type SessionRepository } from 'src/auth/domain/session-repository';
 import { type InviteLinkRepository } from 'src/invite-link/domain/invite-link-repository';
 import { type MemberRepository } from 'src/member/domain/member-repository';
 import { type PasskeyRepository } from 'src/passkey/domain/passkey-repository';
+import { type SessionRepository } from 'src/session/domain/session-repository';
 import { type UserRepository } from 'src/user/domain/user-repository';
 
 export const UNIT_OF_WORK = Symbol('UNIT_OF_WORK');

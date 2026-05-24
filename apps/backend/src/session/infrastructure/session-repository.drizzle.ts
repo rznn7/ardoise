@@ -1,7 +1,7 @@
 import { Inject } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import { type Session } from 'src/auth/domain/session';
-import { SessionRepository } from 'src/auth/domain/session-repository';
+import { type Session } from 'src/session/domain/session';
+import { SessionRepository } from 'src/session/domain/session-repository';
 import {
   type Database,
   DATABASE_CONNECTION,

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { Session } from 'src/auth/domain/session';
 import { UNIT_OF_WORK, type UnitOfWork } from 'src/auth/domain/unit-of-work';
+import { Session } from 'src/session/domain/session';
 
 @Injectable()
 export class LogoutUseCase {

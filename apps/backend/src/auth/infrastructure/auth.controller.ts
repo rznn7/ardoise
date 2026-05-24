@@ -22,9 +22,12 @@ import { BeginRegistrationUseCase } from 'src/auth/application/begin-registratio
 import { CompleteLoginUseCase } from 'src/auth/application/complete-login.use-case';
 import { CompleteRegistrationUseCase } from 'src/auth/application/complete-registration.use-case';
 import { LogoutUseCase } from 'src/auth/application/logout.use-case';
-import { MeUseCase } from 'src/auth/application/me.use-case';
-import { SESSION_TTL_MS } from 'src/auth/domain/session';
-import { Cookie } from 'src/shared/http/cookie.decorator';
+import { MeUseCase } from 'src/session/application/me.use-case';
+import {
+  SESSION_COOKIE_NAME,
+  SESSION_TTL_MS,
+} from 'src/session/domain/session';
+import { Cookie } from 'src/shared/http/cookie';
 import { ZodValidationPipe } from 'src/shared/http/zod-validation.pipe';
 
 @Controller('auth')
@@ -77,7 +80,7 @@ export class AuthController {
       assertion: { credentialId: body.assertion.id, raw: body.assertion },
     });
 
-    res.cookie('session_token', token, {
+    res.cookie(SESSION_COOKIE_NAME, token, {
       httpOnly: true,
       sameSite: 'strict',
       path: '/',
@@ -89,16 +92,16 @@ export class AuthController {
   @Post('logout')
   @HttpCode(204)
   async logout(
-    @Cookie('session_token') token: string | undefined,
+    @Cookie(SESSION_COOKIE_NAME) token: string | undefined,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
     if (token) await this.doLogout.execute(token);
-    res.clearCookie('session_token', { path: '/' });
+    res.clearCookie(SESSION_COOKIE_NAME, { path: '/' });
   }
 
   @Post('me')
   @HttpCode(200)
-  async me(@Cookie('session_token') token: string | undefined) {
+  async me(@Cookie(SESSION_COOKIE_NAME) token: string | undefined) {
     if (!token) throw new UnauthorizedException();
     return await this.doMe.execute(token);
   }

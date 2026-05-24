@@ -4,7 +4,11 @@ import type { Request } from 'express';
 export const Cookie = createParamDecorator(
   (name: string, ctx: ExecutionContext): string | undefined => {
     const req = ctx.switchToHttp().getRequest<Request>();
-    const cookies = req.cookies as Record<string, string> | undefined;
-    return cookies?.[name];
+    return getCookie(req, name);
   },
 );
+
+export const getCookie = (req: Request, name: string): string | undefined => {
+  const cookies = req.cookies as Record<string, string> | undefined;
+  return cookies?.[name];
+};
