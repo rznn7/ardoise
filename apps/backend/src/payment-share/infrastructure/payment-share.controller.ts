@@ -1,7 +1,15 @@
-import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  UseGuards,
+} from '@nestjs/common';
 import { FindPaymentSharesByPaymentUseCase } from 'src/payment-share/application/find-payment-shares-by-payment.use-case';
+import { SessionGuard } from 'src/session/infrastructure/session.guard';
 
 @Controller('payment-shares')
+@UseGuards(SessionGuard)
 export class PaymentShareController {
   constructor(
     private readonly findByPayment: FindPaymentSharesByPaymentUseCase,

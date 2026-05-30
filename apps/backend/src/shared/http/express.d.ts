@@ -1,7 +1,7 @@
-import { type User } from 'src/user/domain/user';
+export {};
 
 declare module 'express' {
   interface Request {
-    user?: User;
+    user?: { id: number; name: string; role: 'user' | 'admin' };
   }
 }

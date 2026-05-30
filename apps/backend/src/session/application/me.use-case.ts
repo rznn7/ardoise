@@ -30,6 +30,6 @@ export class MeUseCase {
     const user = await this.users.findById(session.userId);
     if (!user) throw new UserNotFound();
 
-    return user;
+    return { id: user.id, name: user.name, role: user.role };
   }
 }

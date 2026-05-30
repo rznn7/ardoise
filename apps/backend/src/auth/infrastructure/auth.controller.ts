@@ -2,10 +2,12 @@ import {
   BeginLoginResponse,
   type BeginRegistrationRequest,
   beginRegistrationRequestSchema,
+  type BeginRegistrationResponse,
   type CompleteLoginRequest,
   completeLoginRequestSchema,
   type CompleteRegistrationRequest,
   completeRegistrationRequestSchema,
+  type MeResponse,
 } from '@ardoise/shared';
 import {
   Body,
@@ -46,7 +48,7 @@ export class AuthController {
   registerBegin(
     @Body(new ZodValidationPipe(beginRegistrationRequestSchema))
     body: BeginRegistrationRequest,
-  ) {
+  ): Promise<BeginRegistrationResponse> {
     return this.beginRegistration.execute({ inviteToken: body.inviteToken });
   }
 
@@ -55,7 +57,7 @@ export class AuthController {
   registerComplete(
     @Body(new ZodValidationPipe(completeRegistrationRequestSchema))
     body: CompleteRegistrationRequest,
-  ) {
+  ): Promise<void> {
     return this.completeRegistration.execute({
       ...body,
       attestation: body.attestation as RegistrationResponseJSON,
@@ -101,7 +103,9 @@ export class AuthController {
 
   @Post('me')
   @HttpCode(200)
-  async me(@Cookie(SESSION_COOKIE_NAME) token: string | undefined) {
+  async me(
+    @Cookie(SESSION_COOKIE_NAME) token: string | undefined,
+  ): Promise<MeResponse> {
     if (!token) throw new UnauthorizedException();
     return await this.doMe.execute(token);
   }

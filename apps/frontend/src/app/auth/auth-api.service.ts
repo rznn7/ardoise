@@ -6,6 +6,7 @@ import {
   type BeginRegistrationResponse,
   type CompleteLoginRequest,
   type CompleteRegistrationRequest,
+  type MeResponse,
 } from '@ardoise/shared';
 import { type Observable } from 'rxjs';
 
@@ -35,7 +36,7 @@ export class AuthApiService {
     return this.http.post<void>(`${AUTH_ENDPOINT}/logout`, {});
   }
 
-  me(): Observable<unknown> {
-    return this.http.post<unknown>(`${AUTH_ENDPOINT}/me`, {});
+  me(): Observable<MeResponse> {
+    return this.http.post<MeResponse>(`${AUTH_ENDPOINT}/me`, {});
   }
 }

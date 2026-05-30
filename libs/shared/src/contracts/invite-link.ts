@@ -8,3 +8,8 @@ export const createInviteLinkRequestSchema = z.object({
 export type CreateInviteLinkRequest = z.infer<
   typeof createInviteLinkRequestSchema
 >;
+
+export const createInviteLinkResponseSchema = z.object({ token: z.string() });
+export type CreateInviteLinkResponse = z.infer<
+  typeof createInviteLinkResponseSchema
+>;

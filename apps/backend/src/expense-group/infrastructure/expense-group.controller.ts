@@ -9,12 +9,15 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { CreateExpenseGroupUseCase } from 'src/expense-group/application/create-expense-group.use-case';
 import { FindExpenseGroupUseCase } from 'src/expense-group/application/find-expense-group.use-case';
+import { SessionGuard } from 'src/session/infrastructure/session.guard';
 import { ZodValidationPipe } from 'src/shared/http/zod-validation.pipe';
 
 @Controller('expense-groups')
+@UseGuards(SessionGuard)
 export class ExpenseGroupController {
   constructor(
     private readonly findExpenseGroup: FindExpenseGroupUseCase,

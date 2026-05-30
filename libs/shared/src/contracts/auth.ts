@@ -44,3 +44,10 @@ export const completeLoginRequestSchema = z.object({
   assertion: z.object({ id: z.string() }).loose(),
 });
 export type CompleteLoginRequest = z.infer<typeof completeLoginRequestSchema>;
+
+export const meResponseSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  role: z.enum(['user', 'admin']),
+});
+export type MeResponse = z.infer<typeof meResponseSchema>;
