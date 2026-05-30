@@ -78,7 +78,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
     const { token } = await this.completeLogin.execute({
-      loginState: body.loginState,
+      stateId: body.stateId,
       assertion: { credentialId: body.assertion.id, raw: body.assertion },
     });
 

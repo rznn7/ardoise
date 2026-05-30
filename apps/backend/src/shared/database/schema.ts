@@ -5,6 +5,7 @@ import {
   pgEnum,
   pgTable,
   primaryKey,
+  text,
   timestamp,
   unique,
   varchar,
@@ -68,6 +69,24 @@ export const session = pgTable('session', {
   issuedAt: timestamp({ withTimezone: true }).notNull(),
   expiresAt: timestamp({ withTimezone: true }).notNull(),
   revokedAt: timestamp({ withTimezone: true }),
+});
+
+export const registrationState = pgTable('registration_state', {
+  id,
+  stateId: varchar({ length: 64 }).unique().notNull(),
+  challenge: text().notNull(),
+  webauthnUserId: varchar({ length: 64 }).notNull(),
+  inviteToken: varchar({ length: 64 }).notNull(),
+  expiresAt: timestamp({ withTimezone: true }).notNull(),
+  ...timestamps,
+});
+
+export const loginState = pgTable('login_state', {
+  id,
+  stateId: varchar({ length: 64 }).unique().notNull(),
+  challenge: text().notNull(),
+  expiresAt: timestamp({ withTimezone: true }).notNull(),
+  ...timestamps,
 });
 
 export const expenseGroup = pgTable('expense_group', {

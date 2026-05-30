@@ -27,7 +27,7 @@ describe('Authentication', () => {
 
   afterEach(async () => {
     await pgClient.query(
-      `TRUNCATE session, users, expense_group, invite_link, passkey, member RESTART IDENTITY CASCADE`,
+      `TRUNCATE session, users, expense_group, invite_link, passkey, member, registration_state, login_state RESTART IDENTITY CASCADE`,
     );
   });
 
@@ -62,7 +62,7 @@ describe('Authentication', () => {
       await request(app.getHttpServer())
         .post('/auth/register/complete')
         .send({
-          registrationState: beginBody.registrationState,
+          stateId: beginBody.stateId,
           attestation: {},
         })
         .expect(204);
@@ -73,7 +73,6 @@ describe('Authentication', () => {
       ).rows[0]!;
       expect(createdUser).toMatchObject({
         role: 'user',
-        webauthn_user_id: beginBody.registrationState.webauthnUserId,
       });
 
       const createdPasskey = (
@@ -111,6 +110,44 @@ describe('Authentication', () => {
       await request(app.getHttpServer())
         .post('/auth/register/begin')
         .send({ inviteToken: 'does-not-exist' })
+        .expect(400);
+    });
+
+    it('rejects an unknown stateId on complete', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/register/complete')
+        .send({ stateId: 'made-up-state-id', attestation: {} })
+        .expect(400);
+    });
+
+    it('rejects a replayed stateId after successful registration', async () => {
+      // GIVEN
+      const groupId = (
+        await pgClient.query<{ id: number }>(
+          `INSERT INTO expense_group (name, currency_code) VALUES ($1, $2) RETURNING id`,
+          ['group', 'EUR'],
+        )
+      ).rows[0]!.id;
+      await pgClient.query(
+        `INSERT INTO invite_link (group_id, token, expires_at) VALUES ($1, $2, NOW() + INTERVAL '7 days')`,
+        [groupId, 'replay-token'],
+      );
+
+      const beginResponse = await request(app.getHttpServer())
+        .post('/auth/register/begin')
+        .send({ inviteToken: 'replay-token' })
+        .expect(200);
+      const { stateId } = beginResponse.body as BeginRegistrationResponse;
+
+      await request(app.getHttpServer())
+        .post('/auth/register/complete')
+        .send({ stateId, attestation: {} })
+        .expect(204);
+
+      // WHEN: replay the same stateId
+      await request(app.getHttpServer())
+        .post('/auth/register/complete')
+        .send({ stateId, attestation: {} })
         .expect(400);
     });
 
@@ -159,7 +196,7 @@ describe('Authentication', () => {
       const completeResponse = await request(app.getHttpServer())
         .post('/auth/login/complete')
         .send({
-          loginState: beginResponseBody.loginState,
+          stateId: beginResponseBody.stateId,
           assertion: { id: 'cred-1' },
         })
         .expect(204);
@@ -200,14 +237,49 @@ describe('Authentication', () => {
         .expect(200);
       const beginResponseBody = beginResponse.body as BeginLoginResponse;
 
-      // THEN
+      // WHEN / THEN
       await request(app.getHttpServer())
         .post('/auth/login/complete')
         .send({
-          loginState: beginResponseBody.loginState,
+          stateId: beginResponseBody.stateId,
           assertion: { id: 'unknown-credential-id' },
         })
         .expect(401);
+    });
+
+    it('rejects an unknown stateId on complete', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/login/complete')
+        .send({ stateId: 'made-up-state-id', assertion: { id: 'cred-1' } })
+        .expect(400);
+    });
+
+    it('rejects a replayed stateId after successful login', async () => {
+      // GIVEN
+      const { rows } = await pgClient.query<{ id: number }>(
+        `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
+        ['john', 'webauthn-test'],
+      );
+      await pgClient.query(
+        `INSERT INTO passkey (user_id, credential_id, public_key, counter) VALUES ($1, $2, $3, $4)`,
+        [rows[0]!.id, 'cred-1', Buffer.from([1, 2, 3, 4]), 0],
+      );
+
+      const beginResponse = await request(app.getHttpServer())
+        .post('/auth/login/begin')
+        .expect(200);
+      const { stateId } = beginResponse.body as BeginLoginResponse;
+
+      await request(app.getHttpServer())
+        .post('/auth/login/complete')
+        .send({ stateId, assertion: { id: 'cred-1' } })
+        .expect(204);
+
+      // WHEN: replay the same stateId
+      await request(app.getHttpServer())
+        .post('/auth/login/complete')
+        .send({ stateId, assertion: { id: 'cred-1' } })
+        .expect(400);
     });
   });
 
@@ -229,7 +301,7 @@ describe('Authentication', () => {
         .set('Cookie', `session_token=c19b19f2d4fb4f499a281779498b3677`)
         .expect(204);
 
-      // ASSERT
+      // THEN
       const resRows = (
         await pgClient.query<{ revoked_at: Date | null }>(
           `SELECT revoked_at FROM session WHERE token = $1`,
@@ -265,12 +337,11 @@ describe('Authentication', () => {
         .set('Cookie', `session_token=valid-session-token`)
         .expect(200);
 
-      /// THEN
-      expect(response.body).toMatchObject({
+      // THEN
+      expect(response.body).toStrictEqual({
         id: rows[0]!.id,
         name: 'john',
         role: 'user',
-        webauthnUserId: 'webauthn-test',
       });
     });
 

@@ -1,5 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  LoginState,
+  LoginStateExpired,
+  LoginStateNotFound,
+} from 'src/auth/domain/login-state';
+import {
+  LOGIN_STATE_REPOSITORY,
+  type LoginStateRepository,
+} from 'src/auth/domain/login-state-repository';
+import {
   type Assertion,
   PASSKEY_VERIFIER,
   type PasskeyVerifier,
@@ -22,12 +31,20 @@ export class CompleteLoginUseCase {
     @Inject(PASSKEY_VERIFIER) private readonly verifier: PasskeyVerifier,
     @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork,
     @Inject(TOKEN_GENERATOR) private readonly tokenGenerator: TokenGenerator,
+    @Inject(LOGIN_STATE_REPOSITORY)
+    private readonly loginStates: LoginStateRepository,
   ) {}
 
   async execute(input: {
-    loginState: { challenge: string };
+    stateId: string;
     assertion: Assertion;
   }): Promise<{ token: string }> {
+    const state = await this.loginStates.findByStateId(input.stateId);
+    if (!state) throw new LoginStateNotFound();
+    if (!LoginState.isValid(state, new Date())) throw new LoginStateExpired();
+
+    await this.loginStates.delete(input.stateId);
+
     return this.uow.run(async (repos) => {
       const passkey = await repos.passkeys.findByCredentialId(
         input.assertion.credentialId,
@@ -37,7 +54,7 @@ export class CompleteLoginUseCase {
 
       const { newCounter, userHandle } =
         await this.verifier.verifyAuthentication({
-          challenge: input.loginState.challenge,
+          challenge: state.challenge,
           assertion: input.assertion,
           credential: {
             id: passkey.credentialId,

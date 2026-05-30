@@ -1,12 +1,5 @@
 import { z } from 'zod';
 
-export const registrationStateSchema = z.object({
-  challenge: z.string(),
-  webauthnUserId: z.string(),
-  inviteToken: z.string(),
-});
-export type RegistrationState = z.infer<typeof registrationStateSchema>;
-
 export const beginRegistrationRequestSchema = z.object({
   inviteToken: z.string().min(1),
 });
@@ -14,33 +7,30 @@ export type BeginRegistrationRequest = z.infer<
   typeof beginRegistrationRequestSchema
 >;
 
+export const beginRegistrationResponseSchema = z.object({
+  options: z.unknown(),
+  stateId: z.string(),
+});
+export type BeginRegistrationResponse = z.infer<
+  typeof beginRegistrationResponseSchema
+>;
+
 export const completeRegistrationRequestSchema = z.object({
-  registrationState: registrationStateSchema,
+  stateId: z.string(),
   attestation: z.unknown(),
 });
 export type CompleteRegistrationRequest = z.infer<
   typeof completeRegistrationRequestSchema
 >;
 
-export const beginRegistrationResponseSchema = z.object({
-  options: z.unknown(),
-  registrationState: registrationStateSchema,
-});
-export type BeginRegistrationResponse = z.infer<
-  typeof beginRegistrationResponseSchema
->;
-
-export const loginStateSchema = z.object({ challenge: z.string() });
-export type LoginState = z.infer<typeof loginStateSchema>;
-
 export const beginLoginResponseSchema = z.object({
   options: z.unknown(),
-  loginState: loginStateSchema,
+  stateId: z.string(),
 });
 export type BeginLoginResponse = z.infer<typeof beginLoginResponseSchema>;
 
 export const completeLoginRequestSchema = z.object({
-  loginState: loginStateSchema,
+  stateId: z.string(),
   assertion: z.object({ id: z.string() }).loose(),
 });
 export type CompleteLoginRequest = z.infer<typeof completeLoginRequestSchema>;

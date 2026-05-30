@@ -15,13 +15,13 @@ export class AuthService {
 
   register(inviteToken: string): Observable<void> {
     return this.authApi.registerBegin({ inviteToken }).pipe(
-      switchMap(({ registrationState, options }) =>
+      switchMap(({ stateId, options }) =>
         from(
           startRegistration({ optionsJSON: options as PublicKeyCredentialCreationOptionsJSON }),
-        ).pipe(map((attestation) => ({ attestation, registrationState }))),
+        ).pipe(map((attestation) => ({ attestation, stateId }))),
       ),
-      switchMap(({ attestation, registrationState }) =>
-        this.authApi.registerComplete({ registrationState, attestation }),
+      switchMap(({ attestation, stateId }) =>
+        this.authApi.registerComplete({ stateId, attestation }),
       ),
     );
   }
@@ -32,13 +32,13 @@ export class AuthService {
 
   login(): Observable<void> {
     return this.authApi.loginBegin().pipe(
-      switchMap(({ loginState, options }) =>
+      switchMap(({ stateId, options }) =>
         from(
           startAuthentication({ optionsJSON: options as PublicKeyCredentialRequestOptionsJSON }),
-        ).pipe(map((assertion) => ({ loginState, assertion }))),
+        ).pipe(map((assertion) => ({ stateId, assertion }))),
       ),
-      switchMap(({ loginState, assertion }) =>
-        this.authApi.loginComplete({ loginState, assertion: assertion as { id: string } }),
+      switchMap(({ stateId, assertion }) =>
+        this.authApi.loginComplete({ stateId, assertion: assertion as { id: string } }),
       ),
     );
   }
