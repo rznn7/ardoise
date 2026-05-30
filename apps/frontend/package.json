@@ -3,7 +3,7 @@
   "scripts": {
     "dev": "ng serve",
     "build": "ng build",
-    "format": "prettier --write \"src/**/*.{ts,html}\"",
+    "format": "eslint src --fix && prettier --write \"src/**/*.{ts,html}\"",
     "test": "ng test",
     "test:cov": "ng test --code-coverage",
     "lint": "eslint src"

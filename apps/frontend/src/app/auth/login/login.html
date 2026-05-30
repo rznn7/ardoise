@@ -1,0 +1,4 @@
+<button (click)="login()" [disabled]="state().state === 'loading'">Login with passkey</button>
+@if (errorMessage()) {
+  <p>{{ errorMessage() }}</p>
+}

@@ -30,4 +30,12 @@ export class AuthApiService {
   loginComplete(body: CompleteLoginRequest): Observable<void> {
     return this.http.post<void>(`${AUTH_ENDPOINT}/login/complete`, body);
   }
+
+  logout(): Observable<void> {
+    return this.http.post<void>(`${AUTH_ENDPOINT}/logout`, {});
+  }
+
+  me(): Observable<unknown> {
+    return this.http.post<unknown>(`${AUTH_ENDPOINT}/me`, {});
+  }
 }

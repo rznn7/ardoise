@@ -1,0 +1,10 @@
+@if (!inviteToken) {
+  <p>Invalid invite link.</p>
+} @else {
+  <button (click)="register()" [disabled]="state().state === 'loading'">
+    Register with passkey
+  </button>
+  @if (errorMessage()) {
+    <p>{{ errorMessage() }}</p>
+  }
+}

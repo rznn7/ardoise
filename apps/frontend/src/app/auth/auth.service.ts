@@ -26,6 +26,10 @@ export class AuthService {
     );
   }
 
+  logout(): Observable<void> {
+    return this.authApi.logout();
+  }
+
   login(): Observable<void> {
     return this.authApi.loginBegin().pipe(
       switchMap(({ loginState, options }) =>
