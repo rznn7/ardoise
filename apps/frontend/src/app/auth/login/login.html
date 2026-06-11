@@ -1,4 +1,25 @@
-<button (click)="login()" [disabled]="state().state === 'loading'">Login with passkey</button>
+@let currentState = state();
+
+@switch (currentState.state) {
+  @case ('idle') {
+    <button hlmBtn (click)="login()" variant="outline" size="lg">
+      <ng-icon name="lucideKeyRound" />
+      <span>Login with passkey</span>
+    </button>
+  }
+  @case ('loading') {
+    <button hlmBtn (click)="login()" [disabled]="true" variant="outline" size="lg">
+      <hlm-spinner class="text-base md:text-lg" />
+      <span>Login in...</span>
+    </button>
+  }
+  @case ('error') {
+    <button hlmBtn (click)="login()" variant="outline" size="lg">
+      <span>currentState.state.message</span>
+    </button>
+  }
+}
+
 @if (errorMessage()) {
   <p>{{ errorMessage() }}</p>
 }
