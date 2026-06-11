@@ -38,10 +38,10 @@
     "globals": "^17.6.0",
     "jsdom": "^28.1.0",
     "postcss": "^8.5.15",
-    "prettier": "^3.8.4",
+    "prettier": "catalog:",
     "tailwindcss": "^4.3.0",
-    "typescript": "~5.9.3",
+    "typescript": "catalog:",
     "typescript-eslint": "8.56.1",
-    "vitest": "^4.1.8"
+    "vitest": "catalog:"
   }
 }

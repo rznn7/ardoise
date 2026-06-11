@@ -10,10 +10,10 @@
     "format": "prettier --write \"src/**/*.ts\""
   },
   "dependencies": {
-    "zod": "^4.3.6"
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "prettier": "^3.4.2",
-    "typescript": "^5.9.3"
+    "prettier": "catalog:",
+    "typescript": "catalog:"
   }
 }
