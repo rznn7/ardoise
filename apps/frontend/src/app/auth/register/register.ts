@@ -1,14 +1,20 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { provideIcons } from '@ng-icons/core';
+import { lucideKeyRound } from '@ng-icons/lucide';
+import { HlmButtonImports } from '@spartan-ng/helm/button';
+import { HlmIconImports } from '@spartan-ng/helm/icon';
+import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
 import { AuthService } from 'src/app/auth/auth.service';
 
 type RegisterState = { state: 'idle' } | { state: 'loading' } | { state: 'error'; message: string };
 
 @Component({
   selector: 'app-register',
-  imports: [],
+  imports: [HlmButtonImports, HlmSpinnerImports, HlmIconImports],
   templateUrl: './register.html',
   styleUrl: './register.css',
+  providers: [provideIcons({ lucideKeyRound })],
 })
 export class Register {
   private readonly router = inject(Router);

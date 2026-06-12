@@ -1,10 +1,22 @@
-@if (!inviteToken) {
-  <p>Invalid invite link.</p>
-} @else {
-  <button (click)="register()" [disabled]="state().state === 'loading'">
-    Register with passkey
-  </button>
-  @if (errorMessage()) {
-    <p>{{ errorMessage() }}</p>
+@let currentState = state();
+
+@if (inviteToken) {
+  @switch (currentState.state) {
+    @case ('loading') {
+      <button hlmBtn variant="outline" size="lg" [disabled]="true">
+        <hlm-spinner class="text-base md:text-lg" />
+        <span>Registering...</span>
+      </button>
+    }
+    @default {
+      <button hlmBtn variant="outline" size="lg" (click)="register()">
+        <ng-icon name="lucideKeyRound" />
+        <span>Register with passkey</span>
+      </button>
+    }
   }
+}
+
+@if (errorMessage()) {
+  <p class="text-destructive text-sm">{{ errorMessage() }}</p>
 }

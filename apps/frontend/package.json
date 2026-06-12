@@ -1,7 +1,7 @@
 {
   "name": "@ardoise/frontend",
   "scripts": {
-    "dev": "ng serve",
+    "dev": "ng serve --port 4201",
     "build": "ng build",
     "format": "eslint src --fix && prettier --write \"src/**/*.{ts,html}\"",
     "test": "ng test",

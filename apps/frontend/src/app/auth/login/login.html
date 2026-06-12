@@ -2,24 +2,20 @@
 
 @switch (currentState.state) {
   @case ('idle') {
-    <button hlmBtn (click)="login()" variant="outline" size="lg">
+    <button hlmBtn variant="outline" size="lg" (click)="login()">
       <ng-icon name="lucideKeyRound" />
       <span>Login with passkey</span>
     </button>
   }
   @case ('loading') {
-    <button hlmBtn (click)="login()" [disabled]="true" variant="outline" size="lg">
+    <button hlmBtn variant="outline" size="lg" [disabled]="true">
       <hlm-spinner class="text-base md:text-lg" />
       <span>Login in...</span>
     </button>
   }
   @case ('error') {
-    <button hlmBtn (click)="login()" variant="outline" size="lg">
-      <span>currentState.state.message</span>
+    <button hlmBtn variant="destructive" size="lg" (click)="login()">
+      <span>{{ currentState.message }} Retry?</span>
     </button>
   }
-}
-
-@if (errorMessage()) {
-  <p>{{ errorMessage() }}</p>
 }
