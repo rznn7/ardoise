@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { provideIcons } from '@ng-icons/core';
 import { lucideKeyRound, lucideRefreshCw } from '@ng-icons/lucide';
@@ -21,10 +21,6 @@ export class Login {
   private readonly auth = inject(AuthService);
 
   readonly state = signal<LoginState>({ state: 'idle' });
-  readonly errorMessage = computed(() => {
-    const s = this.state();
-    return s.state === 'error' ? s.message : null;
-  });
 
   login(): void {
     if (this.state().state === 'loading') return;
