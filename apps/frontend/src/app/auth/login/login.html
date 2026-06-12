@@ -15,6 +15,7 @@
   }
   @case ('error') {
     <button hlmBtn variant="destructive" size="lg" (click)="login()">
+      <ng-icon name="lucideRefreshCw" data-icon="inline-end" />
       <span>{{ currentState.message }} Retry?</span>
     </button>
   }
