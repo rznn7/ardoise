@@ -1,7 +1,8 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { provideIcons } from '@ng-icons/core';
-import { lucideKeyRound } from '@ng-icons/lucide';
+import { lucideAlertCircle, lucideKeyRound, lucideRefreshCw } from '@ng-icons/lucide';
+import { HlmAlertImports } from '@spartan-ng/helm/alert';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
@@ -11,10 +12,10 @@ type RegisterState = { state: 'idle' } | { state: 'loading' } | { state: 'error'
 
 @Component({
   selector: 'app-register',
-  imports: [HlmButtonImports, HlmSpinnerImports, HlmIconImports],
+  imports: [HlmButtonImports, HlmSpinnerImports, HlmIconImports, HlmAlertImports],
   templateUrl: './register.html',
   styleUrl: './register.css',
-  providers: [provideIcons({ lucideKeyRound })],
+  providers: [provideIcons({ lucideKeyRound, lucideRefreshCw, lucideAlertCircle })],
 })
 export class Register {
   private readonly router = inject(Router);
@@ -25,10 +26,6 @@ export class Register {
   readonly state = signal<RegisterState>(
     this.inviteToken ? { state: 'idle' } : { state: 'error', message: 'Invalid invite link.' },
   );
-  readonly errorMessage = computed(() => {
-    const s = this.state();
-    return s.state === 'error' ? s.message : null;
-  });
 
   register(): void {
     if (!this.inviteToken || this.state().state === 'loading') return;

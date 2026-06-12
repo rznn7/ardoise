@@ -2,21 +2,29 @@
 
 @if (inviteToken) {
   @switch (currentState.state) {
+    @case ('idle') {
+      <button hlmBtn variant="outline" size="lg" (click)="register()">
+        <ng-icon name="lucideKeyRound" />
+        <span>Register with passkey</span>
+      </button>
+    }
     @case ('loading') {
       <button hlmBtn variant="outline" size="lg" [disabled]="true">
         <hlm-spinner class="text-base md:text-lg" />
         <span>Registering...</span>
       </button>
     }
-    @default {
-      <button hlmBtn variant="outline" size="lg" (click)="register()">
-        <ng-icon name="lucideKeyRound" />
-        <span>Register with passkey</span>
+    @case ('error') {
+      <button hlmBtn variant="destructive" size="lg" (click)="register()">
+        <ng-icon name="lucideRefreshCw" data-icon="inline-end" />
+        <span>{{ currentState.message }} Retry?</span>
       </button>
     }
   }
-}
-
-@if (errorMessage()) {
-  <p class="text-destructive text-sm">{{ errorMessage() }}</p>
+} @else {
+  <hlm-alert variant="destructive" class="max-w-md">
+    <ng-icon name="lucideAlertCircle" />
+    <h4 hlmAlertTitle>Invalid invite link</h4>
+    <p hlmAlertDescription>This invite link is missing or invalid. Please request a new one.</p>
+  </hlm-alert>
 }
