@@ -27,3 +27,10 @@ yarn-error.log
 
 # Coverage
 coverage/
+
+# Claude Code — ignore all, allow shared config explicitly
+.claude/*
+!.claude/settings.json
+!.claude/commands/
+!.claude/agents/
+!.claude/skills/
