@@ -22,6 +22,14 @@ export class InviteLinkRepositoryDrizzle implements InviteLinkRepository {
     return row ? this.toDomain(row) : null;
   }
 
+  async findByToken(token: string): Promise<InviteLink | null> {
+    const row = await this.database.query.inviteLink.findFirst({
+      where: eq(inviteLink.token, token),
+    });
+
+    return row ? this.toDomain(row) : null;
+  }
+
   async markConsumed(id: number, userId: number): Promise<void> {
     await this.database
       .update(inviteLink)

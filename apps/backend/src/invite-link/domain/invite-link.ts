@@ -10,3 +10,5 @@ export type InviteLink = {
 };
 
 export class InviteLinkNotFound extends Error {}
+export class InviteLinkExpired extends Error {}
+export class InviteLinkConsumed extends Error {}

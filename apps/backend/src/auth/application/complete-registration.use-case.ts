@@ -14,7 +14,7 @@ import {
   type RegistrationStateRepository,
 } from 'src/auth/domain/registration-state-repository';
 import { UNIT_OF_WORK, type UnitOfWork } from 'src/auth/domain/unit-of-work';
-import { InviteLinkNotFound } from 'src/invite-link/domain/invite-link';
+import { consumeInviteLink } from 'src/invite-link/domain/consume-invite-link';
 
 @Injectable()
 export class CompleteRegistrationUseCase {
@@ -43,11 +43,6 @@ export class CompleteRegistrationUseCase {
       });
 
     await this.uow.run(async (repos) => {
-      const invite = await repos.inviteLinks.findUsableByToken(
-        state.inviteToken,
-      );
-      if (!invite) throw new InviteLinkNotFound();
-
       const user = await repos.users.create({
         name: `user-${crypto.randomUUID()}`,
         webauthnUserId: state.webauthnUserId,
@@ -58,11 +53,10 @@ export class CompleteRegistrationUseCase {
         publicKey,
         counter,
       });
-      await repos.members.create({
+      await consumeInviteLink(repos, {
+        token: state.inviteToken,
         userId: user.id,
-        groupId: invite.groupId,
       });
-      await repos.inviteLinks.markConsumed(invite.id, user.id);
     });
   }
 }

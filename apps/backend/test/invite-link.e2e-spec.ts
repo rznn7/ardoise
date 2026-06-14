@@ -104,4 +104,257 @@ describe('InviteLink', () => {
       });
     });
   });
+
+  describe('consume', () => {
+    it('joins an authenticated user to the group', async () => {
+      // GIVEN a user + session cookie, a group, and a usable invite link for it.
+      const userId = (
+        await pgClient.query<{ id: number }>(
+          `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
+          ['john', 'webauthn-test'],
+        )
+      ).rows[0]!.id;
+      await pgClient.query(
+        `INSERT INTO session (token, user_id, issued_at, expires_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL '7 days')`,
+        ['valid-session-token', userId],
+      );
+      const groupId = (
+        await pgClient.query<{ id: number }>(
+          `INSERT INTO expense_group (name, currency_code) VALUES ($1, $2) RETURNING id`,
+          ['group', 'EUR'],
+        )
+      ).rows[0]!.id;
+      await pgClient.query(
+        `INSERT INTO invite_link (group_id, token, single_use, expires_at) VALUES ($1, $2, $3, NOW() + INTERVAL '1 day')`,
+        [groupId, 'usable-token', true],
+      );
+
+      // WHEN
+      const response = await request(app.getHttpServer())
+        .post('/invite-link/consume')
+        .set('Cookie', `session_token=valid-session-token`)
+        .send({ token: 'usable-token' })
+        .expect(200);
+
+      // THEN
+      expect(response.body).toEqual({ groupId, alreadyMember: false });
+
+      const memberRows = (
+        await pgClient.query(
+          `SELECT * FROM member WHERE user_id = $1 AND group_id = $2`,
+          [userId, groupId],
+        )
+      ).rows;
+      expect(memberRows).toHaveLength(1);
+
+      const inviteRow = (
+        await pgClient.query<{
+          consumed_by_user_id: number | null;
+          consumed_at: Date | null;
+        }>(`SELECT * FROM invite_link WHERE token = $1`, ['usable-token'])
+      ).rows[0]!;
+      expect(inviteRow.consumed_by_user_id).toBe(userId);
+      expect(inviteRow.consumed_at).not.toBeNull();
+    });
+
+    it('is idempotent when the user is already a member', async () => {
+      // GIVEN the user is already a member of the group, plus a usable link for it.
+      const userId = (
+        await pgClient.query<{ id: number }>(
+          `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
+          ['john', 'webauthn-test'],
+        )
+      ).rows[0]!.id;
+      await pgClient.query(
+        `INSERT INTO session (token, user_id, issued_at, expires_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL '7 days')`,
+        ['valid-session-token', userId],
+      );
+      const groupId = (
+        await pgClient.query<{ id: number }>(
+          `INSERT INTO expense_group (name, currency_code) VALUES ($1, $2) RETURNING id`,
+          ['group', 'EUR'],
+        )
+      ).rows[0]!.id;
+      await pgClient.query(
+        `INSERT INTO member (user_id, group_id) VALUES ($1, $2)`,
+        [userId, groupId],
+      );
+      await pgClient.query(
+        `INSERT INTO invite_link (group_id, token, single_use, expires_at) VALUES ($1, $2, $3, NOW() + INTERVAL '1 day')`,
+        [groupId, 'usable-token', true],
+      );
+
+      // WHEN
+      const response = await request(app.getHttpServer())
+        .post('/invite-link/consume')
+        .set('Cookie', `session_token=valid-session-token`)
+        .send({ token: 'usable-token' })
+        .expect(200);
+
+      // THEN
+      expect(response.body).toEqual({ groupId, alreadyMember: true });
+
+      const memberRows = (
+        await pgClient.query(
+          `SELECT * FROM member WHERE user_id = $1 AND group_id = $2`,
+          [userId, groupId],
+        )
+      ).rows;
+      expect(memberRows).toHaveLength(1);
+
+      const inviteRow = (
+        await pgClient.query<{ consumed_at: Date | null }>(
+          `SELECT * FROM invite_link WHERE token = $1`,
+          ['usable-token'],
+        )
+      ).rows[0]!;
+      expect(inviteRow.consumed_at).toBeNull();
+    });
+
+    it('concurrent double-consume creates exactly one member', async () => {
+      // GIVEN user + session + group + usable link.
+      const userId = (
+        await pgClient.query<{ id: number }>(
+          `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
+          ['john', 'webauthn-test'],
+        )
+      ).rows[0]!.id;
+      await pgClient.query(
+        `INSERT INTO session (token, user_id, issued_at, expires_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL '7 days')`,
+        ['valid-session-token', userId],
+      );
+      const groupId = (
+        await pgClient.query<{ id: number }>(
+          `INSERT INTO expense_group (name, currency_code) VALUES ($1, $2) RETURNING id`,
+          ['group', 'EUR'],
+        )
+      ).rows[0]!.id;
+      await pgClient.query(
+        `INSERT INTO invite_link (group_id, token, single_use, expires_at) VALUES ($1, $2, $3, NOW() + INTERVAL '1 day')`,
+        [groupId, 'usable-token', true],
+      );
+
+      // WHEN two consume requests fire in parallel.
+      const post = () =>
+        request(app.getHttpServer())
+          .post('/invite-link/consume')
+          .set('Cookie', `session_token=valid-session-token`)
+          .send({ token: 'usable-token' });
+      const [first, second] = await Promise.all([post(), post()]);
+
+      // THEN both succeed and exactly one member row exists.
+      expect(first.status).toBe(200);
+      expect(second.status).toBe(200);
+
+      const memberRows = (
+        await pgClient.query(
+          `SELECT * FROM member WHERE user_id = $1 AND group_id = $2`,
+          [userId, groupId],
+        )
+      ).rows;
+      expect(memberRows).toHaveLength(1);
+    });
+
+    it('rejects not-found / expired / consumed with a discriminator', async () => {
+      // GIVEN an authenticated user (not a member of any group) + a group.
+      const userId = (
+        await pgClient.query<{ id: number }>(
+          `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
+          ['john', 'webauthn-test'],
+        )
+      ).rows[0]!.id;
+      await pgClient.query(
+        `INSERT INTO session (token, user_id, issued_at, expires_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL '7 days')`,
+        ['valid-session-token', userId],
+      );
+      const groupId = (
+        await pgClient.query<{ id: number }>(
+          `INSERT INTO expense_group (name, currency_code) VALUES ($1, $2) RETURNING id`,
+          ['group', 'EUR'],
+        )
+      ).rows[0]!.id;
+      // another user who burned a single-use link (consumed by someone else).
+      const otherUserId = (
+        await pgClient.query<{ id: number }>(
+          `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
+          ['jane', 'webauthn-other'],
+        )
+      ).rows[0]!.id;
+      await pgClient.query(
+        `INSERT INTO invite_link (group_id, token, single_use, expires_at) VALUES ($1, $2, $3, NOW() - INTERVAL '1 day')`,
+        [groupId, 'expired-token', true],
+      );
+      await pgClient.query(
+        `INSERT INTO invite_link (group_id, token, single_use, expires_at, consumed_by_user_id, consumed_at) VALUES ($1, $2, $3, NOW() + INTERVAL '1 day', $4, NOW())`,
+        [groupId, 'consumed-token', true, otherUserId],
+      );
+
+      const post = (token: string) =>
+        request(app.getHttpServer())
+          .post('/invite-link/consume')
+          .set('Cookie', `session_token=valid-session-token`)
+          .send({ token });
+
+      // not-found
+      const notFound = await post('does-not-exist').expect(400);
+      expect(notFound.body).toEqual({ error: 'INVITE_NOT_FOUND' });
+
+      // expired
+      const expired = await post('expired-token').expect(400);
+      expect(expired.body).toEqual({ error: 'INVITE_EXPIRED' });
+
+      // consumed (by someone else; requester is not a member)
+      const consumed = await post('consumed-token').expect(400);
+      expect(consumed.body).toEqual({ error: 'INVITE_CONSUMED' });
+    });
+
+    it('rejects unauthenticated and malformed requests', async () => {
+      // GIVEN a valid session so validation (not auth) is what rejects the bad bodies.
+      const userId = (
+        await pgClient.query<{ id: number }>(
+          `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
+          ['john', 'webauthn-test'],
+        )
+      ).rows[0]!.id;
+      await pgClient.query(
+        `INSERT INTO session (token, user_id, issued_at, expires_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL '7 days')`,
+        ['valid-session-token', userId],
+      );
+
+      // no cookie -> 401 (SessionGuard).
+      await request(app.getHttpServer())
+        .post('/invite-link/consume')
+        .send({ token: 'whatever' })
+        .expect(401);
+
+      const post = (body: string | object) =>
+        request(app.getHttpServer())
+          .post('/invite-link/consume')
+          .set('Cookie', `session_token=valid-session-token`)
+          .send(body);
+
+      // A domain discriminator envelope is exactly { error: "INVITE_*" }; a
+      // validation 400 must NOT look like one.
+      const isDiscriminator = (body: unknown) =>
+        typeof body === 'object' &&
+        body !== null &&
+        'error' in body &&
+        typeof body.error === 'string' &&
+        body.error.startsWith('INVITE_');
+
+      // empty token -> 400 (min(1)).
+      const empty = await post({ token: '' }).expect(400);
+      expect(isDiscriminator(empty.body)).toBe(false);
+
+      // token > 64 chars -> 400 (max(64)).
+      const tooLong = await post({ token: 'x'.repeat(65) }).expect(400);
+      expect(isDiscriminator(tooLong.body)).toBe(false);
+
+      // unexpected extra field -> 400 (.strict()).
+      const extra = await post({ token: 'usable-token', userId: 999 }).expect(
+        400,
+      );
+      expect(isDiscriminator(extra.body)).toBe(false);
+    });
+  });
 });

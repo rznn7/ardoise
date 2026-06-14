@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { Member } from 'src/member/domain/member';
 import { MemberRepository } from 'src/member/domain/member-repository';
 import {
@@ -22,16 +22,30 @@ export class MemberRepositoryDrizzle implements MemberRepository {
     return row ? this.toDomain(row) : null;
   }
 
+  async findByUserAndGroup(
+    userId: number,
+    groupId: number,
+  ): Promise<Member | null> {
+    const row = await this.database.query.member.findFirst({
+      where: and(eq(member.userId, userId), eq(member.groupId, groupId)),
+    });
+
+    return row ? this.toDomain(row) : null;
+  }
+
   async create(input: {
     userId: number;
     groupId: number;
     nickname?: string;
     isModerator?: boolean;
-  }): Promise<Member> {
-    const [row] = await this.database.insert(member).values(input).returning();
+  }): Promise<Member | null> {
+    const [row] = await this.database
+      .insert(member)
+      .values(input)
+      .onConflictDoNothing({ target: [member.userId, member.groupId] })
+      .returning();
 
-    if (!row) throw new Error('Member insert returned no row');
-    return this.toDomain(row);
+    return row ? this.toDomain(row) : null;
   }
 
   private toDomain(row: typeof member.$inferSelect): Member {

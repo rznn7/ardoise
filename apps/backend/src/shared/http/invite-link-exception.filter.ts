@@ -1,20 +1,21 @@
-import {
-  ArgumentsHost,
-  BadRequestException,
-  Catch,
-  ExceptionFilter,
-} from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter } from '@nestjs/common';
 import type { Response } from 'express';
-import { InviteLinkNotFound } from 'src/invite-link/domain/invite-link';
+import {
+  InviteLinkConsumed,
+  InviteLinkExpired,
+  InviteLinkNotFound,
+} from 'src/invite-link/domain/invite-link';
 
-@Catch(InviteLinkNotFound)
-export class InviteLinkExceptionFilter implements ExceptionFilter {
-  catch(_: unknown, host: ArgumentsHost) {
-    const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
+@Catch(InviteLinkNotFound, InviteLinkExpired, InviteLinkConsumed)
+export class InviteLinkExceptionFilter implements ExceptionFilter<Error> {
+  catch(exception: Error, host: ArgumentsHost) {
+    const response = host.switchToHttp().getResponse<Response>();
 
-    const error = new BadRequestException('invite link not found or expired');
+    let error = 'UNKNOWN';
+    if (exception instanceof InviteLinkNotFound) error = 'INVITE_NOT_FOUND';
+    else if (exception instanceof InviteLinkExpired) error = 'INVITE_EXPIRED';
+    else if (exception instanceof InviteLinkConsumed) error = 'INVITE_CONSUMED';
 
-    response.status(error.getStatus()).json(error.getResponse());
+    response.status(400).json({ error });
   }
 }
