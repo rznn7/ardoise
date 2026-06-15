@@ -5,3 +5,5 @@ export type Member = {
   readonly nickname: string | null;
   readonly isModerator: boolean;
 };
+
+export class NotAMember extends Error {}

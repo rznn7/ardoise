@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq } from 'drizzle-orm';
+import { and, asc, eq } from 'drizzle-orm';
 import { Member } from 'src/member/domain/member';
 import { MemberRepository } from 'src/member/domain/member-repository';
 import {
@@ -31,6 +31,15 @@ export class MemberRepositoryDrizzle implements MemberRepository {
     });
 
     return row ? this.toDomain(row) : null;
+  }
+
+  async findByGroupId(groupId: number): Promise<Member[]> {
+    const rows = await this.database.query.member.findMany({
+      where: eq(member.groupId, groupId),
+      orderBy: asc(member.id),
+    });
+
+    return rows.map((row) => this.toDomain(row));
   }
 
   async create(input: {
