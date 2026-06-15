@@ -73,7 +73,7 @@ describe('GroupMembers', () => {
 
       // WHEN / THEN
       await request(app.getHttpServer())
-        .get(`/expense-groups/${groupId}/members`)
+        .get(`/expense-groups/${String(groupId)}/members`)
         .set('Cookie', `session_token=alice-session`)
         .expect(403);
     });
@@ -151,7 +151,7 @@ describe('GroupMembers', () => {
 
       // WHEN
       const response = await request(app.getHttpServer())
-        .get(`/expense-groups/${groupId}/members`)
+        .get(`/expense-groups/${String(groupId)}/members`)
         .set('Cookie', `session_token=alice-session`)
         .expect(200);
 

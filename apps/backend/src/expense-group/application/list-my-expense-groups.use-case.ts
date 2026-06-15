@@ -1,5 +1,5 @@
-import { type ExpenseGroupSummary } from '@ardoise/shared';
 import { Inject, Injectable } from '@nestjs/common';
+import { type ExpenseGroup } from 'src/expense-group/domain/expense-group';
 import {
   EXPENSE_GROUP_REPOSITORY,
   type ExpenseGroupRepository,
@@ -12,13 +12,7 @@ export class ListMyExpenseGroupsUseCase {
     private readonly expenseGroups: ExpenseGroupRepository,
   ) {}
 
-  async execute(userId: number): Promise<ExpenseGroupSummary[]> {
-    const groups = await this.expenseGroups.findByUserId(userId);
-    return groups.map((group) => ({
-      id: group.id,
-      name: group.name,
-      currencyCode: group.currencyCode,
-      createdAt: group.createdAt.toISOString(),
-    }));
+  execute(userId: number): Promise<ExpenseGroup[]> {
+    return this.expenseGroups.findByUserId(userId);
   }
 }
