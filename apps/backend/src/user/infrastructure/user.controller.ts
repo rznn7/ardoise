@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { SessionGuard } from 'src/session/infrastructure/session.guard';
 import { FindUserUseCase } from 'src/user/application/find-user.use-case';
+import { toMeResponse } from 'src/user/infrastructure/user.mapper';
 
 @Controller('users')
 @UseGuards(SessionGuard)
@@ -19,6 +20,6 @@ export class UserController {
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<MeResponse> {
     const user = await this.findUser.execute(id);
     if (!user) throw new NotFoundException();
-    return { id: user.id, name: user.name, role: user.role };
+    return toMeResponse(user);
   }
 }

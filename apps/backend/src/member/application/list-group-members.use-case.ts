@@ -1,6 +1,5 @@
-import { type GroupMember } from '@ardoise/shared';
 import { Inject, Injectable } from '@nestjs/common';
-import { NotAMember } from 'src/member/domain/member';
+import { type Member, NotAMember } from 'src/member/domain/member';
 import {
   MEMBER_REPOSITORY,
   type MemberRepository,
@@ -18,16 +17,10 @@ export class ListGroupMembersUseCase {
   }: {
     userId: number;
     groupId: number;
-  }): Promise<GroupMember[]> {
+  }): Promise<Member[]> {
     const membership = await this.members.findByUserAndGroup(userId, groupId);
     if (!membership) throw new NotAMember();
 
-    const members = await this.members.findByGroupId(groupId);
-    return members.map(({ id, userId, nickname, isModerator }) => ({
-      id,
-      userId,
-      nickname,
-      isModerator,
-    }));
+    return this.members.findByGroupId(groupId);
   }
 }
