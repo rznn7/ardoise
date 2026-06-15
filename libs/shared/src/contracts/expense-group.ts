@@ -8,6 +8,14 @@ export type CreateExpenseGroupRequest = z.infer<
   typeof createExpenseGroupRequestSchema
 >;
 
+export const expenseGroupSummarySchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  currencyCode: z.string(),
+  createdAt: z.string(),
+});
+export type ExpenseGroupSummary = z.infer<typeof expenseGroupSummarySchema>;
+
 export const groupMemberSchema = z.object({
   id: z.number(),
   userId: z.number(),

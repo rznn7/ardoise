@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { CreateExpenseGroupUseCase } from 'src/expense-group/application/create-expense-group.use-case';
 import { FindExpenseGroupUseCase } from 'src/expense-group/application/find-expense-group.use-case';
+import { ListMyExpenseGroupsUseCase } from 'src/expense-group/application/list-my-expense-groups.use-case';
 import { EXPENSE_GROUP_REPOSITORY } from 'src/expense-group/domain/expense-group-repository';
 import { SessionModule } from 'src/session/infrastructure/session.module';
 import { DatabaseModule } from 'src/shared/database/database.module';
@@ -17,6 +18,7 @@ import { ExpenseGroupRepositoryDrizzle } from './expense-group-repository.drizzl
     },
     FindExpenseGroupUseCase,
     CreateExpenseGroupUseCase,
+    ListMyExpenseGroupsUseCase,
   ],
   exports: [EXPENSE_GROUP_REPOSITORY],
   controllers: [ExpenseGroupController],
