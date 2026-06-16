@@ -7,20 +7,18 @@ import {
   Body,
   Controller,
   Get,
-  NotFoundException,
   Param,
   ParseIntPipe,
   Post,
-  Req,
-  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { type Request } from 'express';
 import { CreateExpenseGroupUseCase } from 'src/expense-group/application/create-expense-group.use-case';
 import { FindExpenseGroupUseCase } from 'src/expense-group/application/find-expense-group.use-case';
 import { ListMyExpenseGroupsUseCase } from 'src/expense-group/application/list-my-expense-groups.use-case';
 import { toExpenseGroupSummary } from 'src/expense-group/infrastructure/expense-group.mapper';
 import { SessionGuard } from 'src/session/infrastructure/session.guard';
+import { CurrentUser } from 'src/shared/http/current-user.decorator';
+import { type SessionUser } from 'src/shared/http/express';
 import { ZodValidationPipe } from 'src/shared/http/zod-validation.pipe';
 
 @Controller('expense-groups')
@@ -33,18 +31,22 @@ export class ExpenseGroupController {
   ) {}
 
   @Get()
-  async findMine(@Req() req: Request): Promise<ExpenseGroupSummary[]> {
-    if (!req.user) throw new UnauthorizedException();
-    const groups = await this.listMyExpenseGroups.execute(req.user.id);
+  async findMine(
+    @CurrentUser() user: SessionUser,
+  ): Promise<ExpenseGroupSummary[]> {
+    const groups = await this.listMyExpenseGroups.execute(user.id);
     return groups.map(toExpenseGroupSummary);
   }
 
   @Get(':id')
   async findOne(
     @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: SessionUser,
   ): Promise<ExpenseGroupSummary> {
-    const group = await this.findExpenseGroup.execute(id);
-    if (!group) throw new NotFoundException();
+    const group = await this.findExpenseGroup.execute({
+      userId: user.id,
+      groupId: id,
+    });
     return toExpenseGroupSummary(group);
   }
 

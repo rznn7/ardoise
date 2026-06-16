@@ -5,19 +5,12 @@ import {
   type CreateInviteLinkRequest,
   createInviteLinkRequestSchema,
 } from '@ardoise/shared';
-import {
-  Body,
-  Controller,
-  HttpCode,
-  Post,
-  Req,
-  UnauthorizedException,
-  UseGuards,
-} from '@nestjs/common';
-import { type Request } from 'express';
+import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
 import { ConsumeInviteLinkUseCase } from 'src/invite-link/application/consume-invite-link.use-case';
 import { CreateInviteLinkUseCase } from 'src/invite-link/application/create-invite-link.use-case';
 import { SessionGuard } from 'src/session/infrastructure/session.guard';
+import { CurrentUser } from 'src/shared/http/current-user.decorator';
+import { type SessionUser } from 'src/shared/http/express';
 import { ZodValidationPipe } from 'src/shared/http/zod-validation.pipe';
 
 @Controller('invite-link')
@@ -42,13 +35,11 @@ export class InviteLinkController {
   async consume(
     @Body(new ZodValidationPipe(consumeInviteLinkRequestSchema))
     body: ConsumeInviteLinkRequest,
-    @Req() req: Request,
+    @CurrentUser() user: SessionUser,
   ): Promise<ConsumeInviteLinkResponse> {
-    if (!req.user) throw new UnauthorizedException();
-
     return this.consumeInviteLink.execute({
       token: body.token,
-      userId: req.user.id,
+      userId: user.id,
     });
   }
 }

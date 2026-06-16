@@ -4,14 +4,13 @@ import {
   Get,
   Param,
   ParseIntPipe,
-  Req,
-  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { type Request } from 'express';
 import { ListGroupMembersUseCase } from 'src/member/application/list-group-members.use-case';
 import { toGroupMember } from 'src/member/infrastructure/member.mapper';
 import { SessionGuard } from 'src/session/infrastructure/session.guard';
+import { CurrentUser } from 'src/shared/http/current-user.decorator';
+import { type SessionUser } from 'src/shared/http/express';
 
 @Controller('expense-groups/:groupId/members')
 @UseGuards(SessionGuard)
@@ -21,11 +20,10 @@ export class GroupMemberController {
   @Get()
   async list(
     @Param('groupId', ParseIntPipe) groupId: number,
-    @Req() req: Request,
+    @CurrentUser() user: SessionUser,
   ): Promise<GroupMember[]> {
-    if (!req.user) throw new UnauthorizedException();
     const members = await this.listGroupMembers.execute({
-      userId: req.user.id,
+      userId: user.id,
       groupId,
     });
     return members.map(toGroupMember);
