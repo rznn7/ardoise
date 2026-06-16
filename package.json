@@ -16,7 +16,7 @@
     "test:cov": "pnpm -r --if-present test:cov",
     "test:e2e": "pnpm -r --if-present test:e2e"
   },
-  "packageManager": "pnpm@10.34.3",
+  "packageManager": "pnpm@11.7.0",
   "devDependencies": {
     "concurrently": "^9.2.1"
   }
