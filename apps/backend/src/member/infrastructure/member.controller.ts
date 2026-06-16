@@ -2,7 +2,6 @@ import { type MemberResponse } from '@ardoise/shared';
 import {
   Controller,
   Get,
-  NotFoundException,
   Param,
   ParseIntPipe,
   UseGuards,
@@ -10,6 +9,8 @@ import {
 import { FindMemberUseCase } from 'src/member/application/find-member.use-case';
 import { toMemberResponse } from 'src/member/infrastructure/member.mapper';
 import { SessionGuard } from 'src/session/infrastructure/session.guard';
+import { CurrentUser } from 'src/shared/http/current-user.decorator';
+import { type SessionUser } from 'src/shared/http/express';
 
 @Controller('members')
 @UseGuards(SessionGuard)
@@ -19,9 +20,12 @@ export class MemberController {
   @Get(':id')
   async findOne(
     @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: SessionUser,
   ): Promise<MemberResponse> {
-    const member = await this.findMember.execute(id);
-    if (!member) throw new NotFoundException();
+    const member = await this.findMember.execute({
+      userId: user.id,
+      memberId: id,
+    });
     return toMemberResponse(member);
   }
 }
