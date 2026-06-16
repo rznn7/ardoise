@@ -5,6 +5,13 @@ import request from 'supertest';
 import { type App } from 'supertest/types';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
+import {
+  seedGroup,
+  seedInviteLink,
+  seedMember,
+  seedSession,
+  seedUser,
+} from './helpers/seed';
 import { setupTestApp } from './helpers/test-app';
 
 describe('InviteLink', () => {
@@ -35,14 +42,12 @@ describe('InviteLink', () => {
 
     it('returns 401 for a revoked session', async () => {
       // GIVEN
-      const { rows } = await pgClient.query<{ id: number }>(
-        `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
-        ['john', 'webauthn-test'],
-      );
-      await pgClient.query(
-        `INSERT INTO session (token, user_id, issued_at, expires_at, revoked_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL '7 days', NOW() - INTERVAL '1 minute')`,
-        ['revoked-session-token', rows[0]!.id],
-      );
+      const { id: userId } = await seedUser(pgClient);
+      await seedSession(pgClient, {
+        userId,
+        token: 'revoked-session-token',
+        revoked: true,
+      });
 
       // WHEN / THEN
       await request(app.getHttpServer())
@@ -58,20 +63,9 @@ describe('InviteLink', () => {
 
     it('creates an invite link for a valid session', async () => {
       // GIVEN
-      const { rows } = await pgClient.query<{ id: number }>(
-        `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
-        ['john', 'webauthn-test'],
-      );
-      await pgClient.query(
-        `INSERT INTO session (token, user_id, issued_at, expires_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL '7 days')`,
-        ['valid-session-token', rows[0]!.id],
-      );
-      const groupId = (
-        await pgClient.query<{ id: number }>(
-          `INSERT INTO expense_group (name, currency_code) VALUES ($1, $2) RETURNING id`,
-          ['group', 'EUR'],
-        )
-      ).rows[0]!.id;
+      const { id: userId } = await seedUser(pgClient);
+      await seedSession(pgClient, { userId, token: 'valid-session-token' });
+      const { id: groupId } = await seedGroup(pgClient);
 
       // WHEN
       const response = await request(app.getHttpServer())
@@ -108,26 +102,14 @@ describe('InviteLink', () => {
   describe('consume', () => {
     it('joins an authenticated user to the group', async () => {
       // GIVEN a user + session cookie, a group, and a usable invite link for it.
-      const userId = (
-        await pgClient.query<{ id: number }>(
-          `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
-          ['john', 'webauthn-test'],
-        )
-      ).rows[0]!.id;
-      await pgClient.query(
-        `INSERT INTO session (token, user_id, issued_at, expires_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL '7 days')`,
-        ['valid-session-token', userId],
-      );
-      const groupId = (
-        await pgClient.query<{ id: number }>(
-          `INSERT INTO expense_group (name, currency_code) VALUES ($1, $2) RETURNING id`,
-          ['group', 'EUR'],
-        )
-      ).rows[0]!.id;
-      await pgClient.query(
-        `INSERT INTO invite_link (group_id, token, single_use, expires_at) VALUES ($1, $2, $3, NOW() + INTERVAL '1 day')`,
-        [groupId, 'usable-token', true],
-      );
+      const { id: userId } = await seedUser(pgClient);
+      await seedSession(pgClient, { userId, token: 'valid-session-token' });
+      const { id: groupId } = await seedGroup(pgClient);
+      await seedInviteLink(pgClient, {
+        groupId,
+        token: 'usable-token',
+        expiresInDays: 1,
+      });
 
       // WHEN
       const response = await request(app.getHttpServer())
@@ -159,30 +141,15 @@ describe('InviteLink', () => {
 
     it('is idempotent when the user is already a member', async () => {
       // GIVEN the user is already a member of the group, plus a usable link for it.
-      const userId = (
-        await pgClient.query<{ id: number }>(
-          `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
-          ['john', 'webauthn-test'],
-        )
-      ).rows[0]!.id;
-      await pgClient.query(
-        `INSERT INTO session (token, user_id, issued_at, expires_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL '7 days')`,
-        ['valid-session-token', userId],
-      );
-      const groupId = (
-        await pgClient.query<{ id: number }>(
-          `INSERT INTO expense_group (name, currency_code) VALUES ($1, $2) RETURNING id`,
-          ['group', 'EUR'],
-        )
-      ).rows[0]!.id;
-      await pgClient.query(
-        `INSERT INTO member (user_id, group_id) VALUES ($1, $2)`,
-        [userId, groupId],
-      );
-      await pgClient.query(
-        `INSERT INTO invite_link (group_id, token, single_use, expires_at) VALUES ($1, $2, $3, NOW() + INTERVAL '1 day')`,
-        [groupId, 'usable-token', true],
-      );
+      const { id: userId } = await seedUser(pgClient);
+      await seedSession(pgClient, { userId, token: 'valid-session-token' });
+      const { id: groupId } = await seedGroup(pgClient);
+      await seedMember(pgClient, { userId, groupId });
+      await seedInviteLink(pgClient, {
+        groupId,
+        token: 'usable-token',
+        expiresInDays: 1,
+      });
 
       // WHEN
       const response = await request(app.getHttpServer())
@@ -213,26 +180,14 @@ describe('InviteLink', () => {
 
     it('concurrent double-consume creates exactly one member', async () => {
       // GIVEN user + session + group + usable link.
-      const userId = (
-        await pgClient.query<{ id: number }>(
-          `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
-          ['john', 'webauthn-test'],
-        )
-      ).rows[0]!.id;
-      await pgClient.query(
-        `INSERT INTO session (token, user_id, issued_at, expires_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL '7 days')`,
-        ['valid-session-token', userId],
-      );
-      const groupId = (
-        await pgClient.query<{ id: number }>(
-          `INSERT INTO expense_group (name, currency_code) VALUES ($1, $2) RETURNING id`,
-          ['group', 'EUR'],
-        )
-      ).rows[0]!.id;
-      await pgClient.query(
-        `INSERT INTO invite_link (group_id, token, single_use, expires_at) VALUES ($1, $2, $3, NOW() + INTERVAL '1 day')`,
-        [groupId, 'usable-token', true],
-      );
+      const { id: userId } = await seedUser(pgClient);
+      await seedSession(pgClient, { userId, token: 'valid-session-token' });
+      const { id: groupId } = await seedGroup(pgClient);
+      await seedInviteLink(pgClient, {
+        groupId,
+        token: 'usable-token',
+        expiresInDays: 1,
+      });
 
       // WHEN two consume requests fire in parallel.
       const post = () =>
@@ -257,37 +212,22 @@ describe('InviteLink', () => {
 
     it('rejects not-found / expired / consumed with a discriminator', async () => {
       // GIVEN an authenticated user (not a member of any group) + a group.
-      const userId = (
-        await pgClient.query<{ id: number }>(
-          `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
-          ['john', 'webauthn-test'],
-        )
-      ).rows[0]!.id;
-      await pgClient.query(
-        `INSERT INTO session (token, user_id, issued_at, expires_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL '7 days')`,
-        ['valid-session-token', userId],
-      );
-      const groupId = (
-        await pgClient.query<{ id: number }>(
-          `INSERT INTO expense_group (name, currency_code) VALUES ($1, $2) RETURNING id`,
-          ['group', 'EUR'],
-        )
-      ).rows[0]!.id;
+      const { id: userId } = await seedUser(pgClient);
+      await seedSession(pgClient, { userId, token: 'valid-session-token' });
+      const { id: groupId } = await seedGroup(pgClient);
       // another user who burned a single-use link (consumed by someone else).
-      const otherUserId = (
-        await pgClient.query<{ id: number }>(
-          `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
-          ['jane', 'webauthn-other'],
-        )
-      ).rows[0]!.id;
-      await pgClient.query(
-        `INSERT INTO invite_link (group_id, token, single_use, expires_at) VALUES ($1, $2, $3, NOW() - INTERVAL '1 day')`,
-        [groupId, 'expired-token', true],
-      );
-      await pgClient.query(
-        `INSERT INTO invite_link (group_id, token, single_use, expires_at, consumed_by_user_id, consumed_at) VALUES ($1, $2, $3, NOW() + INTERVAL '1 day', $4, NOW())`,
-        [groupId, 'consumed-token', true, otherUserId],
-      );
+      const { id: otherUserId } = await seedUser(pgClient, { name: 'jane' });
+      await seedInviteLink(pgClient, {
+        groupId,
+        token: 'expired-token',
+        expiresInDays: -1,
+      });
+      await seedInviteLink(pgClient, {
+        groupId,
+        token: 'consumed-token',
+        expiresInDays: 1,
+        consumedByUserId: otherUserId,
+      });
 
       const post = (token: string) =>
         request(app.getHttpServer())
@@ -295,31 +235,20 @@ describe('InviteLink', () => {
           .set('Cookie', `session_token=valid-session-token`)
           .send({ token });
 
-      // not-found
       const notFound = await post('does-not-exist').expect(400);
       expect(notFound.body).toEqual({ error: 'INVITE_NOT_FOUND' });
 
-      // expired
       const expired = await post('expired-token').expect(400);
       expect(expired.body).toEqual({ error: 'INVITE_EXPIRED' });
 
-      // consumed (by someone else; requester is not a member)
       const consumed = await post('consumed-token').expect(400);
       expect(consumed.body).toEqual({ error: 'INVITE_CONSUMED' });
     });
 
     it('rejects unauthenticated and malformed requests', async () => {
       // GIVEN a valid session so validation (not auth) is what rejects the bad bodies.
-      const userId = (
-        await pgClient.query<{ id: number }>(
-          `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
-          ['john', 'webauthn-test'],
-        )
-      ).rows[0]!.id;
-      await pgClient.query(
-        `INSERT INTO session (token, user_id, issued_at, expires_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL '7 days')`,
-        ['valid-session-token', userId],
-      );
+      const { id: userId } = await seedUser(pgClient);
+      await seedSession(pgClient, { userId, token: 'valid-session-token' });
 
       // no cookie -> 401 (SessionGuard).
       await request(app.getHttpServer())

@@ -11,6 +11,13 @@ import { type App } from 'supertest/types';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { fakePasskeyVerifier } from './helpers/fake-passkey-verifier';
+import {
+  seedGroup,
+  seedInviteLink,
+  seedPasskey,
+  seedSession,
+  seedUser,
+} from './helpers/seed';
 import { setupTestApp } from './helpers/test-app';
 
 describe('Authentication', () => {
@@ -40,16 +47,13 @@ describe('Authentication', () => {
   describe('register', () => {
     it('registers', async () => {
       // GIVEN
-      const firstGroupId = (
-        await pgClient.query<{ id: number }>(
-          `INSERT INTO expense_group (name, currency_code) VALUES ($1, $2) RETURNING id`,
-          ['summer trip 2026', 'EUR'],
-        )
-      ).rows[0]!.id;
-      await pgClient.query(
-        `INSERT INTO invite_link (group_id, token, expires_at ) VALUES ($1, $2, NOW() + INTERVAL '7 days') RETURNING id`,
-        [firstGroupId, 'registration-token-1'],
-      );
+      const { id: firstGroupId } = await seedGroup(pgClient, {
+        name: 'summer trip 2026',
+      });
+      await seedInviteLink(pgClient, {
+        groupId: firstGroupId,
+        token: 'registration-token-1',
+      });
 
       // WHEN
       const beginResponse = await request(app.getHttpServer())
@@ -122,16 +126,8 @@ describe('Authentication', () => {
 
     it('rejects a replayed stateId after successful registration', async () => {
       // GIVEN
-      const groupId = (
-        await pgClient.query<{ id: number }>(
-          `INSERT INTO expense_group (name, currency_code) VALUES ($1, $2) RETURNING id`,
-          ['group', 'EUR'],
-        )
-      ).rows[0]!.id;
-      await pgClient.query(
-        `INSERT INTO invite_link (group_id, token, expires_at) VALUES ($1, $2, NOW() + INTERVAL '7 days')`,
-        [groupId, 'replay-token'],
-      );
+      const { id: groupId } = await seedGroup(pgClient);
+      await seedInviteLink(pgClient, { groupId, token: 'replay-token' });
 
       const beginResponse = await request(app.getHttpServer())
         .post('/auth/register/begin')
@@ -153,20 +149,13 @@ describe('Authentication', () => {
 
     it('rejects a consumed invite token', async () => {
       // GIVEN
-      const { rows } = await pgClient.query<{ id: number }>(
-        `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
-        ['john', 'webauthn-test'],
-      );
-      const groupId = (
-        await pgClient.query<{ id: number }>(
-          `INSERT INTO expense_group (name, currency_code) VALUES ($1, $2) RETURNING id`,
-          ['group', 'EUR'],
-        )
-      ).rows[0]!.id;
-      await pgClient.query(
-        `INSERT INTO invite_link (group_id, token, expires_at, consumed_by_user_id, consumed_at) VALUES ($1, $2, NOW() + INTERVAL '7 days', $3, NOW())`,
-        [groupId, 'consumed-token', rows[0]!.id],
-      );
+      const { id: userId } = await seedUser(pgClient);
+      const { id: groupId } = await seedGroup(pgClient);
+      await seedInviteLink(pgClient, {
+        groupId,
+        token: 'consumed-token',
+        consumedByUserId: userId,
+      });
 
       // WHEN / THEN
       await request(app.getHttpServer())
@@ -179,14 +168,10 @@ describe('Authentication', () => {
   describe('login', () => {
     it('logs in', async () => {
       // GIVEN
-      const { rows } = await pgClient.query<{ id: number }>(
-        `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
-        ['john', 'webauthn-test'],
-      );
-      await pgClient.query(
-        `INSERT INTO passkey (user_id, credential_id, public_key, counter) VALUES ($1, $2, $3, $4)`,
-        [rows[0]!.id, 'cred-1', Buffer.from([1, 2, 3, 4]), 0],
-      );
+      const { id: userId } = await seedUser(pgClient, {
+        webauthnUserId: 'webauthn-test',
+      });
+      await seedPasskey(pgClient, { userId });
 
       // WHEN
       const beginResponse = await request(app.getHttpServer())
@@ -215,7 +200,7 @@ describe('Authentication', () => {
         ])
       ).rows[0]!;
       expect(sessionRow).toMatchObject({
-        user_id: rows[0]!.id,
+        user_id: userId,
         revoked_at: null,
       });
 
@@ -256,14 +241,10 @@ describe('Authentication', () => {
 
     it('rejects a replayed stateId after successful login', async () => {
       // GIVEN
-      const { rows } = await pgClient.query<{ id: number }>(
-        `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
-        ['john', 'webauthn-test'],
-      );
-      await pgClient.query(
-        `INSERT INTO passkey (user_id, credential_id, public_key, counter) VALUES ($1, $2, $3, $4)`,
-        [rows[0]!.id, 'cred-1', Buffer.from([1, 2, 3, 4]), 0],
-      );
+      const { id: userId } = await seedUser(pgClient, {
+        webauthnUserId: 'webauthn-test',
+      });
+      await seedPasskey(pgClient, { userId });
 
       const beginResponse = await request(app.getHttpServer())
         .post('/auth/login/begin')
@@ -286,14 +267,11 @@ describe('Authentication', () => {
   describe('logout', () => {
     it('logs out', async () => {
       // GIVEN
-      const { rows } = await pgClient.query<{ id: number }>(
-        `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
-        ['john', 'webauthn-test'],
-      );
-      await pgClient.query(
-        `INSERT INTO session (token, user_id, issued_at, expires_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL '7 days')`,
-        ['c19b19f2d4fb4f499a281779498b3677', rows[0]!.id],
-      );
+      const { id: userId } = await seedUser(pgClient);
+      await seedSession(pgClient, {
+        userId,
+        token: 'c19b19f2d4fb4f499a281779498b3677',
+      });
 
       // WHEN
       const logoutResponse = await request(app.getHttpServer())
@@ -322,14 +300,8 @@ describe('Authentication', () => {
   describe('me', () => {
     it('returns user data for a valid session', async () => {
       // GIVEN
-      const { rows } = await pgClient.query<{ id: number }>(
-        `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
-        ['john', 'webauthn-test'],
-      );
-      await pgClient.query(
-        `INSERT INTO session (token, user_id, issued_at, expires_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL '7 days')`,
-        ['valid-session-token', rows[0]!.id],
-      );
+      const { id: userId } = await seedUser(pgClient);
+      await seedSession(pgClient, { userId, token: 'valid-session-token' });
 
       // WHEN
       const response = await request(app.getHttpServer())
@@ -339,7 +311,7 @@ describe('Authentication', () => {
 
       // THEN
       expect(response.body).toStrictEqual({
-        id: rows[0]!.id,
+        id: userId,
         name: 'john',
         role: 'user',
       });
@@ -351,14 +323,12 @@ describe('Authentication', () => {
 
     it('returns 401 for a revoked session', async () => {
       // GIVEN
-      const { rows } = await pgClient.query<{ id: number }>(
-        `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
-        ['john', 'webauthn-test'],
-      );
-      await pgClient.query(
-        `INSERT INTO session (token, user_id, issued_at, expires_at, revoked_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL '7 days', NOW() - INTERVAL '1 minute')`,
-        ['revoked-session-token', rows[0]!.id],
-      );
+      const { id: userId } = await seedUser(pgClient);
+      await seedSession(pgClient, {
+        userId,
+        token: 'revoked-session-token',
+        revoked: true,
+      });
 
       // WHEN / THEN
       await request(app.getHttpServer())
@@ -369,14 +339,12 @@ describe('Authentication', () => {
 
     it('returns 401 for an expired session', async () => {
       // GIVEN
-      const { rows } = await pgClient.query<{ id: number }>(
-        `INSERT INTO users (name, webauthn_user_id) VALUES ($1, $2) RETURNING id`,
-        ['john', 'webauthn-test'],
-      );
-      await pgClient.query(
-        `INSERT INTO session (token, user_id, issued_at, expires_at) VALUES ($1, $2, NOW() - INTERVAL '14 days', NOW() - INTERVAL '7 days')`,
-        ['expired-session-token', rows[0]!.id],
-      );
+      const { id: userId } = await seedUser(pgClient);
+      await seedSession(pgClient, {
+        userId,
+        token: 'expired-session-token',
+        expiresInDays: -7,
+      });
 
       // WHEN / THEN
       await request(app.getHttpServer())
