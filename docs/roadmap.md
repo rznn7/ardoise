@@ -8,50 +8,57 @@ Build by vertical slice, value-first order.
 
 ## Phase 1 — Group lifecycle (close the loop)
 Without a join flow the app is unusable.
-- **invite-link consume (backend)** — one use-case covering both paths: register-new
+- [x] **invite-link consume (backend)** — one use-case covering both paths: register-new
   (already wires `inviteToken`) and join-existing-user. Creates the `Member`, marks the
   link consumed, single transaction.
-- **group/member read endpoints (backend)** — `expense-group` list-mine and `member`
+- [x] **group/member read endpoints (backend)** — `expense-group` list-mine and `member`
   list-by-group, with their contracts and guards.
-- **group create + list (frontend)** — create-group form and the group list on home.
-- **accept-invite page (frontend)** — landing for an invite token: register or join.
+- [ ] **mobile shell (frontend)** — `MobileShell` layout reused by all screens: `100dvh`,
+  `env(safe-area-inset-*)` padding, centered `max-w-[420px]` column, sticky header slot, FAB
+  slot, optional bottom-tab slot (unused at root). Adds slate `--primary`/`--ring` and
+  `--balance-positive/negative` tokens. Target canvas 393×852.
+- [ ] **group create + list (frontend)** — home: header + group rows (name, member count,
+  reserved balance-badge slot) + empty state + FAB → create bottom sheet → flips to
+  invite-link copy/share.
+- [ ] **accept-invite page (frontend)** — landing for an invite token: group-context header,
+  passkey-join (new user) or one-tap join (existing user).
 
 ## Phase 2 — Payments (the heart)
-- **split computation (pure domain)** — compute `PaymentShare.amount` from `splitType`
+- [ ] **split computation (pure domain)** — compute `PaymentShare.amount` from `splitType`
   + `inputValue` for all 4 types, EQUAL remainder → payer, assert sum == `fullAmount`.
   No DB, fully unit-tested in isolation.
-- **create-payment use-case (backend)** — persist payment + shares in a unit-of-work
+- [ ] **create-payment use-case (backend)** — persist payment + shares in a unit-of-work
   transaction, consuming the split logic above.
-- **payment list (backend)** — list-by-group query, endpoint, contract.
-- **add-payment form (frontend)** — one form, 4 split types.
-- **payment list (frontend)** — group payment feed.
+- [ ] **payment list (backend)** — list-by-group query, endpoint, contract.
+- [ ] **add-payment form (frontend)** — one form, 4 split types.
+- [ ] **payment list (frontend)** — group payment feed.
 
 ## Phase 3 — Balances + debt simplification
 Pure domain, no DB — high value, isolated, easy win.
-- **net balance (pure domain)** — net balance per member (paid − owed).
-- **debt simplification (pure domain)** — greedy creditor/debtor matching to minimize
+- [ ] **net balance (pure domain)** — net balance per member (paid − owed).
+- [ ] **debt simplification (pure domain)** — greedy creditor/debtor matching to minimize
   transaction count.
-- **balance endpoint (backend)** — use-case wiring + contract.
-- **balance view (frontend)** — who-owes-whom display.
+- [ ] **balance endpoint (backend)** — use-case wiring + contract.
+- [ ] **balance view (frontend)** — who-owes-whom display.
 
 ## Phase 4 — Settlement
 A settlement overlays the balance calculation; it never mutates payments.
-- **settlement schema + domain (backend)** — table, entity, repository.
-- **create-settlement use-case + balance overlay (backend)** — endpoint, contract, and
+- [ ] **settlement schema + domain (backend)** — table, entity, repository.
+- [ ] **create-settlement use-case + balance overlay (backend)** — endpoint, contract, and
   integration into the balance calc.
-- **mark-settled UI (frontend)** — record a repayment from the balance view.
+- [ ] **mark-settled UI (frontend)** — record a repayment from the balance view.
 
 ## Phase 5 — Real-time SSE
-- **SSE stream infra (backend)** — per-group `@Sse` endpoint, connection management,
+- [ ] **SSE stream infra (backend)** — per-group `@Sse` endpoint, connection management,
   event emitter.
-- **domain event wiring (backend)** — push on payment / settlement / member change.
-- **live subscription (frontend)** — EventSource subscription + reactive refresh.
+- [ ] **domain event wiring (backend)** — push on payment / settlement / member change.
+- [ ] **live subscription (frontend)** — EventSource subscription + reactive refresh.
 
 ## Phase 6 — Hardening & ship
-- **Drizzle migrations** — migration setup and baseline.
-- **deploy** — Docker compose + Hetzner.
-- **multi-device passkey** — lift the v1 single-passkey non-goal.
-- **account recovery** — lift the v1 no-recovery non-goal.
+- [x] **Drizzle migrations** — migration setup and baseline.
+- [ ] **deploy** — Docker compose + Hetzner.
+- [ ] **multi-device passkey** — lift the v1 single-passkey non-goal.
+- [ ] **account recovery** — lift the v1 no-recovery non-goal.
 
 ---
 
