@@ -26,7 +26,8 @@
     "clsx": "^2.1.1",
     "rxjs": "~7.8.2",
     "tailwind-merge": "^3.5.0",
-    "tslib": "^2.8.1"
+    "tslib": "^2.8.1",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@angular-eslint/builder": "21.3.1",

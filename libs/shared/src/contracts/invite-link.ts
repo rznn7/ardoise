@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { type Endpoint } from './http.js';
+
 export const createInviteLinkRequestSchema = z.object({
   groupId: z.number(),
   expiresAt: z.iso.datetime().transform((s) => new Date(s)),
@@ -35,3 +37,19 @@ export const consumeInviteLinkErrorSchema = z.object({
 export type ConsumeInviteLinkError = z.infer<
   typeof consumeInviteLinkErrorSchema
 >;
+
+export const inviteLinkApi = {
+  create: {
+    method: 'POST',
+    path: '/invite-link',
+    body: createInviteLinkRequestSchema,
+    res: createInviteLinkResponseSchema,
+  },
+  consume: {
+    method: 'POST',
+    path: '/invite-link/consume',
+    status: 200,
+    body: consumeInviteLinkRequestSchema,
+    res: consumeInviteLinkResponseSchema,
+  },
+} as const satisfies Record<string, Endpoint>;

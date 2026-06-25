@@ -1,7 +1,6 @@
-import { type PaymentResponse } from '@ardoise/shared';
+import { paymentApi, type PaymentResponse } from '@ardoise/shared';
 import {
   Controller,
-  Get,
   NotFoundException,
   Param,
   ParseIntPipe,
@@ -10,13 +9,14 @@ import {
 import { FindPaymentUseCase } from 'src/payment/application/find-payment.use-case';
 import { toPaymentResponse } from 'src/payment/infrastructure/payment.mapper';
 import { SessionGuard } from 'src/session/infrastructure/session.guard';
+import { Route } from 'src/shared/http/route.decorator';
 
-@Controller('payments')
+@Controller()
 @UseGuards(SessionGuard)
 export class PaymentController {
   constructor(private readonly findPayment: FindPaymentUseCase) {}
 
-  @Get(':id')
+  @Route(paymentApi.findOne)
   async findOne(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<PaymentResponse> {

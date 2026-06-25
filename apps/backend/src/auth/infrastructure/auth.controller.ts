@@ -1,22 +1,13 @@
 import {
+  authApi,
   BeginLoginResponse,
   type BeginRegistrationRequest,
-  beginRegistrationRequestSchema,
   type BeginRegistrationResponse,
   type CompleteLoginRequest,
-  completeLoginRequestSchema,
   type CompleteRegistrationRequest,
-  completeRegistrationRequestSchema,
   type MeResponse,
 } from '@ardoise/shared';
-import {
-  Body,
-  Controller,
-  HttpCode,
-  Post,
-  Res,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Body, Controller, Res, UnauthorizedException } from '@nestjs/common';
 import type { RegistrationResponseJSON } from '@simplewebauthn/server';
 import type { Response } from 'express';
 import { BeginLoginUseCase } from 'src/auth/application/begin-login.use-case';
@@ -30,9 +21,10 @@ import {
   SESSION_TTL_MS,
 } from 'src/session/domain/session';
 import { Cookie } from 'src/shared/http/cookie';
+import { Route } from 'src/shared/http/route.decorator';
 import { ZodValidationPipe } from 'src/shared/http/zod-validation.pipe';
 
-@Controller('auth')
+@Controller()
 export class AuthController {
   constructor(
     private readonly beginRegistration: BeginRegistrationUseCase,
@@ -43,19 +35,17 @@ export class AuthController {
     private readonly doMe: MeUseCase,
   ) {}
 
-  @Post('register/begin')
-  @HttpCode(200)
+  @Route(authApi.registerBegin)
   registerBegin(
-    @Body(new ZodValidationPipe(beginRegistrationRequestSchema))
+    @Body(new ZodValidationPipe(authApi.registerBegin.body))
     body: BeginRegistrationRequest,
   ): Promise<BeginRegistrationResponse> {
     return this.beginRegistration.execute({ inviteToken: body.inviteToken });
   }
 
-  @Post('register/complete')
-  @HttpCode(204)
+  @Route(authApi.registerComplete)
   registerComplete(
-    @Body(new ZodValidationPipe(completeRegistrationRequestSchema))
+    @Body(new ZodValidationPipe(authApi.registerComplete.body))
     body: CompleteRegistrationRequest,
   ): Promise<void> {
     return this.completeRegistration.execute({
@@ -64,16 +54,14 @@ export class AuthController {
     });
   }
 
-  @Post('login/begin')
-  @HttpCode(200)
+  @Route(authApi.loginBegin)
   loginBegin(): Promise<BeginLoginResponse> {
     return this.beginLogin.execute();
   }
 
-  @Post('login/complete')
-  @HttpCode(204)
+  @Route(authApi.loginComplete)
   async loginComplete(
-    @Body(new ZodValidationPipe(completeLoginRequestSchema))
+    @Body(new ZodValidationPipe(authApi.loginComplete.body))
     body: CompleteLoginRequest,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
@@ -91,8 +79,7 @@ export class AuthController {
     });
   }
 
-  @Post('logout')
-  @HttpCode(204)
+  @Route(authApi.logout)
   async logout(
     @Cookie(SESSION_COOKIE_NAME) token: string | undefined,
     @Res({ passthrough: true }) res: Response,
@@ -101,8 +88,7 @@ export class AuthController {
     res.clearCookie(SESSION_COOKIE_NAME, { path: '/' });
   }
 
-  @Post('me')
-  @HttpCode(200)
+  @Route(authApi.me)
   async me(
     @Cookie(SESSION_COOKIE_NAME) token: string | undefined,
   ): Promise<MeResponse> {

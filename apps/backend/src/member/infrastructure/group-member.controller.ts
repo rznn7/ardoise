@@ -1,23 +1,18 @@
-import { type GroupMember } from '@ardoise/shared';
-import {
-  Controller,
-  Get,
-  Param,
-  ParseIntPipe,
-  UseGuards,
-} from '@nestjs/common';
+import { type GroupMember, memberApi } from '@ardoise/shared';
+import { Controller, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { ListGroupMembersUseCase } from 'src/member/application/list-group-members.use-case';
 import { toGroupMember } from 'src/member/infrastructure/member.mapper';
 import { SessionGuard } from 'src/session/infrastructure/session.guard';
 import { CurrentUser } from 'src/shared/http/current-user.decorator';
 import { type SessionUser } from 'src/shared/http/express';
+import { Route } from 'src/shared/http/route.decorator';
 
-@Controller('expense-groups/:groupId/members')
+@Controller()
 @UseGuards(SessionGuard)
 export class GroupMemberController {
   constructor(private readonly listGroupMembers: ListGroupMembersUseCase) {}
 
-  @Get()
+  @Route(memberApi.listByGroup)
   async list(
     @Param('groupId', ParseIntPipe) groupId: number,
     @CurrentUser() user: SessionUser,

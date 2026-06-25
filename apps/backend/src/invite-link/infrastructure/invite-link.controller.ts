@@ -1,19 +1,20 @@
 import {
   type ConsumeInviteLinkRequest,
-  consumeInviteLinkRequestSchema,
   type ConsumeInviteLinkResponse,
   type CreateInviteLinkRequest,
-  createInviteLinkRequestSchema,
+  type CreateInviteLinkResponse,
+  inviteLinkApi,
 } from '@ardoise/shared';
-import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, UseGuards } from '@nestjs/common';
 import { ConsumeInviteLinkUseCase } from 'src/invite-link/application/consume-invite-link.use-case';
 import { CreateInviteLinkUseCase } from 'src/invite-link/application/create-invite-link.use-case';
 import { SessionGuard } from 'src/session/infrastructure/session.guard';
 import { CurrentUser } from 'src/shared/http/current-user.decorator';
 import { type SessionUser } from 'src/shared/http/express';
+import { Route } from 'src/shared/http/route.decorator';
 import { ZodValidationPipe } from 'src/shared/http/zod-validation.pipe';
 
-@Controller('invite-link')
+@Controller()
 @UseGuards(SessionGuard)
 export class InviteLinkController {
   constructor(
@@ -21,19 +22,18 @@ export class InviteLinkController {
     private readonly consumeInviteLink: ConsumeInviteLinkUseCase,
   ) {}
 
-  @Post()
+  @Route(inviteLinkApi.create)
   async create(
-    @Body(new ZodValidationPipe(createInviteLinkRequestSchema))
+    @Body(new ZodValidationPipe(inviteLinkApi.create.body))
     body: CreateInviteLinkRequest,
-  ) {
+  ): Promise<CreateInviteLinkResponse> {
     const token = await this.createInviteLink.execute(body);
     return { token };
   }
 
-  @Post('consume')
-  @HttpCode(200)
+  @Route(inviteLinkApi.consume)
   async consume(
-    @Body(new ZodValidationPipe(consumeInviteLinkRequestSchema))
+    @Body(new ZodValidationPipe(inviteLinkApi.consume.body))
     body: ConsumeInviteLinkRequest,
     @CurrentUser() user: SessionUser,
   ): Promise<ConsumeInviteLinkResponse> {

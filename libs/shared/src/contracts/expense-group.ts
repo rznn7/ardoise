@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { type Endpoint } from './http.js';
+
 export const createExpenseGroupRequestSchema = z.object({
   name: z.string(),
   currencyCode: z.string(),
@@ -23,3 +25,22 @@ export const groupMemberSchema = z.object({
   isModerator: z.boolean(),
 });
 export type GroupMember = z.infer<typeof groupMemberSchema>;
+
+export const expenseGroupApi = {
+  listMine: {
+    method: 'GET',
+    path: '/expense-groups',
+    res: z.array(expenseGroupSummarySchema),
+  },
+  findOne: {
+    method: 'GET',
+    path: '/expense-groups/:id',
+    res: expenseGroupSummarySchema,
+  },
+  create: {
+    method: 'POST',
+    path: '/expense-groups',
+    body: createExpenseGroupRequestSchema,
+    res: expenseGroupSummarySchema,
+  },
+} as const satisfies Record<string, Endpoint>;
