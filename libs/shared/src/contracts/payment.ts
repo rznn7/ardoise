@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { type Endpoint } from './http.js';
+
 export const paymentResponseSchema = z.object({
   id: z.number(),
   payerMemberId: z.number(),
@@ -11,3 +13,11 @@ export const paymentResponseSchema = z.object({
   createdAt: z.string(),
 });
 export type PaymentResponse = z.infer<typeof paymentResponseSchema>;
+
+export const paymentApi = {
+  findOne: {
+    method: 'GET',
+    path: '/payments/:id',
+    res: paymentResponseSchema,
+  },
+} as const satisfies Record<string, Endpoint>;

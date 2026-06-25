@@ -1,15 +1,13 @@
 import {
   type CreateExpenseGroupRequest,
-  createExpenseGroupRequestSchema,
+  expenseGroupApi,
   type ExpenseGroupSummary,
 } from '@ardoise/shared';
 import {
   Body,
   Controller,
-  Get,
   Param,
   ParseIntPipe,
-  Post,
   UseGuards,
 } from '@nestjs/common';
 import { CreateExpenseGroupUseCase } from 'src/expense-group/application/create-expense-group.use-case';
@@ -19,9 +17,10 @@ import { toExpenseGroupSummary } from 'src/expense-group/infrastructure/expense-
 import { SessionGuard } from 'src/session/infrastructure/session.guard';
 import { CurrentUser } from 'src/shared/http/current-user.decorator';
 import { type SessionUser } from 'src/shared/http/express';
+import { Route } from 'src/shared/http/route.decorator';
 import { ZodValidationPipe } from 'src/shared/http/zod-validation.pipe';
 
-@Controller('expense-groups')
+@Controller()
 @UseGuards(SessionGuard)
 export class ExpenseGroupController {
   constructor(
@@ -30,7 +29,7 @@ export class ExpenseGroupController {
     private readonly listMyExpenseGroups: ListMyExpenseGroupsUseCase,
   ) {}
 
-  @Get()
+  @Route(expenseGroupApi.listMine)
   async findMine(
     @CurrentUser() user: SessionUser,
   ): Promise<ExpenseGroupSummary[]> {
@@ -38,7 +37,7 @@ export class ExpenseGroupController {
     return groups.map(toExpenseGroupSummary);
   }
 
-  @Get(':id')
+  @Route(expenseGroupApi.findOne)
   async findOne(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: SessionUser,
@@ -50,11 +49,12 @@ export class ExpenseGroupController {
     return toExpenseGroupSummary(group);
   }
 
-  @Post()
-  create(
-    @Body(new ZodValidationPipe(createExpenseGroupRequestSchema))
+  @Route(expenseGroupApi.create)
+  async create(
+    @Body(new ZodValidationPipe(expenseGroupApi.create.body))
     body: CreateExpenseGroupRequest,
-  ) {
-    return this.createExpenseGroup.execute(body);
+  ): Promise<ExpenseGroupSummary> {
+    const group = await this.createExpenseGroup.execute(body);
+    return toExpenseGroupSummary(group);
   }
 }

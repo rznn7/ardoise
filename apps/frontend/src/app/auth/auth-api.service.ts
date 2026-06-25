@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import {
+  authApi,
   type BeginLoginResponse,
   type BeginRegistrationRequest,
   type BeginRegistrationResponse,
@@ -9,34 +10,37 @@ import {
   type MeResponse,
 } from '@ardoise/shared';
 import { type Observable } from 'rxjs';
-
-const AUTH_ENDPOINT = '/api/auth';
+import { createApiClient } from 'src/app/shared/api-client';
+import { API_BASE_URL } from 'src/app/shared/api-config';
 
 @Injectable({ providedIn: 'root' })
 export class AuthApiService {
-  private readonly http = inject(HttpClient);
+  private readonly api = createApiClient(authApi, {
+    http: inject(HttpClient),
+    baseUrl: inject(API_BASE_URL),
+  });
 
   registerBegin(body: BeginRegistrationRequest): Observable<BeginRegistrationResponse> {
-    return this.http.post<BeginRegistrationResponse>(`${AUTH_ENDPOINT}/register/begin`, body);
+    return this.api.registerBegin({ body });
   }
 
   registerComplete(body: CompleteRegistrationRequest): Observable<void> {
-    return this.http.post<void>(`${AUTH_ENDPOINT}/register/complete`, body);
+    return this.api.registerComplete({ body });
   }
 
   loginBegin(): Observable<BeginLoginResponse> {
-    return this.http.post<BeginLoginResponse>(`${AUTH_ENDPOINT}/login/begin`, {});
+    return this.api.loginBegin();
   }
 
   loginComplete(body: CompleteLoginRequest): Observable<void> {
-    return this.http.post<void>(`${AUTH_ENDPOINT}/login/complete`, body);
+    return this.api.loginComplete({ body });
   }
 
   logout(): Observable<void> {
-    return this.http.post<void>(`${AUTH_ENDPOINT}/logout`, {});
+    return this.api.logout();
   }
 
   me(): Observable<MeResponse> {
-    return this.http.post<MeResponse>(`${AUTH_ENDPOINT}/me`, {});
+    return this.api.me();
   }
 }
