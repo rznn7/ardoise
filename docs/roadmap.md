@@ -13,10 +13,16 @@ Without a join flow the app is unusable.
   link consumed, single transaction.
 - [x] **group/member read endpoints (backend)** — `expense-group` list-mine and `member`
   list-by-group, with their contracts and guards.
-- [ ] **mobile shell (frontend)** — `MobileShell` layout reused by all screens: `100dvh`,
+- [x] **mobile shell (frontend)** — `MobileShell` layout reused by all screens: `100dvh`,
   `env(safe-area-inset-*)` padding, centered `max-w-[420px]` column, sticky header slot, FAB
   slot, optional bottom-tab slot (unused at root). Adds slate `--primary`/`--ring` and
   `--balance-positive/negative` tokens. Target canvas 393×852.
+- [x] **multi-use invite consume (backend)** — make the `singleUse` flag functional: a
+  multi-use link admits many users until `expiresAt` (relying on the existing already-member
+  idempotency), while single-use links still burn after first consume. Folds in a rename of the
+  spent-marker columns `consumed*` → `burned*` (+ migration) to resolve the consume-action /
+  consumed-column collision. Closes the documented gap in `001-invite-link-consume-backend.md`
+  non-goals. See `design-docs/004-multi-use-invite-consume-backend.md`.
 - [ ] **group create + list (frontend)** — home: header + group rows (name, member count,
   reserved balance-badge slot) + empty state + FAB → create bottom sheet → flips to
   invite-link copy/share.

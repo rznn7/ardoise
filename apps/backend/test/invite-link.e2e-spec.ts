@@ -88,13 +88,13 @@ describe('InviteLink', () => {
           token: string;
           group_id: number;
           single_use: boolean;
-          consumed_at: Date | null;
+          burned_at: Date | null;
         }>(`SELECT * FROM invite_link WHERE token = $1`, [body.token])
       ).rows[0]!;
       expect(inviteRow).toMatchObject({
         group_id: groupId,
         single_use: true,
-        consumed_at: null,
+        burned_at: null,
       });
     });
   });
@@ -131,12 +131,12 @@ describe('InviteLink', () => {
 
       const inviteRow = (
         await pgClient.query<{
-          consumed_by_user_id: number | null;
-          consumed_at: Date | null;
+          burned_by_user_id: number | null;
+          burned_at: Date | null;
         }>(`SELECT * FROM invite_link WHERE token = $1`, ['usable-token'])
       ).rows[0]!;
-      expect(inviteRow.consumed_by_user_id).toBe(userId);
-      expect(inviteRow.consumed_at).not.toBeNull();
+      expect(inviteRow.burned_by_user_id).toBe(userId);
+      expect(inviteRow.burned_at).not.toBeNull();
     });
 
     it('is idempotent when the user is already a member', async () => {
@@ -170,12 +170,12 @@ describe('InviteLink', () => {
       expect(memberRows).toHaveLength(1);
 
       const inviteRow = (
-        await pgClient.query<{ consumed_at: Date | null }>(
+        await pgClient.query<{ burned_at: Date | null }>(
           `SELECT * FROM invite_link WHERE token = $1`,
           ['usable-token'],
         )
       ).rows[0]!;
-      expect(inviteRow.consumed_at).toBeNull();
+      expect(inviteRow.burned_at).toBeNull();
     });
 
     it('concurrent double-consume creates exactly one member', async () => {
@@ -226,7 +226,7 @@ describe('InviteLink', () => {
         groupId,
         token: 'consumed-token',
         expiresInDays: 1,
-        consumedByUserId: otherUserId,
+        burnedByUserId: otherUserId,
       });
 
       const post = (token: string) =>
@@ -284,6 +284,110 @@ describe('InviteLink', () => {
         400,
       );
       expect(isDiscriminator(extra.body)).toBe(false);
+    });
+
+    it('admits multiple distinct users to a multi-use link', async () => {
+      const { id: groupId } = await seedGroup(pgClient);
+      const { id: userAId } = await seedUser(pgClient, { name: 'alice' });
+      await seedSession(pgClient, { userId: userAId, token: 'session-a' });
+      const { id: userBId } = await seedUser(pgClient, { name: 'bob' });
+      await seedSession(pgClient, { userId: userBId, token: 'session-b' });
+      await seedInviteLink(pgClient, {
+        groupId,
+        token: 'multi-use-token',
+        singleUse: false,
+        expiresInDays: 1,
+      });
+
+      const consume = (sessionToken: string) =>
+        request(app.getHttpServer())
+          .post('/invite-link/consume')
+          .set('Cookie', `session_token=${sessionToken}`)
+          .send({ token: 'multi-use-token' });
+
+      const first = await consume('session-a').expect(200);
+      expect(first.body).toEqual({ groupId, alreadyMember: false });
+
+      const second = await consume('session-b').expect(200);
+      expect(second.body).toEqual({ groupId, alreadyMember: false });
+
+      const memberRows = (
+        await pgClient.query(`SELECT * FROM member WHERE group_id = $1`, [
+          groupId,
+        ])
+      ).rows;
+      expect(memberRows).toHaveLength(2);
+
+      const inviteRow = (
+        await pgClient.query<{
+          burned_at: Date | null;
+          burned_by_user_id: number | null;
+        }>(`SELECT * FROM invite_link WHERE token = $1`, ['multi-use-token'])
+      ).rows[0]!;
+      expect(inviteRow.burned_at).toBeNull();
+      expect(inviteRow.burned_by_user_id).toBeNull();
+    });
+
+    it('rejects an expired multi-use link with INVITE_EXPIRED', async () => {
+      const { id: userId } = await seedUser(pgClient);
+      await seedSession(pgClient, { userId, token: 'valid-session-token' });
+      const { id: groupId } = await seedGroup(pgClient);
+      await seedInviteLink(pgClient, {
+        groupId,
+        token: 'expired-multi-use-token',
+        singleUse: false,
+        expiresInDays: -1,
+      });
+
+      const response = await request(app.getHttpServer())
+        .post('/invite-link/consume')
+        .set('Cookie', `session_token=valid-session-token`)
+        .send({ token: 'expired-multi-use-token' })
+        .expect(400);
+
+      expect(response.body).toEqual({ error: 'INVITE_EXPIRED' });
+    });
+
+    it('burns a single-use link after the first consume', async () => {
+      const { id: groupId } = await seedGroup(pgClient);
+      const { id: userAId } = await seedUser(pgClient, { name: 'alice' });
+      await seedSession(pgClient, { userId: userAId, token: 'session-a' });
+      const { id: userBId } = await seedUser(pgClient, { name: 'bob' });
+      await seedSession(pgClient, { userId: userBId, token: 'session-b' });
+      await seedInviteLink(pgClient, {
+        groupId,
+        token: 'single-use-token',
+        singleUse: true,
+        expiresInDays: 1,
+      });
+
+      const consume = (sessionToken: string) =>
+        request(app.getHttpServer())
+          .post('/invite-link/consume')
+          .set('Cookie', `session_token=${sessionToken}`)
+          .send({ token: 'single-use-token' });
+
+      const first = await consume('session-a').expect(200);
+      expect(first.body).toEqual({ groupId, alreadyMember: false });
+
+      const burnedRow = (
+        await pgClient.query<{
+          burned_at: Date | null;
+          burned_by_user_id: number | null;
+        }>(`SELECT * FROM invite_link WHERE token = $1`, ['single-use-token'])
+      ).rows[0]!;
+      expect(burnedRow.burned_at).not.toBeNull();
+      expect(burnedRow.burned_by_user_id).toBe(userAId);
+
+      const second = await consume('session-b').expect(400);
+      expect(second.body).toEqual({ error: 'INVITE_CONSUMED' });
+
+      const memberRows = (
+        await pgClient.query(`SELECT * FROM member WHERE group_id = $1`, [
+          groupId,
+        ])
+      ).rows;
+      expect(memberRows).toHaveLength(1);
     });
   });
 });

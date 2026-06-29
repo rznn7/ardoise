@@ -22,7 +22,7 @@ export const consumeInviteLink = async (
 
   const now = new Date();
   if (link.expiresAt < now) throw new InviteLinkExpired();
-  if (link.consumedAt !== null) throw new InviteLinkConsumed();
+  if (link.singleUse && link.burnedAt !== null) throw new InviteLinkConsumed();
 
   const created = await deps.members.create({
     userId: input.userId,
@@ -30,7 +30,9 @@ export const consumeInviteLink = async (
   });
   if (created === null) return { groupId: link.groupId, alreadyMember: true };
 
-  await deps.inviteLinks.markConsumed(link.id, input.userId);
+  if (link.singleUse) {
+    await deps.inviteLinks.markBurned(link.id, input.userId);
+  }
 
   return { groupId: link.groupId, alreadyMember: false };
 };

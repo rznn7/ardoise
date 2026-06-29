@@ -3,9 +3,9 @@ export type InviteLink = {
   readonly groupId: number;
   readonly token: string;
   readonly singleUse: boolean;
-  readonly consumedByUserId: number | null;
+  readonly burnedByUserId: number | null;
   readonly expiresAt: Date;
-  readonly consumedAt: Date | null;
+  readonly burnedAt: Date | null;
   readonly createdAt: Date;
 };
 

@@ -16,7 +16,7 @@ export class InviteLinkRepositoryDrizzle implements InviteLinkRepository {
 
   async findUsableByToken(token: string): Promise<InviteLink | null> {
     const row = await this.database.query.inviteLink.findFirst({
-      where: and(eq(inviteLink.token, token), this.isConsumable()),
+      where: and(eq(inviteLink.token, token), this.isUsable()),
     });
 
     return row ? this.toDomain(row) : null;
@@ -30,14 +30,14 @@ export class InviteLinkRepositoryDrizzle implements InviteLinkRepository {
     return row ? this.toDomain(row) : null;
   }
 
-  async markConsumed(id: number, userId: number): Promise<void> {
+  async markBurned(id: number, userId: number): Promise<void> {
     await this.database
       .update(inviteLink)
       .set({
-        consumedByUserId: userId,
-        consumedAt: new Date(),
+        burnedByUserId: userId,
+        burnedAt: new Date(),
       })
-      .where(and(eq(inviteLink.id, id), this.isConsumable()));
+      .where(and(eq(inviteLink.id, id), this.isUsable()));
   }
 
   async create(input: {
@@ -63,17 +63,17 @@ export class InviteLinkRepositoryDrizzle implements InviteLinkRepository {
       groupId: row.groupId,
       token: row.token,
       singleUse: row.singleUse,
-      consumedByUserId: row.consumedByUserId,
+      burnedByUserId: row.burnedByUserId,
       expiresAt: row.expiresAt,
-      consumedAt: row.consumedAt,
+      burnedAt: row.burnedAt,
       createdAt: row.createdAt,
     };
   }
 
-  private isConsumable() {
+  private isUsable() {
     return and(
-      isNull(inviteLink.consumedAt),
-      isNull(inviteLink.consumedByUserId),
+      isNull(inviteLink.burnedAt),
+      isNull(inviteLink.burnedByUserId),
       gt(inviteLink.expiresAt, new Date()),
     );
   }
