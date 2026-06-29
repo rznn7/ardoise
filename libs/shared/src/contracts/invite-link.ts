@@ -2,11 +2,13 @@ import { z } from 'zod';
 
 import { type Endpoint } from './http.js';
 
-export const createInviteLinkRequestSchema = z.object({
-  groupId: z.number(),
-  expiresAt: z.iso.datetime().transform((s) => new Date(s)),
-  singleUse: z.boolean(),
-});
+export const createInviteLinkRequestSchema = z
+  .object({
+    groupId: z.number(),
+    expiresAt: z.iso.datetime().transform((s) => new Date(s)),
+    singleUse: z.boolean(),
+  })
+  .strict();
 export type CreateInviteLinkRequest = z.infer<
   typeof createInviteLinkRequestSchema
 >;

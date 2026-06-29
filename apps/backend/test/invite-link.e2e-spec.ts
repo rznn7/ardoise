@@ -61,11 +61,12 @@ describe('InviteLink', () => {
         .expect(401);
     });
 
-    it('creates an invite link for a valid session', async () => {
-      // GIVEN
+    it('creates an invite link for a moderator of the group', async () => {
+      // GIVEN a user who is a moderator of the target group.
       const { id: userId } = await seedUser(pgClient);
       await seedSession(pgClient, { userId, token: 'valid-session-token' });
       const { id: groupId } = await seedGroup(pgClient);
+      await seedMember(pgClient, { userId, groupId, isModerator: true });
 
       // WHEN
       const response = await request(app.getHttpServer())
@@ -96,6 +97,94 @@ describe('InviteLink', () => {
         single_use: true,
         burned_at: null,
       });
+    });
+
+    it('forbids a non-member from minting a link for a group (IDOR)', async () => {
+      // GIVEN an authenticated user who is NOT a member of the target group.
+      const { id: userId } = await seedUser(pgClient);
+      await seedSession(pgClient, { userId, token: 'valid-session-token' });
+      const { id: groupId } = await seedGroup(pgClient);
+
+      // WHEN they try to mint a link by guessing the group id.
+      const response = await request(app.getHttpServer())
+        .post('/invite-link')
+        .set('Cookie', `session_token=valid-session-token`)
+        .send({
+          groupId,
+          expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+          singleUse: true,
+        })
+        .expect(403);
+
+      // THEN it is rejected and no link is created.
+      expect(response.body).toEqual({ error: 'NOT_A_MEMBER' });
+      const inviteRows = (
+        await pgClient.query(`SELECT * FROM invite_link WHERE group_id = $1`, [
+          groupId,
+        ])
+      ).rows;
+      expect(inviteRows).toHaveLength(0);
+    });
+
+    it('forbids a non-moderator member from minting a link', async () => {
+      // GIVEN a plain (non-moderator) member of the group.
+      const { id: userId } = await seedUser(pgClient);
+      await seedSession(pgClient, { userId, token: 'valid-session-token' });
+      const { id: groupId } = await seedGroup(pgClient);
+      await seedMember(pgClient, { userId, groupId, isModerator: false });
+
+      // WHEN / THEN
+      const response = await request(app.getHttpServer())
+        .post('/invite-link')
+        .set('Cookie', `session_token=valid-session-token`)
+        .send({
+          groupId,
+          expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+          singleUse: true,
+        })
+        .expect(403);
+      expect(response.body).toEqual({ error: 'NOT_A_MEMBER' });
+    });
+
+    it('forbids minting a link for a non-existent group (enumeration leaks nothing)', async () => {
+      // GIVEN an authenticated user and no such group.
+      const { id: userId } = await seedUser(pgClient);
+      await seedSession(pgClient, { userId, token: 'valid-session-token' });
+
+      // WHEN / THEN a guessed id yields the same 403 as a real-but-foreign group.
+      const response = await request(app.getHttpServer())
+        .post('/invite-link')
+        .set('Cookie', `session_token=valid-session-token`)
+        .send({
+          groupId: 999,
+          expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+          singleUse: true,
+        })
+        .expect(403);
+      expect(response.body).toEqual({ error: 'NOT_A_MEMBER' });
+    });
+
+    it('rejects a body with unexpected extra fields (.strict())', async () => {
+      // GIVEN a moderator so validation (not auth) is what rejects the body.
+      const { id: userId } = await seedUser(pgClient);
+      await seedSession(pgClient, { userId, token: 'valid-session-token' });
+      const { id: groupId } = await seedGroup(pgClient);
+      await seedMember(pgClient, { userId, groupId, isModerator: true });
+
+      // WHEN an extra field is smuggled in.
+      const response = await request(app.getHttpServer())
+        .post('/invite-link')
+        .set('Cookie', `session_token=valid-session-token`)
+        .send({
+          groupId,
+          expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+          singleUse: true,
+          userId: 999,
+        })
+        .expect(400);
+
+      // THEN it is a validation 400, not a domain discriminator.
+      expect(response.body).not.toEqual({ error: 'NOT_A_MEMBER' });
     });
   });
 

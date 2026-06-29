@@ -26,8 +26,12 @@ export class InviteLinkController {
   async create(
     @Body(new ZodValidationPipe(inviteLinkApi.create.body))
     body: CreateInviteLinkRequest,
+    @CurrentUser() user: SessionUser,
   ): Promise<CreateInviteLinkResponse> {
-    const token = await this.createInviteLink.execute(body);
+    const token = await this.createInviteLink.execute({
+      ...body,
+      userId: user.id,
+    });
     return { token };
   }
 
