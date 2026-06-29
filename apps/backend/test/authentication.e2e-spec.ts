@@ -100,14 +100,12 @@ describe('Authentication', () => {
       });
 
       const consumedInvite = (
-        await pgClient.query<{ consumed_at: string }>(
-          `SELECT * FROM invite_link`,
-        )
+        await pgClient.query<{ burned_at: string }>(`SELECT * FROM invite_link`)
       ).rows[0]!;
       expect(consumedInvite).toMatchObject({
-        consumed_by_user_id: createdUser.id,
+        burned_by_user_id: createdUser.id,
       });
-      expect(consumedInvite.consumed_at).not.toBeNull();
+      expect(consumedInvite.burned_at).not.toBeNull();
     });
 
     it('rejects an invalid invite token', async () => {
@@ -154,7 +152,7 @@ describe('Authentication', () => {
       await seedInviteLink(pgClient, {
         groupId,
         token: 'consumed-token',
-        consumedByUserId: userId,
+        burnedByUserId: userId,
       });
 
       // WHEN / THEN

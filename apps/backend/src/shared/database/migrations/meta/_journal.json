@@ -36,6 +36,13 @@
       "when": 1780158152764,
       "tag": "0004_gifted_synch",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782753303852,
+      "tag": "0005_mean_tinkerer",
+      "breakpoints": true
     }
   ]
 }

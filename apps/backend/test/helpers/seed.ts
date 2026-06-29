@@ -81,7 +81,7 @@ export async function seedInviteLink(
     token?: string;
     singleUse?: boolean;
     expiresInDays?: number;
-    consumedByUserId?: number;
+    burnedByUserId?: number;
   },
 ): Promise<{ id: number; token: string }> {
   const {
@@ -89,21 +89,15 @@ export async function seedInviteLink(
     token = randomUUID(),
     singleUse = true,
     expiresInDays = 7,
-    consumedByUserId,
+    burnedByUserId,
   } = opts;
 
-  const consumed = consumedByUserId !== undefined;
+  const burned = burnedByUserId !== undefined;
   const { rows } = await client.query<{ id: number }>(
-    `INSERT INTO invite_link (group_id, token, single_use, expires_at, consumed_by_user_id, consumed_at)
-     VALUES ($1, $2, $3, NOW() + ($4 || ' days')::interval, $5, ${consumed ? 'NOW()' : 'NULL'})
+    `INSERT INTO invite_link (group_id, token, single_use, expires_at, burned_by_user_id, burned_at)
+     VALUES ($1, $2, $3, NOW() + ($4 || ' days')::interval, $5, ${burned ? 'NOW()' : 'NULL'})
      RETURNING id`,
-    [
-      groupId,
-      token,
-      singleUse,
-      String(expiresInDays),
-      consumedByUserId ?? null,
-    ],
+    [groupId, token, singleUse, String(expiresInDays), burnedByUserId ?? null],
   );
   return { id: rows[0]!.id, token };
 }

@@ -55,8 +55,8 @@ export const inviteLink = pgTable('invite_link', {
     .notNull(),
   token: varchar({ length: 64 }).unique().notNull(),
   singleUse: boolean().notNull().default(true),
-  consumedByUserId: integer().references(() => users.id),
-  consumedAt: timestamp({ withTimezone: true }),
+  burnedByUserId: integer().references(() => users.id),
+  burnedAt: timestamp({ withTimezone: true }),
   expiresAt: timestamp({ withTimezone: true }).notNull(),
   ...timestamps,
 });
