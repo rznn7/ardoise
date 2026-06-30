@@ -1,0 +1,75 @@
+@let sheet = state();
+<div hlmSheetHeader>
+  @if (sheet.step === 'invite') {
+    <h3 hlmSheetTitle>Group created</h3>
+  } @else {
+    <h3 hlmSheetTitle>Create a group</h3>
+  }
+</div>
+<form class="flex flex-col gap-4 p-4">
+  @if (sheet.step === 'invite') {
+    @if (sheet.status === 'error') {
+      <p class="text-destructive text-sm">
+        Group created, but we couldn't generate an invite link. Try again.
+      </p>
+      <button hlmBtn type="button" variant="outline" (click)="retryInvite()">Retry link</button>
+    } @else {
+      <div class="flex flex-col gap-1.5">
+        <label for="invite-link" class="text-sm font-medium">Invite link</label>
+        <input
+          id="invite-link"
+          class="rounded-md border border-border px-3 py-2"
+          readonly
+          [value]="sheet.url ?? ''"
+        />
+      </div>
+      <button hlmBtn type="button" (click)="copyLink()">
+        <ng-icon hlm size="sm" [name]="copied() ? 'lucideCheck' : 'lucideCopy'" />
+        <span [attr.role]="copied() ? 'status' : null">{{ copied() ? 'Copied' : 'Copy' }}</span>
+      </button>
+      <button hlmBtn type="button" variant="outline" (click)="shareLink()">Share</button>
+      @if (sharedViaCopy()) {
+        <p role="status" aria-live="polite" class="text-muted-foreground text-sm">
+          Link copied — paste it to share
+        </p>
+      }
+      <button hlmBtn type="button" (click)="done()">Done</button>
+    }
+  } @else {
+    <div class="flex flex-col gap-1.5">
+      <label for="group-name" class="text-sm font-medium">Group name</label>
+      <input
+        #nameInput
+        id="group-name"
+        class="rounded-md border border-border px-3 py-2"
+        [value]="name()"
+        (input)="name.set(nameInput.value)"
+      />
+    </div>
+    <div class="flex flex-col gap-1.5">
+      <label for="currency" class="text-sm font-medium">Currency</label>
+      <select
+        #currencySelect
+        id="currency"
+        class="rounded-md border border-border px-3 py-2"
+        (change)="currencyCode.set(currencySelect.value)"
+      >
+        <option value="EUR">EUR</option>
+        <option value="USD">USD</option>
+        <option value="GBP">GBP</option>
+        <option value="CHF">CHF</option>
+      </select>
+    </div>
+    <button hlmBtn type="button" [disabled]="name().trim().length === 0" (click)="create()">
+      Create
+    </button>
+    @if (sheet.status === 'error') {
+      <div class="flex flex-col gap-2">
+        <p class="text-destructive text-sm">
+          Couldn't create the group. Your details are saved — try again.
+        </p>
+        <button hlmBtn type="button" variant="outline" (click)="create()">Retry</button>
+      </div>
+    }
+  }
+</form>

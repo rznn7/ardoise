@@ -16,12 +16,27 @@
     "module": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@spartan-ng/helm/button": ["./libs/ui/button/src/index.ts"],
-      "@spartan-ng/helm/utils": ["./libs/ui/utils/src/index.ts"],
-      "@spartan-ng/helm/spinner": ["./libs/ui/spinner/src/index.ts"],
-      "@spartan-ng/helm/icon": ["./libs/ui/icon/src/index.ts"],
-      "@spartan-ng/helm/card": ["./libs/ui/card/src/index.ts"],
-      "@spartan-ng/helm/alert": ["./libs/ui/alert/src/index.ts"]
+      "@spartan-ng/helm/button": [
+        "./libs/ui/button/src/index.ts"
+      ],
+      "@spartan-ng/helm/utils": [
+        "./libs/ui/utils/src/index.ts"
+      ],
+      "@spartan-ng/helm/spinner": [
+        "./libs/ui/spinner/src/index.ts"
+      ],
+      "@spartan-ng/helm/icon": [
+        "./libs/ui/icon/src/index.ts"
+      ],
+      "@spartan-ng/helm/card": [
+        "./libs/ui/card/src/index.ts"
+      ],
+      "@spartan-ng/helm/alert": [
+        "./libs/ui/alert/src/index.ts"
+      ],
+      "@spartan-ng/helm/sheet": [
+        "./libs/ui/sheet/src/index.ts"
+      ]
     }
   },
   "angularCompilerOptions": {

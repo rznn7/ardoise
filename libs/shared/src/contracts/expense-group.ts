@@ -2,10 +2,12 @@ import { z } from 'zod';
 
 import { type Endpoint } from './http.js';
 
-export const createExpenseGroupRequestSchema = z.object({
-  name: z.string(),
-  currencyCode: z.string(),
-});
+export const createExpenseGroupRequestSchema = z
+  .object({
+    name: z.string().min(1).max(100),
+    currencyCode: z.string(),
+  })
+  .strict();
 export type CreateExpenseGroupRequest = z.infer<
   typeof createExpenseGroupRequestSchema
 >;
