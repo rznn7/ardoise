@@ -23,7 +23,7 @@ Without a join flow the app is unusable.
   spent-marker columns `consumed*` → `burned*` (+ migration) to resolve the consume-action /
   consumed-column collision. Closes the documented gap in `001-invite-link-consume-backend.md`
   non-goals. See `design-docs/004-multi-use-invite-consume-backend.md`.
-- [ ] **group create + list (frontend)** — home: header + group rows (name, member count,
+- [x] **group create + list (frontend)** — home: header + group rows (name, member count,
   reserved balance-badge slot) + empty state + FAB → create bottom sheet → flips to
   invite-link copy/share.
 - [ ] **accept-invite page (frontend)** — landing for an invite token: group-context header,
