@@ -56,6 +56,14 @@ module.exports = defineConfig([
         { prefer: 'type-imports', fixStyle: 'inline-type-imports' },
       ],
       '@typescript-eslint/no-invalid-void-type': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
       '@typescript-eslint/no-extraneous-class': [
         'error',
         { allowWithDecorator: true },
@@ -82,6 +90,7 @@ module.exports = defineConfig([
     files: ['src/**/*.spec.ts'],
     rules: {
       '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
     },
   },
   {

@@ -53,8 +53,12 @@ export class ExpenseGroupController {
   async create(
     @Body(new ZodValidationPipe(expenseGroupApi.create.body))
     body: CreateExpenseGroupRequest,
+    @CurrentUser() user: SessionUser,
   ): Promise<ExpenseGroupSummary> {
-    const group = await this.createExpenseGroup.execute(body);
+    const group = await this.createExpenseGroup.execute({
+      ...body,
+      userId: user.id,
+    });
     return toExpenseGroupSummary(group);
   }
 }

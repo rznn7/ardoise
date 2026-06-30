@@ -1,2 +1,63 @@
-<p>home works!</p>
-<button (click)="logout()">Logout</button>
+<hlm-sheet #sheet="hlmSheet">
+  <app-mobile-shell>
+    @switch (state().status) {
+      @case ('loading') {
+        <div class="grid min-h-full place-items-center p-6">
+          <hlm-spinner />
+        </div>
+      }
+      @case ('error') {
+        <div class="grid min-h-full place-items-center p-6 text-center">
+          <div class="flex flex-col items-center gap-3">
+            <div class="flex flex-col gap-1">
+              <h2 class="text-lg font-semibold">Couldn't load your groups</h2>
+              <p class="text-muted-foreground text-sm">Check your connection and try again.</p>
+            </div>
+            <button hlmBtn variant="outline" (click)="retry()">Retry</button>
+          </div>
+        </div>
+      }
+      @case ('loaded') {
+        @if (groups().length === 0) {
+          <div class="grid min-h-full place-items-center p-6 text-center">
+            <div class="flex flex-col items-center gap-3">
+              <div class="flex flex-col gap-1">
+                <h2 class="text-lg font-semibold">No groups yet</h2>
+                <p class="text-muted-foreground text-sm">
+                  Create a group to start splitting expenses with friends.
+                </p>
+              </div>
+              <button hlmBtn hlmSheetTrigger>Create your first group</button>
+            </div>
+          </div>
+        } @else {
+          <ul class="flex flex-col divide-y divide-border">
+            @for (group of groups(); track group.id) {
+              <li class="flex items-center justify-between px-4 py-3">
+                <span>{{ group.name }}</span>
+                <span data-testid="balance-slot"></span>
+              </li>
+            }
+          </ul>
+        }
+      }
+    }
+
+    <button
+      appShellFab
+      aria-label="Create a group"
+      class="rounded-full shadow-lg"
+      hlmBtn
+      hlmSheetTrigger
+      side="bottom"
+      size="icon-lg"
+      variant="secondary"
+    >
+      <span aria-hidden="true" class="text-xl leading-none">+</span>
+    </button>
+  </app-mobile-shell>
+
+  <hlm-sheet-content *brnSheetContent>
+    <app-create-group-sheet (created)="refresh()" (closed)="sheet.close()" />
+  </hlm-sheet-content>
+</hlm-sheet>

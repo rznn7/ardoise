@@ -19,6 +19,16 @@ class HeaderHost {}
 })
 class NoHeaderHost {}
 
+@Component({
+  imports: [MobileShellImports],
+  template: `
+    <app-mobile-shell>
+      <button appShellFab>Add</button>
+    </app-mobile-shell>
+  `,
+})
+class FabHost {}
+
 describe('MobileShell', () => {
   it('projects header content into a rendered header region', async () => {
     const { container } = await render(HeaderHost);
@@ -40,6 +50,16 @@ describe('MobileShell', () => {
     const main = container.querySelector('main');
     expect(main).not.toBeNull();
     expect(within(main!).getByText('Body content')).toBeTruthy();
+  });
+
+  it('projects FAB content into the FAB slot', async () => {
+    const { container } = await render(FabHost);
+
+    const fab = within(container).getByText('Add');
+    const main = container.querySelector('main');
+
+    expect(fab).not.toBeNull();
+    expect(main!.contains(fab)).toBe(false);
   });
 
   it.todo('has no accessibility violations', () => {

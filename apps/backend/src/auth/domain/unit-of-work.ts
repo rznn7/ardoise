@@ -1,3 +1,4 @@
+import { type ExpenseGroupRepository } from 'src/expense-group/domain/expense-group-repository';
 import { type InviteLinkRepository } from 'src/invite-link/domain/invite-link-repository';
 import { type MemberRepository } from 'src/member/domain/member-repository';
 import { type PasskeyRepository } from 'src/passkey/domain/passkey-repository';
@@ -12,6 +13,7 @@ export interface TransactionalRepositories {
   members: MemberRepository;
   inviteLinks: InviteLinkRepository;
   sessions: SessionRepository;
+  expenseGroups: ExpenseGroupRepository;
 }
 
 export interface UnitOfWork {

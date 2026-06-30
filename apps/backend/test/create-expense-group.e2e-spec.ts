@@ -77,5 +77,34 @@ describe('CreateExpenseGroup', () => {
         createdAt: createdAt.toISOString(),
       });
     });
+
+    it('adds the creator as a moderator member', async () => {
+      // GIVEN a valid session.
+      const { id: userId } = await seedUser(pgClient, { name: 'alice' });
+      const { token } = await seedSession(pgClient, { userId });
+
+      // WHEN the user creates a group.
+      const response = await request(app.getHttpServer())
+        .post('/expense-groups')
+        .set('Cookie', `session_token=${token}`)
+        .send({ name: 'Trip', currencyCode: 'EUR' })
+        .expect(201);
+
+      // THEN the creator is enrolled as a moderator member of it.
+      const groupId = (response.body as { id: number }).id;
+      const members = (
+        await pgClient.query<{
+          user_id: number;
+          group_id: number;
+          is_moderator: boolean;
+        }>(
+          `SELECT user_id, group_id, is_moderator FROM member WHERE group_id = $1`,
+          [groupId],
+        )
+      ).rows;
+      expect(members).toEqual([
+        { user_id: userId, group_id: groupId, is_moderator: true },
+      ]);
+    });
   });
 });
