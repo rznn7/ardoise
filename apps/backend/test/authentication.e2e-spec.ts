@@ -161,6 +161,80 @@ describe('Authentication', () => {
         .send({ inviteToken: 'consumed-token' })
         .expect(400);
     });
+
+    it('completing registration creates a session row and a usable cookie', async () => {
+      const { id: groupId } = await seedGroup(pgClient);
+      await seedInviteLink(pgClient, {
+        groupId,
+        token: 'session-registration-token',
+      });
+
+      const beginResponse = await request(app.getHttpServer())
+        .post('/auth/register/begin')
+        .send({ inviteToken: 'session-registration-token' })
+        .expect(200);
+      const { stateId } = beginResponse.body as BeginRegistrationResponse;
+
+      const completeResponse = await request(app.getHttpServer())
+        .post('/auth/register/complete')
+        .send({ stateId, attestation: {} })
+        .expect(204);
+
+      const setCookie = completeResponse.headers['set-cookie']![0]!;
+      expect(setCookie).toMatch(/session_token=/);
+
+      const tokenMatch = setCookie.match(/session_token=([^;]+)/);
+      expect(tokenMatch).not.toBeNull();
+      const token = tokenMatch![1]!;
+
+      const createdUser = (
+        await pgClient.query<{ id: number }>(`SELECT * FROM users`)
+      ).rows[0]!;
+
+      const sessionRow = (
+        await pgClient.query<object>(`SELECT * FROM session WHERE token = $1`, [
+          token,
+        ])
+      ).rows[0]!;
+      expect(sessionRow).toMatchObject({
+        user_id: createdUser.id,
+        revoked_at: null,
+      });
+    });
+
+    it('a freshly-registered user can call a guarded endpoint immediately', async () => {
+      const { id: groupId } = await seedGroup(pgClient);
+      await seedInviteLink(pgClient, {
+        groupId,
+        token: 'guarded-registration-token',
+      });
+
+      const beginResponse = await request(app.getHttpServer())
+        .post('/auth/register/begin')
+        .send({ inviteToken: 'guarded-registration-token' })
+        .expect(200);
+      const { stateId } = beginResponse.body as BeginRegistrationResponse;
+
+      const completeResponse = await request(app.getHttpServer())
+        .post('/auth/register/complete')
+        .send({ stateId, attestation: {} })
+        .expect(204);
+
+      const setCookie = completeResponse.headers['set-cookie']![0]!;
+      const cookie = setCookie.split(';')[0]!;
+
+      const { id: secondGroupId } = await seedGroup(pgClient);
+      await seedInviteLink(pgClient, {
+        groupId: secondGroupId,
+        token: 'consumable-token',
+      });
+
+      await request(app.getHttpServer())
+        .post('/invite-link/consume')
+        .set('Cookie', cookie)
+        .send({ token: 'consumable-token' })
+        .expect(200);
+    });
   });
 
   describe('login', () => {

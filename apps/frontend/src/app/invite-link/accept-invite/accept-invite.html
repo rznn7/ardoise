@@ -1,0 +1,27 @@
+@let currentState = state();
+@let currentGroupName = groupName();
+
+@if (currentState === 'invalid') {
+  <p>
+    This invite link is no longer valid — it may have expired or already been used. Ask whoever
+    invited you for a fresh link.
+  </p>
+} @else if (currentState === 'couldNotLoad') {
+  <p>Couldn't load this invite.</p>
+  <button (click)="loadPreview()">Retry</button>
+} @else if (currentGroupName) {
+  @if (currentState === 'loggedIn') {
+    <button (click)="joinLoggedIn()">Join {{ currentGroupName }}</button>
+  } @else if (currentState === 'loggedOut') {
+    <button (click)="loginThenJoin()">Log in to join {{ currentGroupName }}</button>
+    <button (click)="registerThenJoin()">New here? Join with a passkey</button>
+  } @else if (currentState === 'success') {
+    <p>You're in! — {{ currentGroupName }}</p>
+  } @else if (currentState === 'error') {
+    <p role="alert">Something went wrong joining {{ currentGroupName }}.</p>
+    <button (click)="joinLoggedIn()">Retry</button>
+  } @else if (currentState === 'cancelled') {
+    <p>Joining {{ currentGroupName }}</p>
+    <button (click)="loginThenJoin()">Passkey not completed — tap to try again</button>
+  }
+}

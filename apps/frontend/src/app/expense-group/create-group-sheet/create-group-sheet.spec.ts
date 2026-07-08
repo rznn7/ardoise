@@ -140,7 +140,7 @@ describe('CreateGroupSheet', () => {
     expect(create).toHaveBeenCalledTimes(1);
   });
 
-  it('chains the invite link from the response id and shows the join URL', async () => {
+  it('builds the share URL against /join', async () => {
     const { inviteCreate } = await setup({
       create: vi.fn<() => Observable<ExpenseGroupSummary>>().mockReturnValue(of(SUMMARY)),
       inviteCreate: vi
@@ -156,7 +156,7 @@ describe('CreateGroupSheet', () => {
     });
 
     const urlField = await screen.findByLabelText<HTMLInputElement>(/invite link/i);
-    expect(urlField.value.endsWith('/register?token=abc')).toBe(true);
+    expect(urlField.value.endsWith('/join?token=abc')).toBe(true);
   });
 
   it('copy writes the URL to the clipboard', async () => {

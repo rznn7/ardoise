@@ -479,4 +479,84 @@ describe('InviteLink', () => {
       expect(memberRows).toHaveLength(1);
     });
   });
+
+  describe('preview', () => {
+    it('returns the group name for a valid token, with no session', async () => {
+      const { id: groupId } = await seedGroup(pgClient, {
+        name: 'Trip to Lisbon',
+      });
+      await seedInviteLink(pgClient, {
+        groupId,
+        token: 'preview-token',
+        singleUse: false,
+        expiresInDays: 1,
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/invite-link/preview-token/preview')
+        .expect(200);
+
+      expect(response.body).toEqual({ groupName: 'Trip to Lisbon' });
+    });
+
+    it('rejects an unknown token', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/invite-link/bogus/preview')
+        .expect(400);
+
+      expect(response.body).toEqual({ error: 'INVITE_NOT_FOUND' });
+    });
+
+    it('rejects an expired token', async () => {
+      const { id: groupId } = await seedGroup(pgClient);
+      await seedInviteLink(pgClient, {
+        groupId,
+        token: 'expired-token',
+        expiresInDays: -1,
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/invite-link/expired-token/preview')
+        .expect(400);
+
+      expect(response.body).toEqual({ error: 'INVITE_EXPIRED' });
+    });
+
+    it('rejects a burned single-use token', async () => {
+      const { id: groupId } = await seedGroup(pgClient);
+      const { id: userId } = await seedUser(pgClient);
+      await seedInviteLink(pgClient, {
+        groupId,
+        token: 'burned-token',
+        singleUse: true,
+        burnedByUserId: userId,
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/invite-link/burned-token/preview')
+        .expect(400);
+
+      expect(response.body).toEqual({ error: 'INVITE_CONSUMED' });
+    });
+
+    it('a used multi-use token still previews', async () => {
+      const { id: groupId } = await seedGroup(pgClient, {
+        name: 'Trip to Lisbon',
+      });
+      const { id: userId } = await seedUser(pgClient);
+      await seedMember(pgClient, { userId, groupId });
+      await seedInviteLink(pgClient, {
+        groupId,
+        token: 'multi-use-preview-token',
+        singleUse: false,
+        expiresInDays: 1,
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/invite-link/multi-use-preview-token/preview')
+        .expect(200);
+
+      expect(response.body).toEqual({ groupName: 'Trip to Lisbon' });
+    });
+  });
 });

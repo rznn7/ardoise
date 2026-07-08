@@ -9,6 +9,13 @@ export type InviteLink = {
   readonly createdAt: Date;
 };
 
+export const InviteLink = {
+  isExpired: (link: InviteLink, now: Date): boolean => link.expiresAt < now,
+
+  isConsumed: (link: InviteLink): boolean =>
+    link.singleUse && link.burnedAt !== null,
+};
+
 export class InviteLinkNotFound extends Error {}
 export class InviteLinkExpired extends Error {}
 export class InviteLinkConsumed extends Error {}

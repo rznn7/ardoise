@@ -104,7 +104,7 @@ export class CreateGroupSheet {
           this.state.set({
             step: 'invite',
             status: 'idle',
-            url: `${location.origin}/register?token=${token}`,
+            url: `${location.origin}/join?token=${token}`,
           });
         },
         error: () => {

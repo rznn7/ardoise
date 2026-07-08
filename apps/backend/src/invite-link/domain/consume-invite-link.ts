@@ -1,6 +1,7 @@
 import { type MemberRepository } from 'src/member/domain/member-repository';
 
 import {
+  InviteLink,
   InviteLinkConsumed,
   InviteLinkExpired,
   InviteLinkNotFound,
@@ -21,8 +22,8 @@ export const consumeInviteLink = async (
   if (existing) return { groupId: link.groupId, alreadyMember: true };
 
   const now = new Date();
-  if (link.expiresAt < now) throw new InviteLinkExpired();
-  if (link.singleUse && link.burnedAt !== null) throw new InviteLinkConsumed();
+  if (InviteLink.isExpired(link, now)) throw new InviteLinkExpired();
+  if (InviteLink.isConsumed(link)) throw new InviteLinkConsumed();
 
   const created = await deps.members.create({
     userId: input.userId,
