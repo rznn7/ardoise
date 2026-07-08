@@ -16,15 +16,16 @@ export const routes: Routes = [
         path: 'login',
         loadComponent: () => import('./auth/login/login').then((m) => m.Login),
       },
-      {
-        path: 'register',
-        loadComponent: () => import('./auth/register/register').then((m) => m.Register),
-      },
     ],
   },
   {
     path: 'home',
     loadComponent: () => import('./home/home/home').then((m) => m.Home),
     canActivate: [authGuard],
+  },
+  {
+    path: 'join',
+    loadComponent: () =>
+      import('./invite-link/accept-invite/accept-invite').then((m) => m.AcceptInvite),
   },
 ];

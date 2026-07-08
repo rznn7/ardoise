@@ -40,6 +40,13 @@ export type ConsumeInviteLinkError = z.infer<
   typeof consumeInviteLinkErrorSchema
 >;
 
+export const previewInviteLinkResponseSchema = z.object({
+  groupName: z.string(),
+});
+export type PreviewInviteLinkResponse = z.infer<
+  typeof previewInviteLinkResponseSchema
+>;
+
 export const inviteLinkApi = {
   create: {
     method: 'POST',
@@ -53,5 +60,10 @@ export const inviteLinkApi = {
     status: 200,
     body: consumeInviteLinkRequestSchema,
     res: consumeInviteLinkResponseSchema,
+  },
+  preview: {
+    method: 'GET',
+    path: '/invite-link/:token/preview',
+    res: previewInviteLinkResponseSchema,
   },
 } as const satisfies Record<string, Endpoint>;

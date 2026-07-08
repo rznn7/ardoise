@@ -12,4 +12,6 @@ export class InviteLinkApiService {
   });
 
   create = this.api.create;
+  preview = (token: string) => this.api.preview({ params: { token } });
+  consume = (token: string) => this.api.consume({ body: { token } });
 }

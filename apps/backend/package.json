@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build": "nest build",
-    "dev": "nest start --watch",
+    "dev": "pnpm db:up && nest start --watch",
     "dev:debug": "nest start --debug --watch",
     "start": "node dist/main",
     "lint": "eslint src test",
@@ -12,7 +12,7 @@
     "test:cov": "vitest --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
     "test:e2e": "vitest --config ./vitest.config.e2e.ts",
-    "db:up": "docker compose up -d",
+    "db:up": "docker compose up -d --wait",
     "db:down": "docker compose down",
     "db:reset": "docker compose down -v",
     "db:generate": "drizzle-kit generate",

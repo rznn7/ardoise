@@ -16,12 +16,10 @@ import { CompleteLoginUseCase } from 'src/auth/application/complete-login.use-ca
 import { CompleteRegistrationUseCase } from 'src/auth/application/complete-registration.use-case';
 import { LogoutUseCase } from 'src/auth/application/logout.use-case';
 import { MeUseCase } from 'src/session/application/me.use-case';
-import {
-  SESSION_COOKIE_NAME,
-  SESSION_TTL_MS,
-} from 'src/session/domain/session';
+import { SESSION_COOKIE_NAME } from 'src/session/domain/session';
 import { Cookie } from 'src/shared/http/cookie';
 import { Route } from 'src/shared/http/route.decorator';
+import { setSessionCookie } from 'src/shared/http/session-cookie';
 import { ZodValidationPipe } from 'src/shared/http/zod-validation.pipe';
 
 @Controller()
@@ -44,14 +42,17 @@ export class AuthController {
   }
 
   @Route(authApi.registerComplete)
-  registerComplete(
+  async registerComplete(
     @Body(new ZodValidationPipe(authApi.registerComplete.body))
     body: CompleteRegistrationRequest,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
-    return this.completeRegistration.execute({
+    const { token } = await this.completeRegistration.execute({
       ...body,
       attestation: body.attestation as RegistrationResponseJSON,
     });
+
+    setSessionCookie(res, token);
   }
 
   @Route(authApi.loginBegin)
@@ -70,13 +71,7 @@ export class AuthController {
       assertion: { credentialId: body.assertion.id, raw: body.assertion },
     });
 
-    res.cookie(SESSION_COOKIE_NAME, token, {
-      httpOnly: true,
-      sameSite: 'strict',
-      path: '/',
-      secure: false, //TODO: enable secure for production environments
-      maxAge: SESSION_TTL_MS,
-    });
+    setSessionCookie(res, token);
   }
 
   @Route(authApi.logout)
