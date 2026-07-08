@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import {
   type ConsumeInviteLinkResponse,
   type MeResponse,
@@ -20,10 +20,6 @@ describe(AcceptInvite.name, () => {
     const preview = vi.fn<(token: string) => Observable<PreviewInviteLinkResponse>>();
     await render(AcceptInvite, {
       providers: [
-        {
-          provide: ActivatedRoute,
-          useValue: { snapshot: { queryParamMap: convertToParamMap({}) } },
-        },
         { provide: InviteLinkApiService, useValue: { preview } },
         { provide: AuthApiService, useValue: {} },
       ],
@@ -42,11 +38,8 @@ describe(AcceptInvite.name, () => {
         ),
       );
     await render(AcceptInvite, {
+      inputs: { token: 'x' },
       providers: [
-        {
-          provide: ActivatedRoute,
-          useValue: { snapshot: { queryParamMap: convertToParamMap({ token: 'x' }) } },
-        },
         { provide: InviteLinkApiService, useValue: { preview } },
         { provide: AuthApiService, useValue: {} },
       ],
@@ -65,11 +58,8 @@ describe(AcceptInvite.name, () => {
       .fn<() => Observable<MeResponse>>()
       .mockReturnValue(of({ id: 1, name: 'john', role: 'user' }));
     await render(AcceptInvite, {
+      inputs: { token: 'x' },
       providers: [
-        {
-          provide: ActivatedRoute,
-          useValue: { snapshot: { queryParamMap: convertToParamMap({ token: 'x' }) } },
-        },
         { provide: InviteLinkApiService, useValue: { preview } },
         { provide: AuthApiService, useValue: { me } },
       ],
@@ -90,11 +80,8 @@ describe(AcceptInvite.name, () => {
       .mockReturnValue(of({ groupId: 1, alreadyMember: false }));
     const navigate = vi.fn();
     await render(AcceptInvite, {
+      inputs: { token: 'x' },
       providers: [
-        {
-          provide: ActivatedRoute,
-          useValue: { snapshot: { queryParamMap: convertToParamMap({ token: 'x' }) } },
-        },
         { provide: InviteLinkApiService, useValue: { preview, consume } },
         { provide: AuthApiService, useValue: { me } },
         { provide: Router, useValue: { navigate } },
@@ -117,11 +104,8 @@ describe(AcceptInvite.name, () => {
       .fn<() => Observable<MeResponse>>()
       .mockReturnValue(throwError(() => new HttpErrorResponse({ status: 401 })));
     await render(AcceptInvite, {
+      inputs: { token: 'x' },
       providers: [
-        {
-          provide: ActivatedRoute,
-          useValue: { snapshot: { queryParamMap: convertToParamMap({ token: 'x' }) } },
-        },
         { provide: InviteLinkApiService, useValue: { preview } },
         { provide: AuthApiService, useValue: { me } },
       ],
@@ -145,11 +129,8 @@ describe(AcceptInvite.name, () => {
       .mockReturnValue(of({ groupId: 1, alreadyMember: false }));
     const registerThenJoin = vi.fn<(token: string) => Observable<ConsumeInviteLinkResponse>>();
     await render(AcceptInvite, {
+      inputs: { token: 'x' },
       providers: [
-        {
-          provide: ActivatedRoute,
-          useValue: { snapshot: { queryParamMap: convertToParamMap({ token: 'x' }) } },
-        },
         { provide: InviteLinkApiService, useValue: { preview } },
         { provide: AuthApiService, useValue: { me } },
         { provide: AcceptInviteFlow, useValue: { loginThenJoin, registerThenJoin } },
@@ -177,11 +158,8 @@ describe(AcceptInvite.name, () => {
       .fn<(token: string) => Observable<ConsumeInviteLinkResponse>>()
       .mockReturnValue(of({ groupId: 1, alreadyMember: false }));
     await render(AcceptInvite, {
+      inputs: { token: 'x' },
       providers: [
-        {
-          provide: ActivatedRoute,
-          useValue: { snapshot: { queryParamMap: convertToParamMap({ token: 'x' }) } },
-        },
         { provide: InviteLinkApiService, useValue: { preview } },
         { provide: AuthApiService, useValue: { me } },
         { provide: AcceptInviteFlow, useValue: { loginThenJoin, registerThenJoin } },
@@ -189,7 +167,9 @@ describe(AcceptInvite.name, () => {
       ],
     });
 
-    await userEvent.click(screen.getByRole('button', { name: 'New here? Join with a passkey' }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'New here? Join with a passkey' }),
+    );
 
     expect(registerThenJoin).toHaveBeenCalledWith('x');
     expect(loginThenJoin).not.toHaveBeenCalled();
@@ -207,11 +187,8 @@ describe(AcceptInvite.name, () => {
       .mockReturnValue(of({ groupId: 1, alreadyMember: false }));
     const navigate = vi.fn();
     await render(AcceptInvite, {
+      inputs: { token: 'x' },
       providers: [
-        {
-          provide: ActivatedRoute,
-          useValue: { snapshot: { queryParamMap: convertToParamMap({ token: 'x' }) } },
-        },
         { provide: InviteLinkApiService, useValue: { preview, consume } },
         { provide: AuthApiService, useValue: { me } },
         { provide: Router, useValue: { navigate } },
@@ -239,11 +216,8 @@ describe(AcceptInvite.name, () => {
       .mockReturnValue(of({ groupId: 1, alreadyMember: true }));
     const navigate = vi.fn();
     await render(AcceptInvite, {
+      inputs: { token: 'x' },
       providers: [
-        {
-          provide: ActivatedRoute,
-          useValue: { snapshot: { queryParamMap: convertToParamMap({ token: 'x' }) } },
-        },
         { provide: InviteLinkApiService, useValue: { preview, consume } },
         { provide: AuthApiService, useValue: { me } },
         { provide: Router, useValue: { navigate } },
@@ -269,11 +243,8 @@ describe(AcceptInvite.name, () => {
       .fn<(token: string) => Observable<ConsumeInviteLinkResponse>>()
       .mockReturnValue(throwError(() => new Error('consume failed')));
     await render(AcceptInvite, {
+      inputs: { token: 'x' },
       providers: [
-        {
-          provide: ActivatedRoute,
-          useValue: { snapshot: { queryParamMap: convertToParamMap({ token: 'x' }) } },
-        },
         { provide: InviteLinkApiService, useValue: { preview, consume } },
         { provide: AuthApiService, useValue: { me } },
       ],
@@ -297,11 +268,8 @@ describe(AcceptInvite.name, () => {
       .fn<(token: string) => Observable<ConsumeInviteLinkResponse>>()
       .mockReturnValue(throwError(() => new DOMException('cancelled', 'NotAllowedError')));
     await render(AcceptInvite, {
+      inputs: { token: 'x' },
       providers: [
-        {
-          provide: ActivatedRoute,
-          useValue: { snapshot: { queryParamMap: convertToParamMap({ token: 'x' }) } },
-        },
         { provide: InviteLinkApiService, useValue: { preview } },
         { provide: AuthApiService, useValue: { me } },
         { provide: AcceptInviteFlow, useValue: { loginThenJoin } },
@@ -322,11 +290,8 @@ describe(AcceptInvite.name, () => {
       .fn<(token: string) => Observable<PreviewInviteLinkResponse>>()
       .mockReturnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
     await render(AcceptInvite, {
+      inputs: { token: 'x' },
       providers: [
-        {
-          provide: ActivatedRoute,
-          useValue: { snapshot: { queryParamMap: convertToParamMap({ token: 'x' }) } },
-        },
         { provide: InviteLinkApiService, useValue: { preview } },
         { provide: AuthApiService, useValue: {} },
       ],
@@ -345,11 +310,8 @@ describe(AcceptInvite.name, () => {
       .fn<() => Observable<MeResponse>>()
       .mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
     await render(AcceptInvite, {
+      inputs: { token: 'x' },
       providers: [
-        {
-          provide: ActivatedRoute,
-          useValue: { snapshot: { queryParamMap: convertToParamMap({ token: 'x' }) } },
-        },
         { provide: InviteLinkApiService, useValue: { preview } },
         { provide: AuthApiService, useValue: { me } },
       ],

@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { provideIcons } from '@ng-icons/core';
 import {
   lucideCircleCheck,
@@ -49,26 +49,33 @@ const SUCCESS_DISPLAY_MS = 800;
   ],
 })
 export class AcceptInvite {
-  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly inviteLinkApi = inject(InviteLinkApiService);
   private readonly authApi = inject(AuthApiService);
   private readonly flow = inject(AcceptInviteFlow);
 
-  readonly token = this.route.snapshot.queryParamMap.get('token');
-  readonly state = signal<AcceptInviteState>(this.token ? 'loading' : 'invalid');
+  /** Bound from the `?token=` query param via withComponentInputBinding(). */
+  readonly token = input<string>();
+
+  readonly state = signal<AcceptInviteState>('loading');
   readonly groupName = signal<string | null>(null);
 
   constructor() {
-    this.loadPreview();
+    effect(() => {
+      this.loadPreview();
+    });
   }
 
   loadPreview(): void {
-    if (!this.token) return;
+    const token = this.token();
+    if (!token) {
+      this.state.set('invalid');
+      return;
+    }
     this.state.set('loading');
 
     this.inviteLinkApi
-      .preview(this.token)
+      .preview(token)
       .pipe(
         tap(({ groupName }) => {
           this.groupName.set(groupName);
@@ -95,9 +102,10 @@ export class AcceptInvite {
   }
 
   joinLoggedIn(): void {
-    if (!this.token) return;
+    const token = this.token();
+    if (!token) return;
 
-    this.flow.joinLoggedIn(this.token).subscribe({
+    this.flow.joinLoggedIn(token).subscribe({
       next: () => {
         this.onJoinSuccess();
       },
@@ -108,9 +116,10 @@ export class AcceptInvite {
   }
 
   loginThenJoin(): void {
-    if (!this.token) return;
+    const token = this.token();
+    if (!token) return;
 
-    this.flow.loginThenJoin(this.token).subscribe({
+    this.flow.loginThenJoin(token).subscribe({
       next: () => {
         this.onJoinSuccess();
       },
@@ -124,9 +133,10 @@ export class AcceptInvite {
   }
 
   registerThenJoin(): void {
-    if (!this.token) return;
+    const token = this.token();
+    if (!token) return;
 
-    this.flow.registerThenJoin(this.token).subscribe({
+    this.flow.registerThenJoin(token).subscribe({
       next: () => {
         this.onJoinSuccess();
       },
