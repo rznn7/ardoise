@@ -1,10 +1,22 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { provideIcons } from '@ng-icons/core';
+import {
+  lucideCircleCheck,
+  lucideKeyRound,
+  lucideRefreshCw,
+  lucideTriangleAlert,
+} from '@ng-icons/lucide';
+import { HlmButtonImports } from '@spartan-ng/helm/button';
+import { HlmCardImports } from '@spartan-ng/helm/card';
+import { HlmIconImports } from '@spartan-ng/helm/icon';
+import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
 import { catchError, map, of, switchMap, tap } from 'rxjs';
 import { AuthApiService } from 'src/app/auth/auth-api.service';
 import { AcceptInviteFlow } from 'src/app/invite-link/accept-invite-flow.service';
 import { InviteLinkApiService } from 'src/app/invite-link/invite-link-api.service';
+import { MobileShellImports } from 'src/app/shared/mobile-shell/mobile-shell';
 
 type AcceptInviteState =
   | 'invalid'
@@ -25,6 +37,16 @@ const SUCCESS_DISPLAY_MS = 800;
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-accept-invite',
   templateUrl: './accept-invite.html',
+  imports: [
+    MobileShellImports,
+    HlmCardImports,
+    HlmButtonImports,
+    HlmSpinnerImports,
+    HlmIconImports,
+  ],
+  providers: [
+    provideIcons({ lucideKeyRound, lucideRefreshCw, lucideCircleCheck, lucideTriangleAlert }),
+  ],
 })
 export class AcceptInvite {
   private readonly route = inject(ActivatedRoute);
