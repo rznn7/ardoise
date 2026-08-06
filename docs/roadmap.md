@@ -26,18 +26,26 @@ Without a join flow the app is unusable.
 - [x] **group create + list (frontend)** — home: header + group rows (name, member count,
   reserved balance-badge slot) + empty state + FAB → create bottom sheet → flips to
   invite-link copy/share.
-- [ ] **accept-invite page (frontend)** — landing for an invite token: group-context header,
-  passkey-join (new user) or one-tap join (existing user).
+- [x] **accept-invite page (frontend)** — landing for an invite token: group-context header,
+  passkey-join (new user) or one-tap join (existing user). See
+  `design-docs/006-accept-invite-page-frontend.md`.
 
 ## Phase 2 — Payments (the heart)
+`payment` / `payment-share` already have schema, entities, repositories, mappers and find
+use-cases — only the split logic and the create path are missing.
 - [ ] **split computation (pure domain)** — compute `PaymentShare.amount` from `splitType`
   + `inputValue` for all 4 types, EQUAL remainder → payer, assert sum == `fullAmount`.
   No DB, fully unit-tested in isolation.
 - [ ] **create-payment use-case (backend)** — persist payment + shares in a unit-of-work
   transaction, consuming the split logic above.
 - [ ] **payment list (backend)** — list-by-group query, endpoint, contract.
-- [ ] **add-payment form (frontend)** — one form, 4 split types.
-- [ ] **payment list (frontend)** — group payment feed.
+- [ ] **group page (frontend)** — the group-scoped screen everything below hangs off:
+  route `/group/:id`, header with group name + member list (consumes the 002 member
+  list-by-group endpoint, unused until now), empty payment feed, FAB slot. Makes the home
+  group rows navigate here, and adds an invite-link action so a fresh link can be generated
+  for an existing group (today only reachable from the create-group sheet's second step).
+- [ ] **add-payment form (frontend)** — one form, 4 split types. Lives behind the group-page FAB.
+- [ ] **payment list (frontend)** — group payment feed, fills the group page.
 
 ## Phase 3 — Balances + debt simplification
 Pure domain, no DB — high value, isolated, easy win.
@@ -45,7 +53,7 @@ Pure domain, no DB — high value, isolated, easy win.
 - [ ] **debt simplification (pure domain)** — greedy creditor/debtor matching to minimize
   transaction count.
 - [ ] **balance endpoint (backend)** — use-case wiring + contract.
-- [ ] **balance view (frontend)** — who-owes-whom display.
+- [ ] **balance view (frontend)** — who-owes-whom display, hosted on the Phase 2 group page.
 
 ## Phase 4 — Settlement
 A settlement overlays the balance calculation; it never mutates payments.
@@ -70,5 +78,6 @@ A settlement overlays the balance calculation; it never mutates payments.
 
 ## Sequencing
 - **Phase 1 is blocking** — join flow required to exercise everything downstream.
-- **Phase 3** is standalone (pure domain); can go early for a quick win.
+- **Phase 3** is standalone (pure domain); can go early for a quick win — but its frontend
+  bullet needs the Phase 2 group page.
 - Phases 4–5 depend on Phase 2.
