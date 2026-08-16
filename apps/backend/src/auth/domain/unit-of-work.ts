@@ -2,6 +2,8 @@ import { type ExpenseGroupRepository } from 'src/expense-group/domain/expense-gr
 import { type InviteLinkRepository } from 'src/invite-link/domain/invite-link-repository';
 import { type MemberRepository } from 'src/member/domain/member-repository';
 import { type PasskeyRepository } from 'src/passkey/domain/passkey-repository';
+import { type PaymentRepository } from 'src/payment/domain/payment-repository';
+import { type PaymentShareRepository } from 'src/payment-share/domain/payment-share-repository';
 import { type SessionRepository } from 'src/session/domain/session-repository';
 import { type UserRepository } from 'src/user/domain/user-repository';
 
@@ -14,6 +16,8 @@ export interface TransactionalRepositories {
   inviteLinks: InviteLinkRepository;
   sessions: SessionRepository;
   expenseGroups: ExpenseGroupRepository;
+  payments: PaymentRepository;
+  paymentShares: PaymentShareRepository;
 }
 
 export interface UnitOfWork {

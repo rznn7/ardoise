@@ -22,6 +22,17 @@ export class PaymentShareRepositoryDrizzle implements PaymentShareRepository {
     return rows.map((row) => this.toDomain(row));
   }
 
+  async createMany(shares: readonly PaymentShare[]): Promise<PaymentShare[]> {
+    if (shares.length === 0) return [];
+
+    const rows = await this.database
+      .insert(paymentShare)
+      .values([...shares])
+      .returning();
+
+    return rows.map((row) => this.toDomain(row));
+  }
+
   private toDomain(row: typeof paymentShare.$inferSelect): PaymentShare {
     return {
       paymentId: row.paymentId,

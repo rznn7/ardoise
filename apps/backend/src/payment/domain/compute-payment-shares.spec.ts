@@ -5,6 +5,7 @@ import {
   type ComputeSharesInput,
   InvalidSplit,
   type InvalidSplitCode,
+  MAX_SHARE_WEIGHT,
 } from './compute-payment-shares';
 
 describe('computePaymentShares', () => {
@@ -161,6 +162,38 @@ describe('computePaymentShares', () => {
     ]);
   });
 
+  it('accepts a SHARES weight at exactly MAX_SHARE_WEIGHT with a large fullAmount', () => {
+    const fullAmount = 2_000_000_000;
+    const shares = computePaymentShares({
+      fullAmount,
+      splitType: 'shares',
+      payerMemberId: 1,
+      participants: [
+        { memberId: 1, inputValue: MAX_SHARE_WEIGHT },
+        { memberId: 2, inputValue: MAX_SHARE_WEIGHT },
+        { memberId: 3, inputValue: 1 },
+      ],
+    });
+
+    expect(shares.reduce((sum, s) => sum + s.amount, 0)).toBe(fullAmount);
+  });
+
+  it('holds the sum invariant for a large-magnitude SHARES split near the bound', () => {
+    const fullAmount = 2_147_483_647;
+    const shares = computePaymentShares({
+      fullAmount,
+      splitType: 'shares',
+      payerMemberId: 2,
+      participants: [
+        { memberId: 1, inputValue: 852_899 },
+        { memberId: 2, inputValue: MAX_SHARE_WEIGHT },
+        { memberId: 3, inputValue: 999_999 },
+      ],
+    });
+
+    expect(shares.reduce((sum, s) => sum + s.amount, 0)).toBe(fullAmount);
+  });
+
   it('gives an EXACT participant at 0 exactly 0', () => {
     expect(
       computePaymentShares({
@@ -288,6 +321,19 @@ describe('computePaymentShares — rejected input', () => {
         ],
       },
       'ZERO_TOTAL_WEIGHT',
+    );
+  });
+
+  it('rejects a SHARES weight just over MAX_SHARE_WEIGHT', () => {
+    expectCode(
+      {
+        ...valid,
+        participants: [
+          { memberId: 1, inputValue: MAX_SHARE_WEIGHT + 1 },
+          { memberId: 2, inputValue: 1 },
+        ],
+      },
+      'SHARE_WEIGHT_TOO_LARGE',
     );
   });
 });

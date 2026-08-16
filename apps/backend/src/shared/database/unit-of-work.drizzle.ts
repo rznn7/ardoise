@@ -7,6 +7,8 @@ import { ExpenseGroupRepositoryDrizzle } from 'src/expense-group/infrastructure/
 import { InviteLinkRepositoryDrizzle } from 'src/invite-link/infrastructure/invite-link-repository.drizzle';
 import { MemberRepositoryDrizzle } from 'src/member/infrastructure/member-repository.drizzle';
 import { PasskeyRepositoryDrizzle } from 'src/passkey/infrastructure/passkey-repository.drizzle';
+import { PaymentRepositoryDrizzle } from 'src/payment/infrastructure/payment-repository.drizzle';
+import { PaymentShareRepositoryDrizzle } from 'src/payment-share/infrastructure/payment-share-repository.drizzle';
 import { SessionRepositoryDrizzle } from 'src/session/infrastructure/session-repository.drizzle';
 import { UserRepositoryDrizzle } from 'src/user/infrastructure/user-repository.drizzle';
 
@@ -28,6 +30,8 @@ export class UnitOfWorkDrizzle implements UnitOfWork {
         inviteLinks: new InviteLinkRepositoryDrizzle(txDb),
         sessions: new SessionRepositoryDrizzle(txDb),
         expenseGroups: new ExpenseGroupRepositoryDrizzle(txDb),
+        payments: new PaymentRepositoryDrizzle(txDb),
+        paymentShares: new PaymentShareRepositoryDrizzle(txDb),
       });
     });
   }

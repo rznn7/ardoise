@@ -10,3 +10,6 @@ export type Payment = {
   readonly splitType: SplitType;
   readonly createdAt: Date;
 };
+
+export class PayerNotInGroup extends Error {}
+export class ParticipantNotInGroup extends Error {}

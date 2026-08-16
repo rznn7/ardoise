@@ -22,6 +22,13 @@ export class PaymentRepositoryDrizzle implements PaymentRepository {
     return row ? this.toDomain(row) : null;
   }
 
+  async create(input: Omit<Payment, 'id' | 'createdAt'>): Promise<Payment> {
+    const [row] = await this.database.insert(payment).values(input).returning();
+
+    if (!row) throw new Error('Payment insert returned no row');
+    return this.toDomain(row);
+  }
+
   private toDomain(row: typeof payment.$inferSelect): Payment {
     return {
       id: row.id,

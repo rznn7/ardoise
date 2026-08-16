@@ -20,8 +20,8 @@ Without a join flow the app is unusable.
   multi-use link admits many users until `expiresAt` (relying on the existing already-member
   idempotency), while single-use links still burn after first consume. Folds in a rename of the
   spent-marker columns `consumed*` → `burned*` (+ migration) to resolve the consume-action /
-  consumed-column collision. Closes the documented gap in `001-invite-link-consume-backend.md`
-  non-goals.
+  consumed-column collision. Closes the multi-use gap left as a non-goal by the original
+  invite-link consume bullet.
 - [x] **group create + list (frontend)** — home: header + group rows (name, member count,
   reserved balance-badge slot) + empty state + FAB → create bottom sheet → flips to
   invite-link copy/share.
@@ -34,16 +34,18 @@ use-cases — only the split logic and the create path are missing.
 - [x] **split computation (pure domain)** — compute `PaymentShare.amount` from `splitType`
   + `inputValue` for all 4 types, largest-remainder rounding (payer-favoring tie-break),
   assert sum == `fullAmount`. No DB, fully unit-tested in isolation.
-- [ ] **create-payment use-case (backend)** — persist payment + shares in a unit-of-work
-  transaction, consuming the split logic above.
+- [x] **create-payment use-case (backend)** — persist payment + shares in a unit-of-work
+  transaction, consuming the split logic above. Folds in an authorization fix for the two
+  existing payment read endpoints, which today return any payment to any authenticated user.
+  See `superpowers/specs/2026-08-16-create-payment-use-case-design.md`.
 - [ ] **payment list (backend)** — list-by-group query, endpoint, contract.
 - [ ] **group page (frontend)** — the group-scoped screen everything below hangs off:
-  route `/group/:id`, header with group name + member list (consumes the 002 member
+  route `/group/:id`, header with group name + member list (consumes the member
   list-by-group endpoint, unused until now), empty payment feed, FAB slot. Makes the home
   group rows navigate here, and adds an invite-link action so a fresh link can be generated
   for an existing group (today only reachable from the create-group sheet's second step).
 - [ ] **add-payment form (frontend)** — one form, 4 split types. Lives behind the group-page FAB.
-- [ ] **payment list (frontend)** — group payment feed, fills the group page.
+- [ ] **payment feed (frontend)** — group payment feed, fills the group page.
 
 ## Phase 3 — Balances + debt simplification
 Pure domain, no DB — high value, isolated, easy win.

@@ -10,6 +10,7 @@ import { PaymentShareModule } from './payment-share/infrastructure/payment-share
 import { AuthStateExceptionFilter } from './shared/http/auth-state-exception.filter';
 import { InviteLinkExceptionFilter } from './shared/http/invite-link-exception.filter';
 import { MemberExceptionFilter } from './shared/http/member-exception.filter';
+import { PaymentExceptionFilter } from './shared/http/payment-exception.filter';
 import { SessionExceptionFilter } from './shared/http/session-exception.filter';
 import { UserModule } from './user/infrastructure/user.module';
 
@@ -28,6 +29,7 @@ import { UserModule } from './user/infrastructure/user.module';
     { provide: APP_FILTER, useClass: InviteLinkExceptionFilter },
     { provide: APP_FILTER, useClass: AuthStateExceptionFilter },
     { provide: APP_FILTER, useClass: MemberExceptionFilter },
+    { provide: APP_FILTER, useClass: PaymentExceptionFilter },
   ],
 })
 export class AppModule {}

@@ -34,3 +34,6 @@ coverage/
 !.claude/commands/
 !.claude/agents/
 !.claude/skills/
+
+# Superpowers SDD scratch
+.superpowers/

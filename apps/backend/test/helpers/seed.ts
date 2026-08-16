@@ -102,6 +102,52 @@ export async function seedInviteLink(
   return { id: rows[0]!.id, token };
 }
 
+export async function seedPayment(
+  client: Client,
+  opts: {
+    groupId: number;
+    payerMemberId: number;
+    title?: string;
+    fullAmount?: number;
+    splitType?: 'equal' | 'percent' | 'shares' | 'exact';
+    paidAt?: Date;
+  },
+): Promise<{ id: number }> {
+  const {
+    groupId,
+    payerMemberId,
+    title = 'dinner',
+    fullAmount = 1000,
+    splitType = 'equal',
+    paidAt = new Date(),
+  } = opts;
+
+  const { rows } = await client.query<{ id: number }>(
+    `INSERT INTO payment (group_id, payer_member_id, title, full_amount, split_type, paid_at)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+    [groupId, payerMemberId, title, fullAmount, splitType, paidAt],
+  );
+  return { id: rows[0]!.id };
+}
+
+export async function seedPaymentShare(
+  client: Client,
+  opts: {
+    paymentId: number;
+    memberId: number;
+    inputValue?: number;
+    amount: number;
+  },
+): Promise<void> {
+  const { paymentId, memberId, inputValue = 0, amount } = opts;
+
+  await client.query(
+    `INSERT INTO payment_share (payment_id, member_id, input_value, amount)
+     VALUES ($1, $2, $3, $4)`,
+    [paymentId, memberId, inputValue, amount],
+  );
+}
+
 export async function seedPasskey(
   client: Client,
   opts: {
