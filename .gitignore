@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+tmp/
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/settings.json
+*.sublime-workspace
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-error.log
+
+# Coverage
+coverage/
+
+# Claude Code — ignore all, allow shared config explicitly
+.claude/*
+!.claude/settings.json
+!.claude/commands/
+!.claude/agents/
+!.claude/skills/

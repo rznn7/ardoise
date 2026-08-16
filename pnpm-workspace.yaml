@@ -1,0 +1,21 @@
+packages:
+  - "apps/*"
+  - "libs/*"
+allowBuilds:
+  '@parcel/watcher': false
+  '@swc/core': true
+  cpu-features: false
+  esbuild: false
+  less: false
+  lmdb: false
+  msgpackr-extract: false
+  nx: false
+  protobufjs: false
+  ssh2: false
+  unrs-resolver: false
+catalog:
+  zod: 4.4.3
+  fast-check: 4.9.0
+  prettier: 3.8.4
+  typescript: 5.9.3
+  vitest: 4.1.8

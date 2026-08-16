@@ -1,0 +1,39 @@
+export type Session = {
+  readonly token: string;
+  readonly userId: number;
+  readonly issuedAt: Date;
+  readonly expiresAt: Date;
+  readonly revokedAt: Date | null;
+};
+
+export const Session = {
+  issue: (
+    token: string,
+    userId: number,
+    now: Date,
+    ttlMs: number,
+  ): Session => ({
+    token,
+    userId,
+    issuedAt: now,
+    expiresAt: new Date(now.getTime() + ttlMs),
+    revokedAt: null,
+  }),
+
+  isValid: (session: Session, now: Date): boolean =>
+    session.issuedAt < now &&
+    now < session.expiresAt &&
+    session.revokedAt === null,
+
+  revoke: (session: Session, now: Date): Session => ({
+    ...session,
+    revokedAt: now,
+  }),
+};
+
+export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+export const SESSION_COOKIE_NAME = 'session_token';
+
+export class SessionNotFound extends Error {}
+export class SessionExpired extends Error {}
+export class UserHandleMismatch extends Error {}
