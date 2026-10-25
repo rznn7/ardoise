@@ -139,6 +139,28 @@ describe(AcceptInvite.name, () => {
     );
   });
 
+  it('long group names wrap instead of running off screen', async () => {
+    const longName = 'Flatshare Rue Oberkampf, 3rd floor, left';
+    const preview = vi
+      .fn<(token: string) => Observable<PreviewInviteLinkResponse>>()
+      .mockReturnValue(of({ groupName: longName }));
+    const me = vi
+      .fn<() => Observable<MeResponse>>()
+      .mockReturnValue(throwError(() => new HttpErrorResponse({ status: 401 })));
+    await render(AcceptInvite, {
+      inputs: { token: 'x' },
+      providers: [
+        { provide: InviteLinkApiService, useValue: { preview } },
+        { provide: AuthApiService, useValue: { me } },
+      ],
+    });
+
+    const cta = await screen.findByRole('button', { name: `Log in to join ${longName}` });
+    expect(cta.classList).toContain('whitespace-normal');
+    expect(cta.classList).not.toContain('whitespace-nowrap');
+    expect(screen.getByRole('heading', { name: longName }).classList).toContain('break-words');
+  });
+
   it('logged-out primary action invokes loginThenJoin', async () => {
     const preview = vi
       .fn<(token: string) => Observable<PreviewInviteLinkResponse>>()
