@@ -1,11 +1,11 @@
 # Ardoise — Roadmap
 
-Build by vertical slice, value-first order.
+Build by feature slice, value-first order.
 
-> **Each bullet = one `brainstorming` run.** Scopes are deliberately narrow: one focused
-> Don't merge bullets — split further if one grows.
+> **Each `##` slice = one spec + one plan + one PR**, covering backend, frontend and tests
+> (see Workflow in `design.md`). Sub-items are the scope checklist, not separate runs.
 
-## Phase 1 — Group lifecycle (close the loop)
+## Group lifecycle (done)
 Without a join flow the app is unusable.
 - [x] **invite-link consume (backend)** — one use-case covering both paths: register-new
   (already wires `inviteToken`) and join-existing-user. Creates the `Member`, marks the
@@ -28,16 +28,20 @@ Without a join flow the app is unusable.
 - [x] **accept-invite page (frontend)** — landing for an invite token: group-context header,
   passkey-join (new user) or one-tap join (existing user).
 
-## Phase 2 — Payments (the heart)
-`payment` / `payment-share` already have schema, entities, repositories, mappers and find
-use-cases — only the split logic and the create path are missing.
+## Design system foundation
+Ink tokens and theme, Figtree, building blocks, backdrops, lint enforcement, screenshot and A/B
+tooling, Playwright e2e. Existing screens moved onto it.
+See `superpowers/specs/2026-10-25-design-system-and-workflow-design.md`.
+- [ ] **foundation** — `superpowers/plans/2026-10-25-design-system-foundation.md`.
+
+## Payments (the heart)
+Split computation and the create path are done; what remains is listing and the UI.
 - [x] **split computation (pure domain)** — compute `PaymentShare.amount` from `splitType`
   + `inputValue` for all 4 types, largest-remainder rounding (payer-favoring tie-break),
   assert sum == `fullAmount`. No DB, fully unit-tested in isolation.
 - [x] **create-payment use-case (backend)** — persist payment + shares in a unit-of-work
   transaction, consuming the split logic above. Folds in an authorization fix for the two
-  existing payment read endpoints, which today return any payment to any authenticated user.
-  See `superpowers/specs/2026-08-16-create-payment-use-case-design.md`.
+  existing payment read endpoints, which returned any payment to any authenticated user.
 - [ ] **payment list (backend)** — list-by-group query, endpoint, contract.
 - [ ] **group page (frontend)** — the group-scoped screen everything below hangs off:
   route `/group/:id`, header with group name + member list (consumes the member
@@ -47,37 +51,43 @@ use-cases — only the split logic and the create path are missing.
 - [ ] **add-payment form (frontend)** — one form, 4 split types. Lives behind the group-page FAB.
 - [ ] **payment feed (frontend)** — group payment feed, fills the group page.
 
-## Phase 3 — Balances + debt simplification
+## Balances + debt simplification
 Pure domain, no DB — high value, isolated, easy win.
 - [ ] **net balance (pure domain)** — net balance per member (paid − owed).
 - [ ] **debt simplification (pure domain)** — greedy creditor/debtor matching to minimize
   transaction count.
 - [ ] **balance endpoint (backend)** — use-case wiring + contract.
-- [ ] **balance view (frontend)** — who-owes-whom display, hosted on the Phase 2 group page.
+- [ ] **balance view (frontend)** — who-owes-whom display, hosted on the group page.
 
-## Phase 4 — Settlement
+## Settlement
 A settlement overlays the balance calculation; it never mutates payments.
 - [ ] **settlement schema + domain (backend)** — table, entity, repository.
 - [ ] **create-settlement use-case + balance overlay (backend)** — endpoint, contract, and
   integration into the balance calc.
 - [ ] **mark-settled UI (frontend)** — record a repayment from the balance view.
 
-## Phase 5 — Real-time SSE
+## Real-time SSE
 - [ ] **SSE stream infra (backend)** — per-group `@Sse` endpoint, connection management,
   event emitter.
 - [ ] **domain event wiring (backend)** — push on payment / settlement / member change.
 - [ ] **live subscription (frontend)** — EventSource subscription + reactive refresh.
 
-## Phase 6 — Hardening & ship
+## Personal settings
+- [ ] **settings page (frontend)** — personal settings screen; first entry is the theme
+  selector (system / light / dark) on top of the existing `ThemeService`.
+- [ ] **logout control (frontend)** — the auth flow supports logout; no UI exposes it yet.
+
+## Hardening & ship
 - [x] **Drizzle migrations** — migration setup and baseline.
 - [ ] **deploy** — Docker compose + Hetzner.
+- [ ] **PWA** — manifest, icons, installability, standalone mode, iOS keyboard handling
+  (needed by the add-payment form at the latest).
 - [ ] **multi-device passkey** — lift the v1 single-passkey non-goal.
 - [ ] **account recovery** — lift the v1 no-recovery non-goal.
 
 ---
 
 ## Sequencing
-- **Phase 1 is blocking** — join flow required to exercise everything downstream.
-- **Phase 3** is standalone (pure domain); can go early for a quick win — but its frontend
-  bullet needs the Phase 2 group page.
-- Phases 4–5 depend on Phase 2.
+- **Design system foundation** comes before any new screen.
+- **Balances** domain work is standalone; its view needs the Payments group page.
+- Settlement and Real-time depend on Payments.
