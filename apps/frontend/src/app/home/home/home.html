@@ -1,41 +1,41 @@
 <hlm-sheet #sheet="hlmSheet">
   <app-mobile-shell>
+    <div appShellHeader class="bg-background px-4 pt-4 pb-3">
+      <h1 appTitle>Groups</h1>
+    </div>
+
     @switch (state().status) {
       @case ('loading') {
-        <div class="grid min-h-full place-items-center p-6">
-          <hlm-spinner />
-        </div>
+        <app-page-state state="loading" />
       }
       @case ('error') {
-        <div class="grid min-h-full place-items-center p-6 text-center">
-          <div class="flex flex-col items-center gap-3">
-            <div class="flex flex-col gap-1">
-              <h2 class="text-lg font-semibold">Couldn't load your groups</h2>
-              <p class="text-muted-foreground text-sm">Check your connection and try again.</p>
-            </div>
-            <button hlmBtn variant="outline" (click)="retry()">Retry</button>
-          </div>
-        </div>
+        <app-page-state
+          state="error"
+          heading="Couldn't load your groups"
+          description="Check your connection and try again."
+          (retry)="retry()"
+        />
       }
       @case ('loaded') {
         @if (groups().length === 0) {
-          <div class="grid min-h-full place-items-center p-6 text-center">
-            <div class="flex flex-col items-center gap-3">
-              <div class="flex flex-col gap-1">
-                <h2 class="text-lg font-semibold">No groups yet</h2>
-                <p class="text-muted-foreground text-sm">
-                  Create a group to start splitting expenses with friends.
-                </p>
-              </div>
-              <button hlmBtn hlmSheetTrigger>Create your first group</button>
-            </div>
-          </div>
+          <app-page-state
+            state="empty"
+            heading="No groups yet"
+            description="Create a group to start splitting expenses with friends."
+          >
+            <button appPageStateAction hlmBtn hlmSheetTrigger side="bottom" size="xl">
+              Create your first group
+            </button>
+          </app-page-state>
         } @else {
-          <ul class="flex flex-col divide-y divide-border">
+          <ul class="flex flex-col divide-y divide-border border-y border-border">
             @for (group of groups(); track group.id) {
-              <li class="flex items-center justify-between px-4 py-3">
-                <span>{{ group.name }}</span>
-                <span data-testid="balance-slot"></span>
+              <li>
+                <app-list-row>
+                  <app-group-mark appListRowLeading [groupId]="group.id" />
+                  <span appListRowTitle>{{ group.name }}</span>
+                  <span appListRowTrailing data-testid="balance-slot"></span>
+                </app-list-row>
               </li>
             }
           </ul>
@@ -46,14 +46,14 @@
     <button
       appShellFab
       aria-label="Create a group"
-      class="rounded-full shadow-lg"
+      class="rounded-full"
       hlmBtn
       hlmSheetTrigger
       side="bottom"
-      size="icon-lg"
-      variant="secondary"
+      size="xl"
     >
-      <span aria-hidden="true" class="text-xl leading-none">+</span>
+      <ng-icon hlm name="lucidePlus" size="sm" aria-hidden="true" />
+      <span>New group</span>
     </button>
   </app-mobile-shell>
 

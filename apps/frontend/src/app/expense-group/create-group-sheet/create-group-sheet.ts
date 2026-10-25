@@ -3,12 +3,16 @@ import { type ExpenseGroupSummary } from '@ardoise/shared';
 import { provideIcons } from '@ng-icons/core';
 import { lucideCheck, lucideCopy } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
+import { HlmFieldImports } from '@spartan-ng/helm/field';
 import { HlmIconImports } from '@spartan-ng/helm/icon';
+import { HlmInputImports } from '@spartan-ng/helm/input';
+import { HlmNativeSelectImports } from '@spartan-ng/helm/native-select';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
 import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.service';
 import { InviteLinkApiService } from 'src/app/invite-link/invite-link-api.service';
 import { ClipboardService } from 'src/app/shared/clipboard.service';
 import { ShareService } from 'src/app/shared/share.service';
+import { AppTextImports } from 'src/app/shared/ui/text/text';
 
 type SheetState =
   | { step: 'form'; status: 'idle' | 'submitting' | 'error' }
@@ -18,7 +22,15 @@ const INVITE_EXPIRY_MS = 24 * 60 * 60 * 1000;
 
 @Component({
   selector: 'app-create-group-sheet',
-  imports: [HlmButtonImports, HlmIconImports, HlmSheetImports],
+  imports: [
+    HlmButtonImports,
+    HlmIconImports,
+    HlmSheetImports,
+    HlmFieldImports,
+    HlmInputImports,
+    HlmNativeSelectImports,
+    AppTextImports,
+  ],
   providers: [provideIcons({ lucideCopy, lucideCheck })],
   templateUrl: './create-group-sheet.html',
 })
