@@ -68,6 +68,18 @@ export const CELLS: ScreenshotCell[] = [
   },
   {
     route: 'join',
+    state: 'logged-out-long-name',
+    path: '/join?token=demo',
+    mocks: {
+      ...loggedOut,
+      [PREVIEW]: json({
+        groupName: 'Flatshare Rue Oberkampf, 3rd floor, left',
+      }),
+    },
+    ready: visible('New here? Join with a passkey'),
+  },
+  {
+    route: 'join',
     state: 'logged-in',
     path: '/join?token=demo',
     mocks: { ...loggedIn, [PREVIEW]: json({ groupName: 'Lisbon trip' }) },

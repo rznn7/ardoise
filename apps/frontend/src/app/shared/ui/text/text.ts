@@ -4,7 +4,7 @@ import { classes } from '@spartan-ng/helm/utils';
 @Directive({ selector: '[appTitle]' })
 export class AppTitle {
   constructor() {
-    classes(() => 'text-xl font-medium tracking-tight');
+    classes(() => 'text-xl font-medium tracking-tight break-words');
   }
 }
 
@@ -39,7 +39,7 @@ export class AppEyebrow {
 @Directive({ selector: '[appFigure]' })
 export class AppFigure {
   constructor() {
-    classes(() => 'text-4xl font-light tracking-tighter tabular-nums');
+    classes(() => 'text-4xl font-light tracking-tighter break-words tabular-nums');
   }
 }
 
