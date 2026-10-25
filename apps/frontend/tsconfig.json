@@ -6,8 +6,9 @@
     "importHelpers": true,
     "target": "ES2022",
     "module": "preserve",
-    "baseUrl": ".",
+    "rootDir": "../..",
     "paths": {
+      "src/*": ["./src/*"],
       "@ardoise/shared": ["../../libs/shared/src/index.ts"],
       "@spartan-ng/helm/button": [
         "./libs/ui/button/src/index.ts"
