@@ -17,8 +17,20 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build:shared
       - run: pnpm lint
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
 
   backend-unit:
     name: Backend unit tests
@@ -31,8 +43,7 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build:shared
-      - run: pnpm --filter @ardoise/backend exec vitest run
+      - run: pnpm --filter @ardoise/backend test
 
   frontend-unit:
     name: Frontend unit tests
@@ -45,9 +56,7 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build:shared
-      # watch defaults to false in non-TTY (CI), but set it explicitly so the job can never hang.
-      - run: pnpm --filter @ardoise/frontend exec ng test --watch=false
+      - run: pnpm --filter @ardoise/frontend test
 
   backend-e2e:
     name: Backend e2e tests
@@ -60,6 +69,17 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build:shared
-      # ubuntu-latest provides a running Docker daemon, so Testcontainers works out of the box.
-      - run: pnpm --filter @ardoise/backend exec vitest run --config ./vitest.config.e2e.ts
+      - run: pnpm test:e2e
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build

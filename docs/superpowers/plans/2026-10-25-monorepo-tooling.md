@@ -165,7 +165,7 @@
   - `test:e2e`: `pnpm -r --if-present test:e2e`
   - `test:watch:front`: `pnpm --filter @ardoise/frontend test:watch`
   - `test:watch:back`: `pnpm --filter @ardoise/backend test:watch`
-  - `ci`: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm build`
+  - `verify`: `pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm build`
 
 - [ ] **Step 4: CI.** In `.github/workflows/ci.yml`:
   - Remove every `pnpm build:shared` step and both comments.
@@ -180,6 +180,6 @@
 
 - [ ] **Step 5: Verify in a real terminal.** Run `pnpm test` from the repo root in an interactive shell. Expected: both packages run once and the process exits 0. Then run `pnpm typecheck` and `pnpm test:cov`; both exit 0, and frontend coverage output appears.
 
-- [ ] **Step 6: Verify the whole pipeline from a clean state.** Run `rm -rf libs/shared/dist apps/*/dist && pnpm ci`. Expected: exit 0.
+- [ ] **Step 6: Verify the whole pipeline from a clean state.** Run `rm -rf libs/shared/dist apps/*/dist && pnpm verify`. Expected: exit 0.
 
 - [ ] **Step 7: Commit.** `git commit -am "chore: uniform package scripts and drive ci through them"`
