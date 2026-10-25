@@ -37,3 +37,4 @@ coverage/
 
 # Superpowers SDD scratch
 .superpowers/
+.nx/
