@@ -1,1 +1,4 @@
 <router-outlet />
+@if (variantToggle.value(); as toggle) {
+  <ng-container *ngComponentOutlet="toggle" />
+}
