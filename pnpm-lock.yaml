@@ -216,6 +216,9 @@ importers:
       '@ardoise/shared':
         specifier: workspace:*
         version: link:../../libs/shared
+      '@fontsource-variable/figtree':
+        specifier: 5.3.0
+        version: 5.3.0
       '@ng-icons/core':
         specifier: ^36.1.0
         version: 36.1.0(@angular-devkit/schematics@22.2.4(chokidar@5.0.0))(@angular/common@22.2.3(@angular/core@22.2.3(@angular/compiler@22.2.3)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.2.3(@angular/compiler@22.2.3)(rxjs@7.8.2))(@schematics/angular@22.2.4(chokidar@5.0.0))(rxjs@7.8.2)
@@ -1793,6 +1796,9 @@ packages:
     peerDependenciesMeta:
       '@noble/hashes':
         optional: true
+
+  '@fontsource-variable/figtree@5.3.0':
+    resolution: {integrity: sha512-VRVodD7OiG7apQwE8/2fMjaqpY/a0qRJqL5HtYj8CKIVps+9amaFcdfKmDIf7iqYQx6iPLlArVXAfKeIZmVcNQ==}
 
   '@grpc/grpc-js@1.14.6':
     resolution: {integrity: sha512-SgC/B3/VZ8lTyOZ4Cwk6f1skWhmkNAaVfiX90qd5u1rRXGKk1//8FTUEN9GvOUq7rfWIqAYkA3CoyumYVpOS6g==}
@@ -9071,6 +9077,8 @@ snapshots:
   '@exodus/bytes@1.16.0(@noble/hashes@1.8.0)':
     optionalDependencies:
       '@noble/hashes': 1.8.0
+
+  '@fontsource-variable/figtree@5.3.0': {}
 
   '@grpc/grpc-js@1.14.6':
     dependencies:
