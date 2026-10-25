@@ -10,7 +10,7 @@ const globals = require('globals');
 
 module.exports = defineConfig([
   {
-    files: ['**/*.ts'],
+    files: ['**/*.ts', '**/*.mts'],
     extends: [
       eslint.configs.recommended,
       ...tseslint.configs.strictTypeChecked,
