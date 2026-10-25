@@ -1,10 +1,22 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Frontend</title>
+    <title>Ardoise</title>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <script>
+      (function () {
+        var preference = 'system';
+        try {
+          preference = localStorage.getItem('ardoise.theme') || 'system';
+        } catch (e) {}
+        var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (preference === 'dark' || (preference !== 'light' && systemDark)) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
   </head>
   <body>
