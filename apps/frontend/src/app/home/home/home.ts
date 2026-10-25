@@ -9,9 +9,7 @@ import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.
 import { MobileShellImports } from 'src/app/shared/mobile-shell/mobile-shell';
 
 type HomeState =
-  | { status: 'loading' }
-  | { status: 'loaded'; groups: ExpenseGroupSummary[] }
-  | { status: 'error' };
+  { status: 'loading' } | { status: 'loaded'; groups: ExpenseGroupSummary[] } | { status: 'error' };
 
 @Component({
   selector: 'app-home',
