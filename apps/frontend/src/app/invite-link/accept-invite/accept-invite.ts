@@ -9,14 +9,15 @@ import {
   lucideTriangleAlert,
 } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
-import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
 import { catchError, map, of, switchMap, tap } from 'rxjs';
 import { AuthApiService } from 'src/app/auth/auth-api.service';
 import { AcceptInviteFlow } from 'src/app/invite-link/accept-invite-flow.service';
 import { InviteLinkApiService } from 'src/app/invite-link/invite-link-api.service';
+import { HeroScreen } from 'src/app/shared/ui/hero-screen/hero-screen';
 import { MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
+import { AppTextImports } from 'src/app/shared/ui/text/text';
 
 type AcceptInviteState =
   | 'invalid'
@@ -39,7 +40,8 @@ const SUCCESS_DISPLAY_MS = 800;
   templateUrl: './accept-invite.html',
   imports: [
     MobileShellImports,
-    HlmCardImports,
+    HeroScreen,
+    AppTextImports,
     HlmButtonImports,
     HlmSpinnerImports,
     HlmIconImports,

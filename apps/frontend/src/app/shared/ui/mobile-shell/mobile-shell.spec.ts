@@ -67,6 +67,14 @@ describe('MobileShell', () => {
     );
   });
 
+  it('bleed removes bottom safe-area padding too', async () => {
+    const { container } = await render(BleedHost);
+
+    expect(container.querySelector('app-mobile-shell')!.classList).not.toContain(
+      'pb-[env(safe-area-inset-bottom)]',
+    );
+  });
+
   it('projects header content into a rendered header region', async () => {
     const { container } = await render(HeaderHost);
 

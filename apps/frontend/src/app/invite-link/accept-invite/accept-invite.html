@@ -1,105 +1,89 @@
-<app-mobile-shell>
-  <div class="grid min-h-full place-items-center p-4">
-    <section hlmCard class="w-full max-w-sm">
-      @let currentState = state();
-      @let currentGroupName = groupName();
+<app-mobile-shell bleed>
+  <app-hero-screen palette="violet" shape="converge">
+    @let currentState = state();
+    @let currentGroupName = groupName();
 
-      @switch (currentState) {
-        @case ('loading') {
-          <div hlmCardContent class="grid place-items-center py-10">
-            <hlm-spinner />
-          </div>
-        }
+    @switch (currentState) {
+      @case ('loading') {
+        <div class="flex justify-center py-10">
+          <hlm-spinner />
+        </div>
+      }
 
-        @case ('invalid') {
-          <div hlmCardHeader class="items-center justify-items-center text-center">
-            <ng-icon hlm size="lg" name="lucideTriangleAlert" class="text-muted-foreground" />
-            <h1 hlmCardTitle class="text-lg">This invite is no longer valid</h1>
-            <p hlmCardDescription>
-              It may have expired or already been used. Ask whoever invited you for a fresh link.
-            </p>
-          </div>
-        }
+      @case ('invalid') {
+        <div class="flex flex-col gap-3">
+          <ng-icon hlm size="lg" name="lucideTriangleAlert" />
+          <h1 appTitle>This invite is no longer valid</h1>
+          <p appBody>
+            It may have expired or already been used. Ask whoever invited you for a fresh link.
+          </p>
+        </div>
+      }
 
-        @case ('couldNotLoad') {
-          <div hlmCardHeader class="items-center text-center">
-            <h1 hlmCardTitle class="text-lg">Couldn't load this invite</h1>
-            <p hlmCardDescription>Check your connection and try again.</p>
-          </div>
-          <div hlmCardContent class="flex flex-col">
-            <button hlmBtn variant="outline" (click)="loadPreview()">
-              <ng-icon hlm size="sm" name="lucideRefreshCw" aria-hidden="true" />
-              <span>Retry</span>
-            </button>
-          </div>
-        }
+      @case ('couldNotLoad') {
+        <div class="flex flex-col gap-2">
+          <h1 appTitle>Couldn't load this invite</h1>
+          <p appBody>Check your connection and try again.</p>
+        </div>
+        <button hlmBtn variant="inverted-outline" size="xl" (click)="loadPreview()">
+          <ng-icon hlm size="sm" name="lucideRefreshCw" aria-hidden="true" />
+          <span>Retry</span>
+        </button>
+      }
 
-        @default {
-          @if (currentGroupName) {
-            @switch (currentState) {
-              @case ('loggedIn') {
-                <div hlmCardHeader class="items-center text-center">
-                  <p hlmCardDescription>You've been invited to join</p>
-                  <h1 hlmCardTitle class="text-lg">{{ currentGroupName }}</h1>
-                </div>
-                <div hlmCardContent class="flex flex-col">
-                  <button hlmBtn size="lg" (click)="joinLoggedIn()">
-                    Join {{ currentGroupName }}
-                  </button>
-                </div>
-              }
+      @default {
+        @if (currentGroupName) {
+          @switch (currentState) {
+            @case ('loggedIn') {
+              <div class="flex flex-col gap-2">
+                <p appEyebrow>You're invited to</p>
+                <h1 appFigure>{{ currentGroupName }}</h1>
+              </div>
+              <button hlmBtn variant="inverted" size="xl" (click)="joinLoggedIn()">
+                Join {{ currentGroupName }}
+              </button>
+            }
 
-              @case ('loggedOut') {
-                <div hlmCardHeader class="items-center text-center">
-                  <p hlmCardDescription>You've been invited to join</p>
-                  <h1 hlmCardTitle class="text-lg">{{ currentGroupName }}</h1>
-                </div>
-                <div hlmCardContent class="flex flex-col gap-2">
-                  <button hlmBtn size="lg" (click)="loginThenJoin()">
-                    <ng-icon hlm size="sm" name="lucideKeyRound" aria-hidden="true" />
-                    <span>Log in to join {{ currentGroupName }}</span>
-                  </button>
-                  <button hlmBtn variant="outline" size="lg" (click)="registerThenJoin()">
-                    New here? Join with a passkey
-                  </button>
-                </div>
-              }
+            @case ('loggedOut') {
+              <div class="flex flex-col gap-2">
+                <p appEyebrow>You're invited to</p>
+                <h1 appFigure>{{ currentGroupName }}</h1>
+              </div>
+              <div class="flex flex-col gap-3">
+                <button hlmBtn variant="inverted" size="xl" (click)="loginThenJoin()">
+                  <ng-icon hlm size="sm" name="lucideKeyRound" aria-hidden="true" />
+                  <span>Log in to join {{ currentGroupName }}</span>
+                </button>
+                <button hlmBtn variant="inverted-outline" size="xl" (click)="registerThenJoin()">
+                  New here? Join with a passkey
+                </button>
+              </div>
+            }
 
-              @case ('success') {
-                <div hlmCardHeader class="items-center justify-items-center text-center">
-                  <ng-icon hlm size="lg" name="lucideCircleCheck" class="text-primary" />
-                  <h1 hlmCardTitle class="text-lg">You're in! — {{ currentGroupName }}</h1>
-                </div>
-              }
+            @case ('success') {
+              <div class="flex flex-col gap-3">
+                <ng-icon hlm size="lg" name="lucideCircleCheck" />
+                <h1 appTitle>You're in! — {{ currentGroupName }}</h1>
+              </div>
+            }
 
-              @case ('error') {
-                <div hlmCardHeader class="items-center text-center">
-                  <p hlmCardDescription role="alert" class="text-destructive">
-                    Something went wrong joining {{ currentGroupName }}.
-                  </p>
-                </div>
-                <div hlmCardContent class="flex flex-col">
-                  <button hlmBtn variant="outline" (click)="joinLoggedIn()">
-                    <ng-icon hlm size="sm" name="lucideRefreshCw" aria-hidden="true" />
-                    <span>Retry</span>
-                  </button>
-                </div>
-              }
+            @case ('error') {
+              <p appBody role="alert">Something went wrong joining {{ currentGroupName }}.</p>
+              <button hlmBtn variant="inverted-outline" size="xl" (click)="joinLoggedIn()">
+                <ng-icon hlm size="sm" name="lucideRefreshCw" aria-hidden="true" />
+                <span>Retry</span>
+              </button>
+            }
 
-              @case ('cancelled') {
-                <div hlmCardHeader class="items-center text-center">
-                  <p hlmCardDescription>Joining {{ currentGroupName }}</p>
-                </div>
-                <div hlmCardContent class="flex flex-col">
-                  <button hlmBtn variant="outline" (click)="loginThenJoin()">
-                    Passkey not completed — tap to try again
-                  </button>
-                </div>
-              }
+            @case ('cancelled') {
+              <p appBody>Joining {{ currentGroupName }}</p>
+              <button hlmBtn variant="inverted-outline" size="xl" (click)="loginThenJoin()">
+                Passkey not completed — tap to try again
+              </button>
             }
           }
         }
       }
-    </section>
-  </div>
+    }
+  </app-hero-screen>
 </app-mobile-shell>
