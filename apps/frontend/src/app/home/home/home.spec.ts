@@ -68,7 +68,7 @@ describe('Home', () => {
     expect(screen.getByText('Trip')).toBeTruthy();
     expect(screen.getByText('Flat')).toBeTruthy();
 
-    expect(document.querySelectorAll('app-group-mark')).toHaveLength(2);
+    expect(document.querySelectorAll('app-group-fade')).toHaveLength(2);
 
     const slots = screen.getAllByTestId('balance-slot');
     expect(slots).toHaveLength(2);

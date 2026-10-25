@@ -8,7 +8,7 @@ import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
 import { CreateGroupSheet } from 'src/app/expense-group/create-group-sheet/create-group-sheet';
 import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.service';
-import { GroupMark } from 'src/app/shared/ui/backdrop/group-mark';
+import { GroupFade } from 'src/app/shared/ui/backdrop/group-fade';
 import { ListRowImports } from 'src/app/shared/ui/list-row/list-row';
 import { MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
 import { PageStateImports } from 'src/app/shared/ui/page-state/page-state';
@@ -24,7 +24,7 @@ type HomeState =
     HlmIconImports,
     PageStateImports,
     ListRowImports,
-    GroupMark,
+    GroupFade,
     AppTextImports,
     HlmButtonImports,
     HlmSheetImports,

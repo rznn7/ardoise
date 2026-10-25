@@ -13,7 +13,7 @@ The living reference for every screen. Read before building UI. Origin and ratio
   - **Balances:** a small green/red dot next to an ink amount. The only color tied to money.
   - **One moment surface per screen, at most:** a backdrop (see Backdrops) behind the screen's hero element.
   - **Violet** speaks for Ardoise: login, accept-invite, the home overall balance.
-  - **Violet, cobalt, sunset, ember** are group identities, derived from the group id. A group's color appears on its hero and as a small rounded-square mark (never a dot) on its home row.
+  - **Violet, cobalt, sunset, ember** are group identities, derived from the group id. A group's color appears on its hero, and on its home row as its backdrop fading in from the right edge behind the trailing content (amount), which is white over it. Never a dot: dots are for balances.
 - Dark mode is a real theme, maintained alongside light. Preference `system | light | dark`, stored in `localStorage['ardoise.theme']`, default `system`.
 
 ## UX principles
@@ -102,4 +102,5 @@ With the frontend running (`pnpm dev:front`), `pnpm --filter @ardoise/e2e screen
 | 2026-10-25 | Visual direction | Ink + one abstract moment | Strong black/white, color only in precise places |
 | 2026-10-25 | Moment surface | Grain + light rays, violet, medium grain | CSS gradients felt artificial; heavy grain feels like light |
 | 2026-10-25 | Login, accept-invite | Full-screen backdrop | Over a top band |
+| 2026-10-25 | Group rows on home | Backdrop fading in from the right (D) | The 28px tile felt compacted; full image cards/stripes too loud; edge band too quiet |
 | 2026-10-25 | Typeface | Figtree | Over Geist, Inter Tight, Manrope, Instrument Sans, Onest, Hanken, Schibsted |
