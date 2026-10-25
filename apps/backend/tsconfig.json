@@ -1,10 +1,10 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "resolvePackageJsonExports": true,
     "esModuleInterop": true,
-    "isolatedModules": true,
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
@@ -17,21 +17,7 @@
     "paths": {
       "@ardoise/shared": ["../../libs/shared/src/index.ts"]
     },
-    "incremental": true,
-    "skipLibCheck": true,
-    "strictNullChecks": true,
-    "forceConsistentCasingInFileNames": true,
-    "noImplicitAny": true,
-    "strictBindCallApply": true,
-    "noFallthroughCasesInSwitch": true,
-    "noImplicitReturns": true,
-    "useUnknownInCatchVariables": true,
-    "noUncheckedIndexedAccess": true,
-    "strictFunctionTypes": true,
-    "noImplicitThis": true,
-    "alwaysStrict": true,
-    "noImplicitOverride": true,
-    "noPropertyAccessFromIndexSignature": true
+    "incremental": true
   },
   "include": ["src/**/*", "test/**/*"]
 }
