@@ -29,7 +29,44 @@ class NoHeaderHost {}
 })
 class FabHost {}
 
+@Component({
+  imports: [MobileShellImports],
+  template: `<app-mobile-shell bleed>Body content</app-mobile-shell>`,
+})
+class BleedHost {}
+
 describe('MobileShell', () => {
+  it('is full width on phones', async () => {
+    const { container } = await render(NoHeaderHost);
+
+    const inner = container.querySelector('app-mobile-shell > div')!;
+    expect(inner.classList).toContain('w-full');
+    expect(inner.classList).not.toContain('border-x');
+    expect(inner.classList).not.toContain('shadow-sm');
+  });
+
+  it('caps width from sm', async () => {
+    const { container } = await render(NoHeaderHost);
+
+    expect(container.querySelector('app-mobile-shell > div')!.classList).toContain('sm:max-w-md');
+  });
+
+  it('keeps top safe-area padding by default', async () => {
+    const { container } = await render(NoHeaderHost);
+
+    expect(container.querySelector('app-mobile-shell')!.classList).toContain(
+      'pt-[env(safe-area-inset-top)]',
+    );
+  });
+
+  it('bleed removes top safe-area padding', async () => {
+    const { container } = await render(BleedHost);
+
+    expect(container.querySelector('app-mobile-shell')!.classList).not.toContain(
+      'pt-[env(safe-area-inset-top)]',
+    );
+  });
+
   it('projects header content into a rendered header region', async () => {
     const { container } = await render(HeaderHost);
 

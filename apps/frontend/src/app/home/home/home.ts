@@ -6,7 +6,7 @@ import { HlmSheetImports } from '@spartan-ng/helm/sheet';
 import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
 import { CreateGroupSheet } from 'src/app/expense-group/create-group-sheet/create-group-sheet';
 import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.service';
-import { MobileShellImports } from 'src/app/shared/mobile-shell/mobile-shell';
+import { MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
 
 type HomeState =
   { status: 'loading' } | { status: 'loaded'; groups: ExpenseGroupSummary[] } | { status: 'error' };

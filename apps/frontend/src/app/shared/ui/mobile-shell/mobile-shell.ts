@@ -1,4 +1,4 @@
-import { Component, contentChild, Directive } from '@angular/core';
+import { booleanAttribute, Component, contentChild, Directive, input } from '@angular/core';
 
 @Directive({ selector: '[appShellHeader]' })
 export class ShellHeader {}
@@ -11,11 +11,14 @@ export class ShellFab {}
   imports: [],
   host: {
     class:
-      'flex h-[100dvh] justify-center bg-background pt-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]',
+      'flex h-[100dvh] justify-center bg-background pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]',
+    '[class.pt-[env(safe-area-inset-top)]]': '!bleed()',
   },
   templateUrl: './mobile-shell.html',
 })
 export class MobileShell {
+  readonly bleed = input(false, { transform: booleanAttribute });
+
   protected readonly header = contentChild(ShellHeader);
   protected readonly fab = contentChild(ShellFab);
 }
