@@ -4,7 +4,7 @@ import { provideIcons } from '@ng-icons/core';
 import { lucideNotebookPen } from '@ng-icons/lucide';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmIconImports } from '@spartan-ng/helm/icon';
-import { MobileShell } from 'src/app/shared/mobile-shell/mobile-shell';
+import { MobileShell } from 'src/app/shared/ui/mobile-shell/mobile-shell';
 
 @Component({
   selector: 'app-auth-layout',

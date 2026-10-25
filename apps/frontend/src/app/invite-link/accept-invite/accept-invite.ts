@@ -16,7 +16,7 @@ import { catchError, map, of, switchMap, tap } from 'rxjs';
 import { AuthApiService } from 'src/app/auth/auth-api.service';
 import { AcceptInviteFlow } from 'src/app/invite-link/accept-invite-flow.service';
 import { InviteLinkApiService } from 'src/app/invite-link/invite-link-api.service';
-import { MobileShellImports } from 'src/app/shared/mobile-shell/mobile-shell';
+import { MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
 
 type AcceptInviteState =
   | 'invalid'
