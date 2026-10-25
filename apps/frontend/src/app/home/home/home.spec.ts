@@ -1,6 +1,6 @@
 import { Router } from '@angular/router';
 import { type CreateInviteLinkResponse, type ExpenseGroupSummary } from '@ardoise/shared';
-import { render, screen, waitForElementToBeRemoved, within } from '@testing-library/angular';
+import { render, screen, waitFor, within } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { type Observable, of, Subject, throwError } from 'rxjs';
 import { AuthService } from 'src/app/auth/auth.service';
@@ -111,7 +111,9 @@ describe('Home', () => {
     expect(within(fabDialog).getByLabelText(/name/i)).toBeTruthy();
 
     await userEvent.keyboard('{Escape}');
-    await waitForElementToBeRemoved(() => screen.queryByRole('dialog'));
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
 
     await userEvent.click(screen.getByRole('button', { name: /create your first group/i }));
     expect(await screen.findByRole('dialog', { name: /create a group/i })).toBeTruthy();
@@ -166,6 +168,8 @@ describe('Home', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: /done/i }));
 
-    await waitForElementToBeRemoved(() => screen.queryByRole('dialog'));
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
   });
 });
