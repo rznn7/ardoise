@@ -7,7 +7,6 @@ import { VARIANTS_ENABLED } from 'src/environments/environment';
   selector: 'app-root',
   imports: [RouterOutlet, NgComponentOutlet],
   templateUrl: './app.html',
-  styleUrl: './app.css',
 })
 export class App {
   protected readonly variantToggle = resource({
