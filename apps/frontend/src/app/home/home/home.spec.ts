@@ -45,12 +45,14 @@ async function setup({
 }
 
 describe('Home', () => {
-  it('shows a spinner while groups load', async () => {
+  it('shows a loading skeleton while groups load', async () => {
     await setup({
       listMine: vi.fn<() => Observable<ExpenseGroupSummary[]>>().mockReturnValue(new Subject()),
     });
 
-    expect(screen.getByRole('status')).toBeTruthy();
+    expect(screen.getByRole('status', { name: 'Loading' })).toBeTruthy();
+    expect(document.querySelector('hlm-spinner')).toBeNull();
+    expect(document.querySelectorAll('hlm-skeleton').length).toBeGreaterThan(0);
     expect(screen.queryByText(/no groups yet/i)).toBeNull();
   });
 
@@ -65,6 +67,8 @@ describe('Home', () => {
 
     expect(screen.getByText('Trip')).toBeTruthy();
     expect(screen.getByText('Flat')).toBeTruthy();
+
+    expect(document.querySelectorAll('app-group-mark')).toHaveLength(2);
 
     const slots = screen.getAllByTestId('balance-slot');
     expect(slots).toHaveLength(2);

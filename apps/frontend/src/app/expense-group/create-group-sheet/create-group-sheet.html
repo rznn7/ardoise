@@ -6,69 +6,65 @@
     <h3 hlmSheetTitle>Create a group</h3>
   }
 </div>
-<form class="flex flex-col gap-4 p-4">
+<form class="flex flex-col gap-4 p-4 pb-8">
   @if (sheet.step === 'invite') {
     @if (sheet.status === 'error') {
-      <p class="text-destructive text-sm">
-        Group created, but we couldn't generate an invite link. Try again.
-      </p>
-      <button hlmBtn type="button" variant="outline" (click)="retryInvite()">Retry link</button>
+      <p appError>Group created, but we couldn't generate an invite link. Try again.</p>
+      <button hlmBtn size="xl" type="button" variant="outline" (click)="retryInvite()">
+        Retry link
+      </button>
     } @else {
-      <div class="flex flex-col gap-1.5">
-        <label for="invite-link" class="text-sm font-medium">Invite link</label>
-        <input
-          id="invite-link"
-          class="rounded-md border border-border px-3 py-2"
-          readonly
-          [value]="sheet.url ?? ''"
-        />
+      <div hlmField>
+        <label hlmFieldLabel for="invite-link">Invite link</label>
+        <input hlmInput id="invite-link" readonly [value]="sheet.url ?? ''" />
       </div>
-      <button hlmBtn type="button" (click)="copyLink()">
+      <button hlmBtn size="xl" type="button" (click)="copyLink()">
         <ng-icon hlm size="sm" [name]="copied() ? 'lucideCheck' : 'lucideCopy'" />
         <span [attr.role]="copied() ? 'status' : null">{{ copied() ? 'Copied' : 'Copy' }}</span>
       </button>
-      <button hlmBtn type="button" variant="outline" (click)="shareLink()">Share</button>
+      <button hlmBtn size="xl" type="button" variant="outline" (click)="shareLink()">Share</button>
       @if (sharedViaCopy()) {
-        <p role="status" aria-live="polite" class="text-muted-foreground text-sm">
-          Link copied — paste it to share
-        </p>
+        <p appMeta role="status" aria-live="polite">Link copied — paste it to share</p>
       }
-      <button hlmBtn type="button" (click)="done()">Done</button>
+      <button hlmBtn size="xl" type="button" variant="ghost" (click)="done()">Done</button>
     }
   } @else {
-    <div class="flex flex-col gap-1.5">
-      <label for="group-name" class="text-sm font-medium">Group name</label>
+    <div hlmField>
+      <label hlmFieldLabel for="group-name">Group name</label>
       <input
         #nameInput
+        hlmInput
         id="group-name"
-        class="rounded-md border border-border px-3 py-2"
         [value]="name()"
         (input)="name.set(nameInput.value)"
       />
     </div>
-    <div class="flex flex-col gap-1.5">
-      <label for="currency" class="text-sm font-medium">Currency</label>
-      <select
-        #currencySelect
-        id="currency"
-        class="rounded-md border border-border px-3 py-2"
-        (change)="currencyCode.set(currencySelect.value)"
+    <div hlmField>
+      <label hlmFieldLabel for="currency">Currency</label>
+      <hlm-native-select
+        selectId="currency"
+        [value]="currencyCode()"
+        (valueChange)="currencyCode.set($event ?? 'EUR')"
       >
-        <option value="EUR">EUR</option>
-        <option value="USD">USD</option>
-        <option value="GBP">GBP</option>
-        <option value="CHF">CHF</option>
-      </select>
+        <option hlmNativeSelectOption value="EUR">EUR</option>
+        <option hlmNativeSelectOption value="USD">USD</option>
+        <option hlmNativeSelectOption value="GBP">GBP</option>
+        <option hlmNativeSelectOption value="CHF">CHF</option>
+      </hlm-native-select>
     </div>
-    <button hlmBtn type="button" [disabled]="name().trim().length === 0" (click)="create()">
+    <button
+      hlmBtn
+      size="xl"
+      type="button"
+      [disabled]="name().trim().length === 0"
+      (click)="create()"
+    >
       Create
     </button>
     @if (sheet.status === 'error') {
       <div class="flex flex-col gap-2">
-        <p class="text-destructive text-sm">
-          Couldn't create the group. Your details are saved — try again.
-        </p>
-        <button hlmBtn type="button" variant="outline" (click)="create()">Retry</button>
+        <p appError>Couldn't create the group. Your details are saved — try again.</p>
+        <button hlmBtn size="xl" type="button" variant="outline" (click)="create()">Retry</button>
       </div>
     }
   }

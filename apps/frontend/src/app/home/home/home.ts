@@ -1,12 +1,18 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { type ExpenseGroupSummary } from '@ardoise/shared';
+import { provideIcons } from '@ng-icons/core';
+import { lucidePlus } from '@ng-icons/lucide';
 import { BrnSheetImports } from '@spartan-ng/brain/sheet';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
+import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
-import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
 import { CreateGroupSheet } from 'src/app/expense-group/create-group-sheet/create-group-sheet';
 import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.service';
+import { GroupMark } from 'src/app/shared/ui/backdrop/group-mark';
+import { ListRowImports } from 'src/app/shared/ui/list-row/list-row';
 import { MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
+import { PageStateImports } from 'src/app/shared/ui/page-state/page-state';
+import { AppTextImports } from 'src/app/shared/ui/text/text';
 
 type HomeState =
   { status: 'loading' } | { status: 'loaded'; groups: ExpenseGroupSummary[] } | { status: 'error' };
@@ -15,14 +21,18 @@ type HomeState =
   selector: 'app-home',
   imports: [
     MobileShellImports,
-    HlmSpinnerImports,
+    HlmIconImports,
+    PageStateImports,
+    ListRowImports,
+    GroupMark,
+    AppTextImports,
     HlmButtonImports,
     HlmSheetImports,
     BrnSheetImports,
     CreateGroupSheet,
   ],
   templateUrl: './home.html',
-  styleUrl: './home.css',
+  providers: [provideIcons({ lucidePlus })],
 })
 export class Home {
   private readonly expenseGroupApi = inject(ExpenseGroupApiService);
