@@ -1,17 +1,15 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  fullyParallel: true,
+  testDir: 'e2e',
+  globalSetup: './e2e/global-setup.ts',
+  workers: 1,
+  timeout: 60_000,
   reporter: [['list']],
-  use: { trace: 'retain-on-failure' },
-  projects: [
-    {
-      name: 'screenshots',
-      testDir: 'screenshots',
-      use: {
-        ...devices['Desktop Chrome'],
-        baseURL: process.env['SCREENSHOTS_BASE_URL'] ?? 'http://localhost:4200',
-      },
-    },
-  ],
+  use: {
+    ...devices['Desktop Chrome'],
+    baseURL: 'http://localhost:4300',
+    viewport: { width: 393, height: 852 },
+    trace: 'retain-on-failure',
+  },
 });

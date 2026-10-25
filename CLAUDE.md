@@ -9,6 +9,7 @@ The owner is learning hexagonal architecture through this project. When you plac
 ```
 apps/backend    NestJS, hexagonal, one folder per bounded context
 apps/frontend   Angular standalone components, spartan.ng helm UI in libs/ui, Tailwind 4
+apps/e2e        Playwright: full-stack scenarios (e2e/) and the screenshot matrix (screenshots/)
 libs/shared     Zod contracts (@ardoise/shared), consumed from src by tsc/vitest/Angular, from dist by the backend build
 docs/           design.md (design system, UX, workflow), domain.md (entities, rules), roadmap.md (feature slices), superpowers/specs + plans
 ```
@@ -24,6 +25,9 @@ pnpm typecheck           tsc --noEmit everywhere
 pnpm --filter @ardoise/backend test       pure domain/mapper specs in src/**/*.spec.ts
 pnpm --filter @ardoise/backend test:e2e   HTTP e2e in test/, needs Docker (testcontainers)
 pnpm --filter @ardoise/frontend test      Angular unit tests (vitest)
+pnpm --filter @ardoise/frontend backdrops regenerate backdrop images (commit the output)
+pnpm --filter @ardoise/e2e test:e2e       Playwright scenarios: real backend, testcontainers Postgres, virtual passkeys
+pnpm --filter @ardoise/e2e screenshots    every screen/state, light+dark (needs pnpm dev:front; ALL_SIZES=1 for 360/375)
 pnpm --filter @ardoise/backend db:generate | db:migrate | db:seed
 ```
 
@@ -69,6 +73,7 @@ Read `docs/design.md` before building any screen. In feature templates (`src/app
 
 - Backend coverage goes into e2e specs in `test/`, with a real Postgres from testcontainers and supertest. Helpers are in `test/helpers/` (`setupTestApp` with provider overrides, `fakePasskeyVerifier`, `seed*` functions). Write unit specs only for pure domain logic.
 - Frontend specs sit next to their component.
+- User-facing flows are covered by Playwright scenarios in `apps/e2e/e2e/`, named as use cases, against the real backend, a throwaway Postgres and a Chrome virtual authenticator. Assert through roles and text, never CSS classes. Every feature slice adds or extends scenarios for its use cases.
 
 ## Workflow
 
