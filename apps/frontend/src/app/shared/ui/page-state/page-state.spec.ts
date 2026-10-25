@@ -44,6 +44,7 @@ describe('PageState', () => {
     });
 
     expect(screen.getByText("Couldn't load your groups")).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Retry' }).classList).toContain('h-12');
     await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
     expect(retry).toHaveBeenCalledOnce();
   });

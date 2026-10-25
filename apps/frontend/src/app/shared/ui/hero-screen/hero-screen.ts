@@ -18,6 +18,11 @@ import { BackdropSurface } from 'src/app/shared/ui/backdrop/backdrop-surface';
       [shape]="shape()"
       [seed]="seed()"
     >
+      <div
+        aria-hidden="true"
+        data-slot="hero-scrim"
+        class="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-3/5 bg-linear-to-t from-black/60 to-transparent"
+      ></div>
       <header class="px-4 pt-[calc(env(safe-area-inset-top)+1.25rem)]">
         <span class="text-base font-medium tracking-tight">ardoise</span>
       </header>

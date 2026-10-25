@@ -25,4 +25,14 @@ describe('HeroScreen', () => {
     expect(content.className).toContain('safe-area-inset-bottom');
     expect(container.querySelector('header')!.className).toContain('safe-area-inset-top');
   });
+
+  it('darkens the bottom so white text stays readable on bright rays', async () => {
+    const { container } = await render(`<app-hero-screen><p>Content</p></app-hero-screen>`, {
+      imports: [HeroScreen],
+    });
+
+    const scrim = container.querySelector('[data-slot="hero-scrim"]')!;
+    expect(scrim.getAttribute('aria-hidden')).toBe('true');
+    expect(scrim.className).toContain('from-black');
+  });
 });

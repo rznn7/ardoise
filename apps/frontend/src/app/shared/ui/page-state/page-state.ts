@@ -58,7 +58,7 @@ export class PageStateAction {}
             }
           </hlm-empty-header>
           <hlm-empty-content>
-            <button hlmBtn variant="outline" size="lg" type="button" (click)="retry.emit()">
+            <button hlmBtn variant="outline" size="xl" type="button" (click)="retry.emit()">
               Retry
             </button>
           </hlm-empty-content>
