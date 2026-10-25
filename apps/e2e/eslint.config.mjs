@@ -13,4 +13,8 @@ export default tseslint.config(
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
     },
   },
+  {
+    files: ['e2e/fixtures/**/*.ts'],
+    rules: { 'no-empty-pattern': 'off' },
+  },
 );

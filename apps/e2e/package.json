@@ -3,18 +3,23 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "screenshots": "playwright test --project screenshots",
+    "screenshots": "playwright test -c playwright.screenshots.config.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "format": "prettier --write \"**/*.ts\""
+    "format": "prettier --write \"**/*.ts\"",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
     "@ardoise/shared": "workspace:*",
     "@eslint/js": "catalog:",
     "@playwright/test": "1.64.1",
+    "@testcontainers/postgresql": "^12.2.1",
     "@types/node": "^24.19.2",
+    "@types/pg": "^8.23.1",
+    "drizzle-orm": "^0.45.4",
     "eslint": "catalog:",
     "eslint-plugin-prettier": "catalog:",
+    "pg": "^8.23.1",
     "prettier": "catalog:",
     "typescript": "catalog:",
     "typescript-eslint": "catalog:"
