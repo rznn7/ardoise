@@ -13,6 +13,7 @@ export default defineConfig({
   resolve: {
     alias: {
       src: resolve(__dirname, 'src'),
+      '@ardoise/shared': resolve(__dirname, '../../libs/shared/src/index.ts'),
     },
   },
   plugins: [swc.vite({ module: { type: 'es6' } })],

@@ -16,6 +16,7 @@
     "module": "preserve",
     "baseUrl": ".",
     "paths": {
+      "@ardoise/shared": ["../../libs/shared/src/index.ts"],
       "@spartan-ng/helm/button": [
         "./libs/ui/button/src/index.ts"
       ],
