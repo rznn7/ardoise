@@ -117,6 +117,28 @@ describe(AcceptInvite.name, () => {
     expect(screen.getByRole('button', { name: 'New here? Join with a passkey' })).toBeTruthy();
   });
 
+  it('invite is presented on a full-screen violet backdrop', async () => {
+    const preview = vi
+      .fn<(token: string) => Observable<PreviewInviteLinkResponse>>()
+      .mockReturnValue(of({ groupName: 'Trip to Lisbon' }));
+    const me = vi
+      .fn<() => Observable<MeResponse>>()
+      .mockReturnValue(throwError(() => new HttpErrorResponse({ status: 401 })));
+    const { container } = await render(AcceptInvite, {
+      inputs: { token: 'x' },
+      providers: [
+        { provide: InviteLinkApiService, useValue: { preview } },
+        { provide: AuthApiService, useValue: { me } },
+      ],
+    });
+
+    expect(await screen.findByText("You're invited to")).toBeTruthy();
+    expect(screen.getByText('Trip to Lisbon')).toBeTruthy();
+    expect(container.querySelector('img')!.getAttribute('src')).toBe(
+      '/backdrops/violet-converge-1.webp',
+    );
+  });
+
   it('logged-out primary action invokes loginThenJoin', async () => {
     const preview = vi
       .fn<(token: string) => Observable<PreviewInviteLinkResponse>>()

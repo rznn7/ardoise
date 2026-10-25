@@ -10,9 +10,11 @@ export class ShellFab {}
   selector: 'app-mobile-shell',
   imports: [],
   host: {
-    class:
-      'flex h-[100dvh] justify-center bg-background pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]',
+    class: 'flex h-[100dvh] justify-center bg-background',
     '[class.pt-[env(safe-area-inset-top)]]': '!bleed()',
+    '[class.pr-[env(safe-area-inset-right)]]': '!bleed()',
+    '[class.pb-[env(safe-area-inset-bottom)]]': '!bleed()',
+    '[class.pl-[env(safe-area-inset-left)]]': '!bleed()',
   },
   templateUrl: './mobile-shell.html',
 })

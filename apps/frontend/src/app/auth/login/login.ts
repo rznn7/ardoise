@@ -13,7 +13,6 @@ type LoginState = { state: 'idle' } | { state: 'loading' } | { state: 'error'; m
   selector: 'app-login',
   imports: [HlmButtonImports, HlmSpinnerImports, HlmIconImports],
   templateUrl: './login.html',
-  styleUrl: './login.css',
   providers: [provideIcons({ lucideRefreshCw, lucideKeyRound })],
 })
 export class Login {
