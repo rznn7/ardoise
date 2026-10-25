@@ -5,6 +5,7 @@
 
 @import '@spartan-ng/brain/hlm-tailwind-preset.css';
 @import '@fontsource-variable/figtree';
+@import './styles/backdrop-tokens.css';
 
 :root {
   color-scheme: light;
@@ -83,6 +84,10 @@
   --color-ring: var(--ring);
   --color-balance-positive: var(--balance-positive);
   --color-balance-negative: var(--balance-negative);
+  --color-backdrop-violet: var(--backdrop-violet);
+  --color-backdrop-cobalt: var(--backdrop-cobalt);
+  --color-backdrop-sunset: var(--backdrop-sunset);
+  --color-backdrop-ember: var(--backdrop-ember);
 }
 
 @layer base {
