@@ -84,6 +84,13 @@ Generated light rays with heavy grain, VoidZero-inspired.
 4. **Build without stopping**; interrupt only for an unclear domain rule or a convention that would need breaking.
 5. **Checkpoint 2, PR**: `pnpm verify` green; screenshots of every screen in every state, light and dark, full set at 393×852, 360/375 only where they differ; forks side by side.
 
+### How to add an A/B fork
+
+1. In the feature component: `private readonly variants = inject(VariantService)`, register once with `this.variants.register('add-expense', 'Add expense form')`.
+2. In the template: `@if (variants.variant('add-expense')() === 'b') { …B… } @else { …A… }`.
+3. A floating A/B pill appears bottom-left in dev builds only (`VARIANTS_ENABLED` is `false` in `environment.prod.ts`, so production never loads it). The choice persists in `localStorage['ardoise.variant.<key>']`.
+4. Before merge: delete the losing branch, the `register` call and the `VariantService` injection; log the pick below.
+
 ## A/B decisions log
 
 | Date | Screen | Picked | Why |
