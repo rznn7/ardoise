@@ -1,0 +1,22 @@
+{
+  "name": "@ardoise/e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "screenshots": "playwright test --project screenshots",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write \"**/*.ts\""
+  },
+  "devDependencies": {
+    "@ardoise/shared": "workspace:*",
+    "@eslint/js": "catalog:",
+    "@playwright/test": "1.64.1",
+    "@types/node": "^24.19.2",
+    "eslint": "catalog:",
+    "eslint-plugin-prettier": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:"
+  }
+}
