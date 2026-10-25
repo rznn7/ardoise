@@ -34,4 +34,39 @@ describe('ListRow', () => {
     expect(title.closest('.min-w-0')).not.toBeNull();
     expect(screen.getByText('€42.50').closest('.shrink-0')).not.toBeNull();
   });
+
+  it('renders a backdrop behind the content without covering it', async () => {
+    await render(
+      `<app-list-row>
+        <span appListRowBackdrop>bg</span>
+        <span appListRowTitle>Title</span>
+      </app-list-row>`,
+      { imports: [...ListRowImports] },
+    );
+
+    const backdrop = screen.getByText('bg');
+    const row = backdrop.closest('[hlmItem]')!;
+    expect(row.className).toContain('relative');
+    expect(row.className).toContain('overflow-hidden');
+    expect(screen.getByText('Title').closest('.relative.min-w-0')).not.toBeNull();
+  });
+
+  it('keeps the text clear of the backdrop so long names truncate before it', async () => {
+    await render(
+      `<app-list-row>
+        <span appListRowBackdrop>bg</span>
+        <span appListRowTitle>Title</span>
+      </app-list-row>`,
+      { imports: [...ListRowImports] },
+    );
+
+    expect(screen.getByText('Title').closest('.min-w-0')!.className).toContain('max-w-3/5');
+  });
+
+  it('lets the text use the full width without a backdrop', async () => {
+    await render(RowHost);
+
+    const title = screen.getByText('A very long group name that should truncate');
+    expect(title.closest('.min-w-0')!.className).not.toContain('max-w-3/5');
+  });
 });

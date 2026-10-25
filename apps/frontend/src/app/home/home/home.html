@@ -32,7 +32,7 @@
             @for (group of groups(); track group.id) {
               <li>
                 <app-list-row>
-                  <app-group-mark appListRowLeading [groupId]="group.id" />
+                  <app-group-fade appListRowBackdrop [groupId]="group.id" />
                   <span appListRowTitle>{{ group.name }}</span>
                   <span appListRowTrailing data-testid="balance-slot"></span>
                 </app-list-row>
