@@ -91,6 +91,10 @@ Generated light rays with heavy grain, VoidZero-inspired.
 3. A floating A/B pill appears bottom-left in dev builds only (`VARIANTS_ENABLED` is `false` in `environment.prod.ts`, so production never loads it). The choice persists in `localStorage['ardoise.variant.<key>']`.
 4. Before merge: delete the losing branch, the `register` call and the `VariantService` injection; log the pick below.
 
+### Screenshots
+
+With the frontend running (`pnpm dev:front`), `pnpm --filter @ardoise/e2e screenshots` writes `apps/e2e/screenshots-out/{route}-{state}-{theme}-{w}x{h}.png` for every screen and state in light and dark at 393×852; `ALL_SIZES=1` adds 360×780 and 375×667. API responses are faked by Playwright route interception (`apps/e2e/screenshots/fixtures.ts`), so loading, empty, error and filled states are all reachable without a backend. Add a cell to `apps/e2e/screenshots/matrix.ts` for every new screen state.
+
 ## A/B decisions log
 
 | Date | Screen | Picked | Why |

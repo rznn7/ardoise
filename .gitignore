@@ -38,3 +38,8 @@ coverage/
 # Superpowers SDD scratch
 .superpowers/
 .nx/
+
+# Playwright
+apps/e2e/screenshots-out/
+apps/e2e/test-results/
+apps/e2e/playwright-report/
