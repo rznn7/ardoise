@@ -23,6 +23,8 @@ import { MemberApiService } from 'src/app/member/member-api.service';
 import { PaymentApiService } from 'src/app/payment/payment-api.service';
 import { PaymentDraft } from 'src/app/payment/payment-draft';
 import { PaymentStore } from 'src/app/payment/payment-store';
+import { withHistoryPageIds } from 'src/app/shared/navigation/back';
+import { openFirstPage } from 'src/app/shared/navigation/first-page.testing';
 
 import { PaymentDetails } from './payment-details';
 
@@ -94,6 +96,7 @@ async function setup({
           { path: 'group/:groupId/payments/:paymentId/edit/options', component: Blank },
         ],
         withComponentInputBinding(),
+        withHistoryPageIds(),
       ),
       { provide: PaymentApiService, useValue: { findOne, sharesOf: () => of(SHARES) } },
       { provide: MemberApiService, useValue: { listByGroup: () => of(MEMBERS) } },
@@ -104,8 +107,12 @@ async function setup({
     ],
   });
   const harness = await RouterTestingHarness.create();
-  if (from) await harness.navigateByUrl(from);
-  await harness.navigateByUrl('/group/7/payments/5');
+  if (from) {
+    await openFirstPage(harness, from);
+    await harness.navigateByUrl('/group/7/payments/5');
+  } else {
+    await openFirstPage(harness, '/group/7/payments/5');
+  }
   harness.detectChanges();
   return { findOne, remove, pending, clear, router: TestBed.inject(Router), harness };
 }

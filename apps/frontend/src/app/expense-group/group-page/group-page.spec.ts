@@ -20,6 +20,8 @@ import { InviteLinkApiService } from 'src/app/invite-link/invite-link-api.servic
 import { MemberApiService } from 'src/app/member/member-api.service';
 import { type FeedPayment, type FeedState, PaymentStore } from 'src/app/payment/payment-store';
 import { ClipboardService } from 'src/app/shared/clipboard.service';
+import { withHistoryPageIds } from 'src/app/shared/navigation/back';
+import { openFirstPage } from 'src/app/shared/navigation/first-page.testing';
 import { ShareService } from 'src/app/shared/share.service';
 
 import { GroupPage } from './group-page';
@@ -101,6 +103,7 @@ async function setup({
           { path: 'group/:groupId/payments/:paymentId', component: Blank },
         ],
         withComponentInputBinding(),
+        withHistoryPageIds(),
       ),
       { provide: ExpenseGroupApiService, useValue: { findOne } },
       { provide: MemberApiService, useValue: { listByGroup: () => of(members) } },
@@ -120,8 +123,12 @@ async function setup({
     ],
   });
   const harness = await RouterTestingHarness.create();
-  if (from) await harness.navigateByUrl(from);
-  await harness.navigateByUrl('/group/7');
+  if (from) {
+    await openFirstPage(harness, from);
+    await harness.navigateByUrl('/group/7');
+  } else {
+    await openFirstPage(harness, '/group/7');
+  }
   harness.detectChanges();
   return { feed, load, remember, findOne };
 }

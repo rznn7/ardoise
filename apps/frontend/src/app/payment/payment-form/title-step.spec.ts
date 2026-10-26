@@ -7,6 +7,8 @@ import { type ExpenseGroupSummary, type GroupMember } from '@ardoise/shared';
 import { screen, waitFor } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { NOW, PaymentDraft } from 'src/app/payment/payment-draft';
+import { withHistoryPageIds } from 'src/app/shared/navigation/back';
+import { openFirstPage } from 'src/app/shared/navigation/first-page.testing';
 
 import { TitleStep } from './title-step';
 
@@ -27,11 +29,14 @@ const MEMBERS: GroupMember[] = [
 async function setup(): Promise<{ draft: PaymentDraft; router: Router }> {
   TestBed.configureTestingModule({
     providers: [
-      provideRouter([
-        { path: 'group/:groupId/payments/new/amount', component: Blank },
-        { path: 'group/:groupId/payments/new/title', component: TitleStep },
-        { path: 'group/:groupId/payments/new/options', component: Blank },
-      ]),
+      provideRouter(
+        [
+          { path: 'group/:groupId/payments/new/amount', component: Blank },
+          { path: 'group/:groupId/payments/new/title', component: TitleStep },
+          { path: 'group/:groupId/payments/new/options', component: Blank },
+        ],
+        withHistoryPageIds(),
+      ),
       { provide: NOW, useValue: () => new Date(2026, 9, 26, 15, 30) },
     ],
   });
@@ -40,7 +45,7 @@ async function setup(): Promise<{ draft: PaymentDraft; router: Router }> {
   draft.group.set(GROUP);
   draft.amountText.set('24,5');
   const harness = await RouterTestingHarness.create();
-  await harness.navigateByUrl('/group/7/payments/new/amount');
+  await openFirstPage(harness, '/group/7/payments/new/amount');
   await harness.navigateByUrl('/group/7/payments/new/title');
   harness.detectChanges();
   return { draft, router: TestBed.inject(Router) };

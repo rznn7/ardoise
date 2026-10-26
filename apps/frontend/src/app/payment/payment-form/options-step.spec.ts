@@ -13,6 +13,8 @@ import { screen, waitFor, within } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { NOW, PaymentDraft } from 'src/app/payment/payment-draft';
 import { PaymentStore } from 'src/app/payment/payment-store';
+import { withHistoryPageIds } from 'src/app/shared/navigation/back';
+import { openFirstPage } from 'src/app/shared/navigation/first-page.testing';
 
 import { OptionsStep } from './options-step';
 
@@ -63,16 +65,19 @@ async function setup(mode: 'new' | 'edit' = 'new'): Promise<Setup> {
   const store = { create: vi.fn(), update: vi.fn() };
   TestBed.configureTestingModule({
     providers: [
-      provideRouter([
-        { path: 'group/:groupId', component: Blank },
-        { path: 'group/:groupId/payments/new/amount', component: Blank },
-        { path: 'group/:groupId/payments/new/title', component: Blank },
-        { path: 'group/:groupId/payments/new/options', component: OptionsStep },
-        { path: 'group/:groupId/payments/:paymentId', component: Blank },
-        { path: 'group/:groupId/payments/:paymentId/edit/amount', component: Blank },
-        { path: 'group/:groupId/payments/:paymentId/edit/title', component: Blank },
-        { path: 'group/:groupId/payments/:paymentId/edit/options', component: OptionsStep },
-      ]),
+      provideRouter(
+        [
+          { path: 'group/:groupId', component: Blank },
+          { path: 'group/:groupId/payments/new/amount', component: Blank },
+          { path: 'group/:groupId/payments/new/title', component: Blank },
+          { path: 'group/:groupId/payments/new/options', component: OptionsStep },
+          { path: 'group/:groupId/payments/:paymentId', component: Blank },
+          { path: 'group/:groupId/payments/:paymentId/edit/amount', component: Blank },
+          { path: 'group/:groupId/payments/:paymentId/edit/title', component: Blank },
+          { path: 'group/:groupId/payments/:paymentId/edit/options', component: OptionsStep },
+        ],
+        withHistoryPageIds(),
+      ),
       { provide: NOW, useValue: () => new Date(2026, 9, 26, 15, 30) },
       { provide: PaymentStore, useValue: store },
     ],
@@ -83,7 +88,7 @@ async function setup(mode: 'new' | 'edit' = 'new'): Promise<Setup> {
     draft.startNew(7, MEMBERS, 12);
     draft.group.set(GROUP);
     draft.amountText.set('24,5');
-    await harness.navigateByUrl('/group/7');
+    await openFirstPage(harness, '/group/7');
     await harness.navigateByUrl('/group/7/payments/new/amount');
     await harness.navigateByUrl('/group/7/payments/new/title');
     await harness.navigateByUrl('/group/7/payments/new/options');
@@ -91,7 +96,7 @@ async function setup(mode: 'new' | 'edit' = 'new'): Promise<Setup> {
     draft.startEdit(PAYMENT, SHARES, MEMBERS);
     draft.myMemberId.set(12);
     draft.group.set(GROUP);
-    await harness.navigateByUrl('/group/7/payments/5');
+    await openFirstPage(harness, '/group/7/payments/5');
     await harness.navigateByUrl('/group/7/payments/5/edit/options');
   }
   harness.detectChanges();

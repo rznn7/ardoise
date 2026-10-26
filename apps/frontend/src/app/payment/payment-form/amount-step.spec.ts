@@ -7,6 +7,8 @@ import { type ExpenseGroupSummary, type GroupMember } from '@ardoise/shared';
 import { screen, waitFor } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { PaymentDraft } from 'src/app/payment/payment-draft';
+import { withHistoryPageIds } from 'src/app/shared/navigation/back';
+import { openFirstPage } from 'src/app/shared/navigation/first-page.testing';
 
 import { AmountStep } from './amount-step';
 
@@ -28,18 +30,21 @@ const MEMBERS: GroupMember[] = [
 async function setup(): Promise<{ draft: PaymentDraft; router: Router }> {
   TestBed.configureTestingModule({
     providers: [
-      provideRouter([
-        { path: 'group/:groupId', component: Blank },
-        { path: 'group/:groupId/payments/new/amount', component: AmountStep },
-        { path: 'group/:groupId/payments/new/title', component: Blank },
-      ]),
+      provideRouter(
+        [
+          { path: 'group/:groupId', component: Blank },
+          { path: 'group/:groupId/payments/new/amount', component: AmountStep },
+          { path: 'group/:groupId/payments/new/title', component: Blank },
+        ],
+        withHistoryPageIds(),
+      ),
     ],
   });
   const draft = TestBed.inject(PaymentDraft);
   draft.startNew(7, MEMBERS, 11);
   draft.group.set(GROUP);
   const harness = await RouterTestingHarness.create();
-  await harness.navigateByUrl('/group/7');
+  await openFirstPage(harness, '/group/7');
   await harness.navigateByUrl('/group/7/payments/new/amount');
   harness.detectChanges();
   return { draft, router: TestBed.inject(Router) };
