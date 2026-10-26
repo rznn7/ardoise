@@ -61,6 +61,7 @@ export class PaymentDraft {
   readonly group = signal<ExpenseGroupSummary | null>(null);
   readonly paymentId = signal<number | null>(null);
   readonly members = signal<readonly GroupMember[]>([]);
+  readonly myMemberId = signal<number | null>(null);
   readonly amountText = signal('');
   readonly title = signal('');
   readonly payerMemberId = signal<number | null>(null);
@@ -142,6 +143,7 @@ export class PaymentDraft {
     this.mode.set('new');
     this.groupId.set(groupId);
     this.members.set(members);
+    this.myMemberId.set(me);
     this.payerMemberId.set(me);
     this.included.set(new Set(members.map((m) => m.id)));
     this.weights.set(allWeightsOne(members));
@@ -202,6 +204,7 @@ export class PaymentDraft {
     this.group.set(null);
     this.paymentId.set(null);
     this.members.set([]);
+    this.myMemberId.set(null);
     this.amountText.set('');
     this.title.set('');
     this.payerMemberId.set(null);

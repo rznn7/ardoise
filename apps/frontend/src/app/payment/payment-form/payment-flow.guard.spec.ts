@@ -121,6 +121,7 @@ describe('paymentFlowGuard', () => {
     expect(draft.mode()).toBe('new');
     expect(draft.groupId()).toBe(7);
     expect(draft.payerMemberId()).toBe(12);
+    expect(draft.myMemberId()).toBe(12);
     expect(draft.group()).toEqual(GROUP);
   });
 
@@ -178,6 +179,7 @@ describe('paymentFlowGuard', () => {
     expect(draft.mode()).toBe('edit');
     expect(draft.paymentId()).toBe(5);
     expect(draft.amountText()).toBe('42,50');
+    expect(draft.myMemberId()).toBe(12);
     expect(draft.group()).toEqual(GROUP);
   });
 

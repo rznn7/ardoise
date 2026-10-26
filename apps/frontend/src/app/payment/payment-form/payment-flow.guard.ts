@@ -75,10 +75,12 @@ function guardEditStep(groupId: number, paymentId: number): GuardResult | Observ
     shares: payments.sharesOf(paymentId),
     members: inject(MemberApiService).listByGroup(groupId),
     group: inject(ExpenseGroupApiService).findOne({ params: { id: groupId } }),
+    me: inject(AuthApiService).me(),
   }).pipe(
-    map(({ payment, shares, members, group }) => {
+    map(({ payment, shares, members, group, me }) => {
       if (payment.groupId !== groupId) return groupUrl;
       draft.startEdit(payment, shares, members);
+      draft.myMemberId.set(members.find((member) => member.userId === me.id)?.id ?? null);
       draft.group.set(group);
       return true;
     }),

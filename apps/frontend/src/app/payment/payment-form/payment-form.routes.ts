@@ -13,6 +13,11 @@ const steps: Routes = [
     loadComponent: () => import('./title-step').then((m) => m.TitleStep),
     canActivate: [paymentFlowGuard],
   },
+  {
+    path: 'options',
+    loadComponent: () => import('./options-step').then((m) => m.OptionsStep),
+    canActivate: [paymentFlowGuard],
+  },
 ];
 
 export const paymentFormRoutes: Routes = [

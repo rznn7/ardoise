@@ -32,6 +32,7 @@ describe('PaymentDraft', () => {
     expect(draft.active()).toBe(true);
     draft.clear();
     expect(draft.active()).toBe(false);
+    expect(draft.myMemberId()).toBeNull();
   });
 
   it('forgets the group on clear and on a new start', () => {
@@ -50,6 +51,7 @@ describe('PaymentDraft', () => {
     expect(draft.paymentId()).toBeNull();
     expect(draft.splitType()).toBe('equal');
     expect(draft.payerMemberId()).toBe(3);
+    expect(draft.myMemberId()).toBe(3);
     expect([...draft.included()]).toEqual([1, 2, 3, 4]);
     expect([...draft.weights().values()]).toEqual([1, 1, 1, 1]);
     expect(draft.date()).toBe('2026-10-26');
