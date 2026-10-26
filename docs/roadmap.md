@@ -35,21 +35,22 @@ See `superpowers/specs/2026-10-25-design-system-and-workflow-design.md`.
 - [x] **foundation** — `superpowers/plans/2026-10-25-design-system-foundation.md`.
 
 ## Payments (the heart)
-Split computation and the create path are done; what remains is listing and the UI.
 - [x] **split computation (pure domain)** — compute `PaymentShare.amount` from `splitType`
   + `inputValue` for all 4 types, largest-remainder rounding (payer-favoring tie-break),
   assert sum == `fullAmount`. No DB, fully unit-tested in isolation.
 - [x] **create-payment use-case (backend)** — persist payment + shares in a unit-of-work
   transaction, consuming the split logic above. Folds in an authorization fix for the two
   existing payment read endpoints, which returned any payment to any authenticated user.
-- [ ] **payment list (backend)** — list-by-group query, endpoint, contract.
-- [ ] **group page (frontend)** — the group-scoped screen everything below hangs off:
+- [x] **payment list (backend)** — list-by-group query, endpoint, contract.
+- [x] **group page (frontend)** — the group-scoped screen everything below hangs off:
   route `/group/:id`, header with group name + member list (consumes the member
   list-by-group endpoint, unused until now), empty payment feed, FAB slot. Makes the home
   group rows navigate here, and adds an invite-link action so a fresh link can be generated
   for an existing group (today only reachable from the create-group sheet's second step).
-- [ ] **add-payment form (frontend)** — one form, 4 split types. Lives behind the group-page FAB.
-- [ ] **payment feed (frontend)** — group payment feed, fills the group page.
+- [x] **add-payment form (frontend)** — one form, 4 split types. Lives behind the group-page FAB.
+- [x] **payment feed (frontend)** — group payment feed, fills the group page.
+- [x] **payment details, edit, delete** — details screen with shares, edit through the same form
+  (opens on options), delete with a confirmation sheet. Any member may edit or delete.
 
 ## Balances + debt simplification
 Pure domain, no DB — high value, isolated, easy win.

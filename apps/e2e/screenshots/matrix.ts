@@ -3,11 +3,15 @@ import { expect, type Page } from '@playwright/test';
 import {
   abort,
   type ApiMocks,
+  GROUP,
   GROUPS,
   json,
   ME,
+  MEMBERS,
   NEW_GROUP,
+  PAYMENTS,
   pending,
+  SHARES,
   status,
 } from './fixtures';
 
@@ -23,6 +27,23 @@ const loggedIn: ApiMocks = { 'POST /auth/me': json(ME) };
 const loggedOut: ApiMocks = { 'POST /auth/me': status(401) };
 const PREVIEW = 'GET /invite-link/[^/]+/preview';
 const GROUPS_LIST = 'GET /expense-groups';
+const GROUP_PATH = `/group/${String(GROUP.id)}`;
+const GROUP_FEED = `GET /expense-groups/${String(GROUP.id)}/payments`;
+const INVITE_TOKEN = 'aGVsbG8td29ybGQtdGhpcy1pcy1hLWRlbW8tdG9rZW4';
+const [DETAILED_PAYMENT] = PAYMENTS;
+if (DETAILED_PAYMENT === undefined) throw new Error('PAYMENTS is empty');
+const DETAILS_PATH = `${GROUP_PATH}/payments/${String(DETAILED_PAYMENT.id)}`;
+
+const groupMocks: ApiMocks = {
+  ...loggedIn,
+  [`GET /expense-groups/${String(GROUP.id)}`]: json(GROUP),
+  [`GET /expense-groups/${String(GROUP.id)}/members`]: json(MEMBERS),
+  [GROUP_FEED]: json(PAYMENTS),
+  [`GET /payments/${String(DETAILED_PAYMENT.id)}`]: json(DETAILED_PAYMENT),
+  [`GET /payment-shares/by-payment/${String(DETAILED_PAYMENT.id)}`]:
+    json(SHARES),
+  'POST /invite-link': json({ token: INVITE_TOKEN }, 201),
+};
 
 const visible = (text: string | RegExp) => async (page: Page) => {
   await expect(page.getByText(text).first()).toBeVisible();
@@ -32,6 +53,45 @@ const loadingStatus = async (page: Page): Promise<void> => {
   await expect(
     page.getByRole('status', { name: 'Loading' }).first(),
   ).toBeVisible();
+};
+
+const groupLoaded = async (page: Page): Promise<void> => {
+  await expect(page.getByRole('heading', { name: GROUP.name })).toBeVisible();
+};
+
+const amountTyped = async (page: Page): Promise<void> => {
+  await page.getByLabel('Amount').fill('24,50');
+};
+
+const toTitle = async (page: Page): Promise<void> => {
+  await amountTyped(page);
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByLabel('Title').fill('Pizza');
+};
+
+const toOptions = async (page: Page): Promise<void> => {
+  await toTitle(page);
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByRole('button', { name: 'Save' })).toBeVisible();
+};
+
+const splitBy =
+  (mode: string, fill: (page: Page) => Promise<void>) =>
+  async (page: Page): Promise<void> => {
+    await toOptions(page);
+    await page.getByRole('button', { name: mode, exact: true }).click();
+    await fill(page);
+  };
+
+const fillEach = async (
+  page: Page,
+  suffix: string,
+  values: readonly string[],
+): Promise<void> => {
+  const fields = page.getByRole('textbox', { name: new RegExp(`${suffix}$`) });
+  for (const [index, value] of values.entries()) {
+    await fields.nth(index).fill(value);
+  }
 };
 
 const openCreateSheet = async (page: Page): Promise<void> => {
@@ -152,6 +212,140 @@ export const CELLS: ScreenshotCell[] = [
       await page.getByLabel('Group name').fill(NEW_GROUP.name);
       await page.getByRole('button', { name: 'Create', exact: true }).click();
       await expect(page.getByText('Group created')).toBeVisible();
+    },
+  },
+  {
+    route: 'group',
+    state: 'loading',
+    path: GROUP_PATH,
+    mocks: {
+      ...groupMocks,
+      [`GET /expense-groups/${String(GROUP.id)}`]: pending,
+    },
+    ready: loadingStatus,
+  },
+  {
+    route: 'group',
+    state: 'empty',
+    path: GROUP_PATH,
+    mocks: { ...groupMocks, [GROUP_FEED]: json([]) },
+    ready: visible('No payments yet'),
+  },
+  {
+    route: 'group',
+    state: 'filled',
+    path: GROUP_PATH,
+    mocks: groupMocks,
+    ready: visible('Pastéis de nata'),
+  },
+  {
+    route: 'group',
+    state: 'error',
+    path: GROUP_PATH,
+    mocks: { ...groupMocks, [GROUP_FEED]: status(500) },
+    ready: visible("Couldn't load payments"),
+  },
+  {
+    route: 'group',
+    state: 'invite-sheet',
+    path: GROUP_PATH,
+    mocks: groupMocks,
+    ready: async (page) => {
+      await groupLoaded(page);
+      await page.getByRole('button', { name: 'Group menu' }).click();
+      await page.getByRole('button', { name: 'Invite people' }).click();
+      await expect(page.getByLabel('Invite link')).toHaveValue(/token=/);
+    },
+  },
+  {
+    route: 'payment-amount',
+    state: 'typed',
+    path: `${GROUP_PATH}/payments/new/amount`,
+    mocks: groupMocks,
+    ready: amountTyped,
+  },
+  {
+    route: 'payment-title',
+    state: 'typed',
+    path: `${GROUP_PATH}/payments/new/amount`,
+    mocks: groupMocks,
+    ready: toTitle,
+  },
+  {
+    route: 'payment-options',
+    state: 'equally',
+    path: `${GROUP_PATH}/payments/new/amount`,
+    mocks: groupMocks,
+    ready: splitBy('Equally', async (page) => {
+      await page.getByRole('checkbox').nth(3).uncheck();
+    }),
+  },
+  {
+    route: 'payment-options',
+    state: 'shares',
+    path: `${GROUP_PATH}/payments/new/amount`,
+    mocks: groupMocks,
+    ready: splitBy('Shares', async (page) => {
+      await page.getByRole('button', { name: 'More shares for You' }).click();
+      await page.getByRole('button', { name: 'Fewer shares for Max' }).click();
+    }),
+  },
+  {
+    route: 'payment-options',
+    state: 'percent',
+    path: `${GROUP_PATH}/payments/new/amount`,
+    mocks: groupMocks,
+    ready: splitBy('%', (page) =>
+      fillEach(page, 'percent', ['40', '20', '20']),
+    ),
+  },
+  {
+    route: 'payment-options',
+    state: 'exact',
+    path: `${GROUP_PATH}/payments/new/amount`,
+    mocks: groupMocks,
+    ready: splitBy('Exact', (page) =>
+      fillEach(page, 'amount', ['10', '6,50', '2']),
+    ),
+  },
+  {
+    route: 'payment-options',
+    state: 'exact-over',
+    path: `${GROUP_PATH}/payments/new/amount`,
+    mocks: groupMocks,
+    ready: splitBy('Exact', (page) =>
+      fillEach(page, 'amount', ['10', '10', '10']),
+    ),
+  },
+  {
+    route: 'payment-details',
+    state: 'loaded',
+    path: DETAILS_PATH,
+    mocks: groupMocks,
+    ready: visible('Shares'),
+  },
+  {
+    route: 'payment-details',
+    state: 'delete-confirm',
+    path: DETAILS_PATH,
+    mocks: groupMocks,
+    ready: async (page) => {
+      await expect(page.getByText('Shares')).toBeVisible();
+      await page.getByRole('button', { name: 'Delete' }).click();
+      await expect(
+        page.getByRole('heading', {
+          name: `Delete "${DETAILED_PAYMENT.title}"?`,
+        }),
+      ).toBeVisible();
+    },
+  },
+  {
+    route: 'payment-edit',
+    state: 'options',
+    path: `${DETAILS_PATH}/edit/options`,
+    mocks: groupMocks,
+    ready: async (page) => {
+      await expect(page.getByRole('button', { name: 'Save' })).toBeVisible();
     },
   },
 ];

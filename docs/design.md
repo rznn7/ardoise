@@ -25,12 +25,13 @@ The living reference for every screen. Read before building UI. Origin and ratio
 5. **Feels instant.** Skeletons, not spinners. Optimistic updates for user actions, rolled back with a message if the server refuses.
 6. **Mobile only, full screen real estate.**
 
-Reference flow, add expense (3–4 touches):
+Reference flow, add payment (4 taps: **+ → Next → Next → Save**, amount and title typed in between). Full spec in `superpowers/specs/2026-10-26-payments-design.md`.
 
-1. FAB → amount focused, numeric keypad up.
-2. Type amount; "next" moves to the optional title (dated default).
-3. Payer = me, date = today, split = equal among all. Members shown inline as chips, all selected; one tap excludes someone. Percent/shares/exact one level deeper.
-4. Save, optimistic.
+1. The app opens on the last group used (once per launch); its hero makes the group obvious.
+2. **+** → amount, focused, numeric keypad up, group chip in the top bar. **Next**.
+3. Title, optional, its placeholder is the dated default ("Payment, 26 Oct"). **Next**.
+4. Options on one screen, prefilled: Paid by (native select, me), Date (native date, today), split Equally with everyone ticked. Shares / % / Exact sit in the same segmented control, inline on the member rows, no sub-screens.
+5. **Save**, optimistic: back on the group page, the row shows "Saving…" until confirmed.
 
 Animations come later, not now.
 
@@ -50,7 +51,12 @@ Prefer in this order:
 2. App-level building blocks in `apps/frontend/src/app/shared/ui/`.
 3. A new building block is a deliberate act: created in `shared/ui/` and called out in the PR, never inside a feature.
 
-Current app-level blocks: _(filled in as they land)_
+Current app-level blocks:
+
+- `group-hero`: the group's backdrop with the top-bar actions and the group name over it (group page).
+- `group-chip`: small chip with the group's colour and name, so the target group is always visible in the add/edit flow and details.
+- `figure-input`: the large amount field (`appFigureInput`) of the add flow's first step.
+- `stepper`: − / + with the value between, 44px buttons, for share weights.
 
 ## Template rules
 
@@ -104,3 +110,6 @@ With the frontend running (`pnpm dev:front`), `pnpm --filter @ardoise/e2e screen
 | 2026-10-25 | Login, accept-invite | Full-screen backdrop | Over a top band |
 | 2026-10-25 | Group rows on home | Backdrop fading in from the right (D) | The 28px tile felt compacted; full image cards/stripes too loud; edge band too quiet |
 | 2026-10-25 | Typeface | Figtree | Over Geist, Inter Tight, Manrope, Instrument Sans, Onest, Hanken, Schibsted |
+| 2026-10-26 | Add payment options | Native selects + inline split on one screen | Sub-screens felt heavy |
+| 2026-10-26 | Payment detail actions | Text-only Edit/Delete | Icons made it heavier |
+| 2026-10-26 | Money format on options screen | app-wide MoneyAmount (€24.50) | one format per screen |
