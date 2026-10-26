@@ -90,4 +90,13 @@ describe('GroupBalances', () => {
       expect(amount.classList).toContain('justify-end');
     }
   });
+
+  it('lets names take the free width instead of a narrow fixed column', async () => {
+    await renderBalances(OWING);
+
+    const name = screen.getByText('Léa');
+    expect(name.classList).toContain('flex-1');
+    expect(name.classList).toContain('min-w-0');
+    expect(name.classList).toContain('truncate');
+  });
 });

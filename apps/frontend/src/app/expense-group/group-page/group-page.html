@@ -109,7 +109,7 @@
           </div>
           @if (tab() === 'balances') {
             <app-group-balances
-              [state]="balances()"
+              [state]="balancesTab()"
               [members]="group.members"
               [meUserId]="group.me.id"
               [currency]="group.group.currencyCode"

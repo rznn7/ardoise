@@ -21,7 +21,7 @@ import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
 import { HlmToggleGroupImports } from '@spartan-ng/helm/toggle-group';
 import { forkJoin } from 'rxjs';
 import { AuthService } from 'src/app/auth/auth.service';
-import { BalanceStore } from 'src/app/balance/balance-store';
+import { type BalancesState, BalanceStore } from 'src/app/balance/balance-store';
 import { GroupBalances } from 'src/app/balance/group-balances/group-balances';
 import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.service';
 import { LastGroupService } from 'src/app/expense-group/last-group.service';
@@ -115,7 +115,13 @@ export class GroupPage {
 
   readonly hasPayments = computed(() => {
     const feed = this.feed();
-    return feed.status === 'loaded' && feed.payments.length > 0;
+    return feed.status === 'loaded' && feed.payments.some((payment) => !payment.pending);
+  });
+
+  readonly balancesTab = computed<BalancesState>(() => {
+    const feed = this.feed();
+    if (feed.status !== 'loaded') return feed;
+    return this.balances();
   });
 
   readonly myBalance = computed(() => {
@@ -206,6 +212,7 @@ export class GroupPage {
   }
 
   retryBalances(): void {
+    if (this.feed().status === 'error') this.paymentStore.load(this.groupId());
     this.balanceStore.load(this.groupId());
   }
 

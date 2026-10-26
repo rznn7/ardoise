@@ -490,4 +490,42 @@ describe('GroupPage', () => {
       expect(listBalances).toHaveBeenCalledTimes(2);
     });
   });
+
+  describe('balances tab while payments are not known', () => {
+    it('stays loading until the payments arrive', async () => {
+      await setup({
+        feedState: { status: 'loading' },
+        balances: balancesOf(0),
+        url: '/group/7?tab=balances',
+      });
+
+      expect(await screen.findByRole('status', { name: 'Loading' })).toBeTruthy();
+      expect(screen.queryByText('Nothing to settle yet')).toBeNull();
+    });
+
+    it('shows an error with retry when the payments fail', async () => {
+      const { load, listBalances } = await setup({
+        feedState: { status: 'error' },
+        balances: balancesOf(-1500),
+        url: '/group/7?tab=balances',
+      });
+
+      expect(await screen.findByText("Couldn't load balances")).toBeTruthy();
+      expect(screen.queryByText('Nothing to settle yet')).toBeNull();
+      await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+      expect(load).toHaveBeenCalledTimes(2);
+      expect(listBalances).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not count a payment that is still saving', async () => {
+      await setup({
+        feedState: { status: 'loaded', payments: [payment({ id: -1, pending: true })] },
+        balances: balancesOf(0),
+        url: '/group/7?tab=balances',
+      });
+
+      expect(await screen.findByText('Nothing to settle yet')).toBeTruthy();
+      expect(screen.queryByRole('button', { name: /settled up/i })).toBeNull();
+    });
+  });
 });
