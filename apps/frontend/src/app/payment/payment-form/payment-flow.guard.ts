@@ -21,7 +21,7 @@ export const paymentFlowGuard: CanActivateFn = (route) => {
   const paymentId = paramOf(route, 'paymentId');
   return paymentId === undefined
     ? guardNewStep(groupId, route.routeConfig?.path)
-    : guardEditStep(groupId, Number(paymentId), route.routeConfig?.path);
+    : guardEditStep(groupId, Number(paymentId));
 };
 
 function guardNewStep(
@@ -58,11 +58,7 @@ function guardNewStep(
   );
 }
 
-function guardEditStep(
-  groupId: number,
-  paymentId: number,
-  step: string | undefined,
-): GuardResult | Observable<GuardResult> {
+function guardEditStep(groupId: number, paymentId: number): GuardResult | Observable<GuardResult> {
   const draft = inject(PaymentDraft);
   const router = inject(Router);
   const editing =
@@ -70,8 +66,7 @@ function guardEditStep(
     draft.mode() === 'edit' &&
     draft.groupId() === groupId &&
     draft.paymentId() === paymentId;
-  const reentering = step === 'options' && router.currentNavigation()?.trigger !== 'popstate';
-  if (editing && !reentering) return true;
+  if (editing) return true;
 
   const payments = inject(PaymentApiService);
   const groupUrl = router.createUrlTree(['/group', groupId]);

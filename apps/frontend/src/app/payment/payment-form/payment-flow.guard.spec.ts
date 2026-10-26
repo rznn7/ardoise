@@ -181,11 +181,12 @@ describe('paymentFlowGuard', () => {
     expect(draft.group()).toEqual(GROUP);
   });
 
-  it('reloads the payment when edit is opened again', async () => {
+  it('reloads the payment when edit is opened again after the draft was cleared', async () => {
     const { harness, draft } = await setup();
     await harness.navigateByUrl('/group/7/payments/5/edit/options');
     draft.title.set('Abandoned');
     await harness.navigateByUrl('/group/7');
+    draft.clear();
 
     await harness.navigateByUrl('/group/7/payments/5/edit/options');
 
@@ -205,6 +206,17 @@ describe('paymentFlowGuard', () => {
       expect(router.url).toBe('/group/7/payments/5/edit/options');
     });
     expect(draft.title()).toBe('Changed');
+  });
+
+  it('keeps the typed amount when Done falls back to options after a direct load', async () => {
+    const { harness, draft, router } = await setup();
+    await harness.navigateByUrl('/group/7/payments/5/edit/amount');
+    draft.amountText.set('99');
+
+    await router.navigateByUrl('/group/7/payments/5/edit/options', { replaceUrl: true });
+
+    expect(router.url).toBe('/group/7/payments/5/edit/options');
+    expect(draft.amountText()).toBe('99');
   });
 
   it('keeps the edit draft when moving between edit steps', async () => {
