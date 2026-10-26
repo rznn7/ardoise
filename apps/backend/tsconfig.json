@@ -16,9 +16,10 @@
     "rootDir": "../..",
     "paths": {
       "src/*": ["./src/*"],
+      "scripts/*": ["./scripts/*"],
       "@ardoise/shared": ["../../libs/shared/src/index.ts"]
     },
     "incremental": true
   },
-  "include": ["src/**/*", "test/**/*"]
+  "include": ["src/**/*", "test/**/*", "scripts/**/*"]
 }
