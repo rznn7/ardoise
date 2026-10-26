@@ -9,7 +9,7 @@ export const setSessionCookie = (res: Response, token: string): void => {
     httpOnly: true,
     sameSite: 'strict',
     path: '/',
-    secure: false, //TODO: enable secure for production environments
+    secure: process.env['COOKIE_SECURE'] === 'true',
     maxAge: SESSION_TTL_MS,
   });
 };
