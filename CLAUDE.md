@@ -29,6 +29,7 @@ pnpm --filter @ardoise/frontend backdrops regenerate backdrop images (commit the
 pnpm --filter @ardoise/e2e test:e2e       Playwright scenarios: real backend, testcontainers Postgres, virtual passkeys
 pnpm --filter @ardoise/e2e screenshots    every screen/state, light+dark (needs pnpm dev:front; ALL_SIZES=1 for 360/375)
 pnpm --filter @ardoise/backend db:generate | db:migrate | db:seed
+pnpm --filter @ardoise/backend db:fresh   drop the Postgres volume, migrate, seed (dev data from scratch)
 ```
 
 vitest builds with SWC and eslint is not type-aware, so green tests and lint say nothing about types. Run `typecheck` before calling work done. `noUncheckedIndexedAccess` is on: prefer `Map.get`, `.find` or destructuring over `arr[i]!`.
