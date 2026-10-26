@@ -151,7 +151,7 @@ describe('VersionWatcher', () => {
     await router.navigateByUrl('/broken').catch(() => undefined);
 
     expect(reload).toHaveBeenCalledOnce();
-    expect(sessionStorage.getItem(CHUNK_RELOAD_KEY)).toBe('1');
+    expect(sessionStorage.getItem(CHUNK_RELOAD_KEY)).not.toBeNull();
   });
 
   it('reloads only once for repeated chunk failures', async () => {
@@ -163,13 +163,23 @@ describe('VersionWatcher', () => {
     expect(reload).toHaveBeenCalledOnce();
   });
 
-  it('clears the chunk guard after a successful navigation', async () => {
-    sessionStorage.setItem(CHUNK_RELOAD_KEY, '1');
-    const { router } = setup([respond('aaa')]);
+  it('does not reload again when a successful navigation sits between two chunk failures', async () => {
+    const { reload, router } = setup([respond('aaa')]);
 
+    await router.navigateByUrl('/broken').catch(() => undefined);
     await router.navigateByUrl('/ok');
+    await router.navigateByUrl('/broken').catch(() => undefined);
 
-    expect(sessionStorage.getItem(CHUNK_RELOAD_KEY)).toBeNull();
+    expect(reload).toHaveBeenCalledOnce();
+  });
+
+  it('reloads again once the last chunk reload is a minute old', async () => {
+    sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now() - 61_000));
+    const { reload, router } = setup([respond('aaa')]);
+
+    await router.navigateByUrl('/broken').catch(() => undefined);
+
+    expect(reload).toHaveBeenCalledOnce();
   });
 
   it('ignores navigation errors that are not chunk failures', async () => {

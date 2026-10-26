@@ -1,6 +1,6 @@
 import { DestroyRef, DOCUMENT, inject, Injectable, InjectionToken } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NavigationEnd, NavigationError, Router } from '@angular/router';
+import { NavigationError, Router } from '@angular/router';
 import { filter, fromEvent } from 'rxjs';
 
 export const VERSION_URL = '/version.json';
@@ -17,6 +17,7 @@ export const PAGE_RELOAD = new InjectionToken<() => void>('PAGE_RELOAD', {
 });
 
 const DEV_SHA = 'dev';
+const CHUNK_RELOAD_COOLDOWN_MS = 60_000;
 const CHUNK_FAILURE =
   /dynamically imported module|Importing a module script failed|Failed to fetch dynamically/;
 
@@ -33,18 +34,18 @@ async function fetchSha(): Promise<string | null> {
   }
 }
 
-function readChunkGuard(): boolean {
+function reloadedForChunkRecently(now: number): boolean {
   try {
-    return sessionStorage.getItem(CHUNK_RELOAD_KEY) !== null;
+    const last = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY));
+    return now - last < CHUNK_RELOAD_COOLDOWN_MS;
   } catch {
     return false;
   }
 }
 
-function writeChunkGuard(armed: boolean): void {
+function rememberChunkReload(now: number): void {
   try {
-    if (armed) sessionStorage.setItem(CHUNK_RELOAD_KEY, '1');
-    else sessionStorage.removeItem(CHUNK_RELOAD_KEY);
+    sessionStorage.setItem(CHUNK_RELOAD_KEY, String(now));
   } catch {
     return;
   }
@@ -71,10 +72,14 @@ export class VersionWatcher {
       )
       .subscribe(() => void this.check());
 
-    this.router.events.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event) => {
-      if (event instanceof NavigationEnd) writeChunkGuard(false);
-      if (event instanceof NavigationError) this.recoverFromChunkFailure(event.error);
-    });
+    this.router.events
+      .pipe(
+        filter((event) => event instanceof NavigationError),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((event) => {
+        this.recoverFromChunkFailure(event.error);
+      });
   }
 
   private async check(): Promise<void> {
@@ -88,8 +93,9 @@ export class VersionWatcher {
   }
 
   private recoverFromChunkFailure(error: unknown): void {
-    if (!isChunkFailure(error) || readChunkGuard()) return;
-    writeChunkGuard(true);
+    const now = Date.now();
+    if (!isChunkFailure(error) || reloadedForChunkRecently(now)) return;
+    rememberChunkReload(now);
     this.reload();
   }
 }
