@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Every push to `main` that passes CI is live at `https://ardoise.rznn.dev` within minutes, on the homelab, with fresh demo data built around the owner's kept account.
+**Goal:** Every push to `main` that passes CI publishes images that the owner deploys with one command to `https://ardoise.rznn.dev` on the homelab, with fresh demo data built around the owner's kept account.
 
-**Architecture:** CI publishes two images to GHCR: `ardoise-backend` (API plus migrate and seed tooling) and `ardoise-web` (Caddy serving the Angular build and proxying `/api`). The homelab pulls `:main` every 2 minutes from a systemd timer. The backend container migrates, re-seeds and starts. The seed keeps every user with a passkey and rebuilds the scenario around the oldest one.
+**Architecture:** CI publishes two images to GHCR: `ardoise-backend` (API plus migrate and seed tooling) and `ardoise-web` (Caddy serving the Angular build and proxying `/api`). The owner pulls `:main` on the homelab by hand over SSH. The backend container migrates, re-seeds and starts. The seed keeps every user with a passkey and rebuilds the scenario around the oldest one.
 
-**Tech Stack:** Docker, Caddy 2, GitHub Actions + GHCR, systemd timers, NestJS, Drizzle (`drizzle-kit migrate`), `pg`, vitest + testcontainers.
+**Tech Stack:** Docker, Caddy 2, GitHub Actions + GHCR, NestJS, Drizzle (`drizzle-kit migrate`), `pg`, vitest + testcontainers.
 
 **Spec:** `docs/superpowers/specs/2026-10-26-preview-deploy-design.md`
 
@@ -27,7 +27,7 @@
 
 ## Review Focus
 
-1. **A timer tick with no new image must not reset data.** `docker compose up -d` only recreates changed containers. Verified in Task 5: two runs in a row, same backend `StartedAt`.
+1. **Running the deploy command with no new image must not reset data.** `docker compose up -d` only recreates changed containers. Verified in Task 5: two runs in a row, same backend `StartedAt`.
 2. **A deep link refreshed in the browser** (`/groups/3`) serves `index.html`, while an unknown `/api/...` path returns Nest's JSON 404 rather than `index.html`. Smoke-checked in Task 3.
 3. **A seed run on a database where the owner created their own groups from the phone** wipes those groups but keeps the account and its session. Test in Task 1.
 4. **Running the seed twice** gives the same counts, with no duplicated fictional users. Test in Task 1.
@@ -143,7 +143,8 @@ Decisions:
 - Base `node:24-bookworm-slim` pinned to its current exact `24.x` tag. pnpm from `corepack enable` (the root's `packageManager` field pins it).
 - Backend: one stage is fine (fat image by design). `pnpm install --frozen-lockfile`, then `pnpm --filter @ardoise/backend... build` (builds `@ardoise/shared` first). Keep dev dependencies: `drizzle-kit` and `tsx` run at start.
 - Web: build stage as above with `pnpm --filter @ardoise/frontend... build`, final stage `caddy:2.x-alpine` pinned, copying the Angular `browser` output (`apps/frontend/dist/frontend/browser`, check the actual path after a build) to `/srv`.
-- Caddyfile: `:80`. `handle_path /api/*` → `reverse_proxy backend:3000`. Default `handle`: `root * /srv`, `try_files {path} /index.html`, `file_server`.
+- Caddyfile: `:80`. `handle_path /api/*` → `reverse_proxy backend:3000`. `handle /version.json`: `header Cache-Control no-store`, `root * /srv`, `file_server`. Default `handle`: `root * /srv`, `try_files {path} /index.html`, `file_server`.
+- Version: the web Dockerfile takes `ARG GIT_SHA=dev` and `ARG GIT_DATE=` and writes `/srv/version.json` as `{"sha":"$GIT_SHA","date":"$GIT_DATE"}` in the final stage.
 
 - [ ] **Step 1: Write the four files.**
 
@@ -156,6 +157,7 @@ Decisions:
   - `curl -s -o /dev/null -w '%{http_code}' localhost:8080/` → `200`,
   - `curl -s localhost:8080/groups/3 | grep -c '<app-root'` → `1` (SPA fallback),
   - `curl -s -o /dev/null -w '%{http_code}' localhost:8080/api/auth/me` → `401`,
+  - `curl -si localhost:8080/version.json` → `{"sha":"smoke",...}` and a `Cache-Control: no-store` header (build the web image with `--build-arg GIT_SHA=smoke --build-arg GIT_DATE=2026-10-26T00:00:00Z`),
   - `curl -s localhost:8080/api/does-not-exist` → Nest's JSON `{"message":"Cannot GET /does-not-exist",...}`, not HTML,
   - opening the printed invite link in Chrome on `http://localhost:8080` and registering with a passkey works.
   Clean up the containers and the network.
@@ -171,7 +173,7 @@ Decisions:
 - Modify: `.github/workflows/ci.yml`
 - Modify: `docs/roadmap.md`
 
-- [ ] **Step 1: Add a `publish` job**: `needs: [lint, typecheck, backend-unit, frontend-unit, e2e, build]`, `if: github.event_name == 'push' && github.ref == 'refs/heads/main'`, `permissions: { contents: read, packages: write }`. Steps: checkout, `docker/setup-buildx-action`, `docker/login-action` to `ghcr.io` with `GITHUB_TOKEN`, then `docker/build-push-action` twice (backend, web) with `context: .`, the matching `file:`, `push: true`, tags `ghcr.io/rznn7/ardoise-<name>:main` and `:${{ github.sha }}`, and GHA cache (`cache-from: type=gha,scope=<name>`, `cache-to: type=gha,mode=max,scope=<name>`). Pin each action to its current major.
+- [ ] **Step 1: Add a `publish` job**: `needs: [lint, typecheck, backend-unit, frontend-unit, e2e, build]`, `if: github.event_name == 'push' && github.ref == 'refs/heads/main'`, `permissions: { contents: read, packages: write }`. Steps: checkout, `docker/setup-buildx-action`, `docker/login-action` to `ghcr.io` with `GITHUB_TOKEN`, then `docker/build-push-action` twice (backend, web) with `context: .`, the matching `file:`, `push: true`, tags `ghcr.io/rznn7/ardoise-<name>:main` and `:${{ github.sha }}`, `build-args` `GIT_SHA=${{ github.sha }}` and `GIT_DATE=<commit date>` on the web image, the date from a prior step `git log -1 --format=%cI` written to `$GITHUB_OUTPUT`, and GHA cache (`cache-from: type=gha,scope=<name>`, `cache-to: type=gha,mode=max,scope=<name>`). Pin each action to its current major.
 
 - [ ] **Step 2: Lint the workflow**
   Run: `docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:<current version>`
@@ -191,11 +193,9 @@ Work in a clone in the scratchpad, on a branch `ardoise-preview`. Follow the con
 **Files (homelab repo):**
 - Create: `ardoise/docker-compose.yml`
 - Create: `ardoise/.env.example`
-- Create: `automation/ardoise-deploy.service`, `automation/ardoise-deploy.timer`
-- Modify: `automation/install.sh` (link and enable the new timer, same pattern as `homelab-update.timer`)
 - Modify: `automation/update-apply.sh` (`EXCLUDE=("nextcloud" "ardoise")`)
 - Modify: `renovate.json` (a rule disabling `ardoise/**`, same shape as the Nextcloud one)
-- Modify: `README.md` (directory table, access table `ardoise.rznn.dev` / anywhere, and an "Ardoise preview" section with the deploy, reset, full wipe and psql commands from the spec's Operations section)
+- Modify: `README.md` (directory table, access table `ardoise.rznn.dev` / anywhere, and an "Ardoise preview" section with the deploy, `docker compose images`, reset, full wipe and psql commands from the spec's Operations section)
 
 **Interfaces:**
 - Consumes: Task 3 images and env vars.
@@ -203,8 +203,6 @@ Work in a clone in the scratchpad, on a branch `ardoise-preview`. Follow the con
 Decisions:
 - `docker-compose.yml`: services `db` (`postgres:16.x` pinned, `POSTGRES_USER=ardoise`, `POSTGRES_DB=ardoise`, password from `.env`, named volume `ardoise_pgdata`, healthcheck `pg_isready`), `backend` (`ghcr.io/rznn7/ardoise-backend:main`, `env_file: .env`, `depends_on: db: condition: service_healthy`), `web` (`ghcr.io/rznn7/ardoise-web:main`, `depends_on: backend`). `container_name: ardoise-db|ardoise-backend|ardoise-web`, `restart: unless-stopped`, no `ports:` anywhere. Networks: `ardoise` (`internal: true`) for all three, `homelab` (`external: true`) for `web` only.
 - `.env.example`: `POSTGRES_PASSWORD=`, `DATABASE_URL=postgres://ardoise:<POSTGRES_PASSWORD>@db:5432/ardoise`, `RP_ID=ardoise.rznn.dev`, `RP_NAME=Ardoise`, `EXPECTED_ORIGIN=https://ardoise.rznn.dev`, `COOKIE_SECURE=true`.
-- `ardoise-deploy.service`: `Type=oneshot`, `User=rznn`, `WorkingDirectory=/home/rznn/homelab/ardoise`, `ExecStart=/usr/bin/docker compose pull --quiet`, then a second `ExecStart=/usr/bin/docker compose up -d --remove-orphans`. No git pull: compose changes arrive through the nightly `homelab-update` pull.
-- `ardoise-deploy.timer`: `OnBootSec=2min`, `OnUnitActiveSec=2min`.
 
 - [ ] **Step 1: Write the files.**
 
@@ -214,17 +212,12 @@ Decisions:
 
 - [ ] **Step 3: Check that an unchanged image does not restart the backend.** Locally, with Task 3's images tagged `:main`, a dummy `.env`, and `docker network create homelab` if missing: `docker compose up -d`, note `docker inspect -f '{{.State.StartedAt}}' ardoise-backend`, run `docker compose up -d` again, compare. Expected: same `StartedAt`. `docker compose down -v` afterwards. (`pull` is skipped here because the images are local only.)
 
-- [ ] **Step 4: Validate the units**
-  Run: `systemd-analyze verify automation/ardoise-deploy.service automation/ardoise-deploy.timer`
-  Expected: no errors (a warning about the missing `/home/rznn/homelab` path on this machine is fine).
-
-- [ ] **Step 5: Commit and open the PR.** One-line commit `feat: ardoise preview, pulled from GHCR every 2 minutes`. Push the branch and open a PR whose body is the owner's checklist, from the spec:
+- [ ] **Step 4: Commit and open the PR.** One-line commit `feat: ardoise preview from GHCR, deployed by hand`. Push the branch and open a PR whose body is the owner's checklist, from the spec:
   1. Merge, then `git pull` on the host.
   2. `cp ardoise/.env.example ardoise/.env` and fill in `POSTGRES_PASSWORD` and `DATABASE_URL`.
-  3. Re-run `automation/install.sh` to install the timer.
-  4. After the first `publish` run on `rznn7/ardoise`, make both GHCR packages public (package settings → Change visibility).
-  5. Cloudflare Zero Trust → Networks → Tunnels → Public Hostnames: `ardoise.rznn.dev` → `http://ardoise-web:80`.
-  6. `docker compose -f ~/homelab/ardoise/docker-compose.yml logs backend`, open the printed invite link on the phone, register, then `docker compose restart backend`.
+  3. After the first `publish` run on `rznn7/ardoise`, make both GHCR packages public (package settings → Change visibility).
+  4. Cloudflare Zero Trust → Networks → Tunnels → Public Hostnames: `ardoise.rznn.dev` → `http://ardoise-web:80`.
+  5. In `~/homelab/ardoise`: `docker compose up -d`, then `docker compose logs backend`, open the printed invite link on the phone, register, then `docker compose restart backend`.
   End the body with the attribution line.
 
 ---
@@ -232,4 +225,4 @@ Decisions:
 ## After all tasks
 
 - `pnpm verify` green on `feat/deploy`. Push and open the Ardoise PR, linking the homelab PR. No screenshots: this slice has no screen.
-- The end-to-end check, a push to `main` going live, is done by the owner after the homelab checklist.
+- The end-to-end check, a push to `main` then the deploy command, is done by the owner after the homelab checklist.

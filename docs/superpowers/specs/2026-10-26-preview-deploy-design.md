@@ -10,7 +10,7 @@ It is not production, and won't be for a while. Nothing on it is worth keeping e
 
 ## Goals
 
-- A push to `main` that passes CI is live on `ardoise.rznn.dev` within a few minutes, with no manual step.
+- A push to `main` that passes CI publishes images. The owner brings the preview up to date with one command over SSH, when it suits them: an automatic deploy would wipe the demo data in the middle of a test on the phone.
 - Each deploy resets the demo data to the seed scenario.
 - Real accounts (users with a passkey) survive the reset, so the owner registers once per environment and stays logged in.
 - The same seed behaviour works in local dev: register once on `localhost` with a real passkey and stop pasting session cookies.
@@ -49,6 +49,8 @@ Two images, built from the monorepo root as the build context, published to `ghc
 - **backend**: one image that runs the API and also carries what migrating and seeding need (`drizzle-kit`, `tsx`, `scripts/`, `test/helpers/seed.ts`). Heavier than a production image would be, which is fine for a preview. Its entrypoint: migrate, seed with accounts kept, start.
 - **web**: Caddy serving the Angular build, with SPA fallback to `index.html`, and proxying `/api/*` to `backend` with the prefix stripped. Caddy listens on plain HTTP: Cloudflare terminates TLS.
 
+**Which version is running.** The web image serves `/version.json`, `{"sha": "<full git sha>", "date": "<commit date, ISO 8601>"}`, written at image build time from build args the CI passes. Caddy serves it with `Cache-Control: no-store`. The owner opens `https://ardoise.rznn.dev/version.json` on the phone or the PC when in doubt. No application code and no screen: the owner chose this over a visible version line in the UI. An image built without the args reports `"sha": "dev"`.
+
 Tags: `:main` (what the homelab follows) and `:<git sha>` (to know what is running and roll back by hand).
 
 ### CI
@@ -64,7 +66,7 @@ A new `ardoise/` directory:
   - `ardoise-backend`: network `ardoise` only. Env from `.env`.
   - `ardoise-web`: networks `ardoise` and `homelab` (the only one on `homelab`, so `cloudflared` reaches it). No host port.
 - `.env.example`: `POSTGRES_PASSWORD`, `DATABASE_URL`, `RP_ID`, `RP_NAME`, `EXPECTED_ORIGIN`, the secure-cookie flag.
-- A systemd timer and service, linked the way `automation/install.sh` links the existing ones, running every 2–3 minutes: `docker compose pull --quiet && docker compose up -d`. `up -d` only recreates containers whose image changed, so a tick with nothing new does nothing.
+- No timer. Updating is manual (see Operations). An automatic pull can be added later as a systemd timer, if wanted.
 - `ardoise` added to `EXCLUDE` in `automation/update-apply.sh` and ignored in `renovate.json`.
 - README: the service in both tables (`ardoise.rznn.dev`, from anywhere), the deploy and reset commands.
 
@@ -72,11 +74,10 @@ These changes are delivered as a PR on `rznn7/homelab`. The builder does not tou
 
 1. Merge the PR, then `git pull` on the host.
 2. Fill in `ardoise/.env` from `.env.example`.
-3. Install the timer (re-run `automation/install.sh` or link and enable it by hand).
-4. Make both GHCR packages public in their package settings, after the first `publish` run. Packages pushed from Actions start out private.
-5. Add the public hostname `ardoise.rznn.dev → http://ardoise-web:80` in the Cloudflare Zero Trust dashboard.
+3. Make both GHCR packages public in their package settings, after the first `publish` run. Packages pushed from Actions start out private.
+4. Add the public hostname `ardoise.rznn.dev → http://ardoise-web:80` in the Cloudflare Zero Trust dashboard.
 
-The end-to-end check, a push to `main` going live, happens once the checklist is done.
+The end-to-end check, a push to `main` then the deploy command, happens once the checklist is done.
 
 ### Seed: keep real accounts
 
@@ -99,6 +100,8 @@ Local dev: `db:seed` gets the new behaviour. `db:fresh` still drops the volume, 
 
 From the tailnet, `ssh rznn-hl`, then in `~/homelab/ardoise`:
 
+- deploy the latest `main`: `docker compose pull && docker compose up -d` (also resets the demo data when the backend image changed),
+- see what is running: `docker compose images`,
 - reset the demo data: `docker compose restart backend` (the entrypoint re-seeds),
 - start from nothing, accounts included: `docker compose down -v && docker compose up -d`. Also the way out if a migration ever breaks on existing accounts,
 - SQL shell: `docker compose exec db psql -U ardoise`.
@@ -113,5 +116,4 @@ From the tailnet, `ssh rznn-hl`, then in `~/homelab/ardoise`:
 - Dockerfile structure: multi-stage, `pnpm deploy` or not, base images (pinned), where the Dockerfiles live.
 - How `@ardoise/shared` gets built inside the image.
 - Name and shape of the secure-cookie config.
-- The exact timer interval within 2–3 minutes.
 - Test coverage of the seed: a backend e2e spec against a testcontainers Postgres that checks real accounts survive and the fictional data is rebuilt is welcome. No Playwright scenario: this slice has no user-facing flow.
