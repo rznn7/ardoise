@@ -4,4 +4,7 @@ export const BALANCE_REPOSITORY = Symbol('BALANCE_REPOSITORY');
 
 export interface BalanceRepository {
   totalsByGroup(groupId: number): Promise<MemberTotals[]>;
+  totalsOfUser(
+    userId: number,
+  ): Promise<(MemberTotals & { readonly groupId: number })[]>;
 }

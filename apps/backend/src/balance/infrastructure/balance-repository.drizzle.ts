@@ -15,6 +15,20 @@ export class BalanceRepositoryDrizzle implements BalanceRepository {
   ) {}
 
   async totalsByGroup(groupId: number): Promise<MemberTotals[]> {
+    return this.totals()
+      .where(eq(member.groupId, groupId))
+      .orderBy(asc(member.id));
+  }
+
+  async totalsOfUser(
+    userId: number,
+  ): Promise<(MemberTotals & { readonly groupId: number })[]> {
+    return this.totals()
+      .where(eq(member.userId, userId))
+      .orderBy(asc(member.groupId));
+  }
+
+  private totals() {
     const paidByMember = this.database
       .select({
         memberId: payment.payerMemberId,
@@ -35,13 +49,13 @@ export class BalanceRepositoryDrizzle implements BalanceRepository {
     return this.database
       .select({
         memberId: member.id,
+        groupId: member.groupId,
         paid: sql<number>`COALESCE(${paidByMember.paid}, 0)::int`,
         owed: sql<number>`COALESCE(${owedByMember.owed}, 0)::int`,
       })
       .from(member)
       .leftJoin(paidByMember, eq(paidByMember.memberId, member.id))
       .leftJoin(owedByMember, eq(owedByMember.memberId, member.id))
-      .where(eq(member.groupId, groupId))
-      .orderBy(asc(member.id));
+      .$dynamic();
   }
 }

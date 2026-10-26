@@ -33,4 +33,9 @@ export const balanceApi = {
     path: '/expense-groups/:groupId/balances',
     res: groupBalancesResponseSchema,
   },
+  listMine: {
+    method: 'GET',
+    path: '/balances/mine',
+    res: z.array(myBalanceSchema),
+  },
 } as const satisfies Record<string, Endpoint>;
