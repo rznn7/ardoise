@@ -202,6 +202,34 @@ describe('Authentication', () => {
       });
     });
 
+    const registerAndReadCookie = async (): Promise<string> => {
+      const { id: groupId } = await seedGroup(pgClient);
+      await seedInviteLink(pgClient, { groupId, token: 'cookie-flag-token' });
+      const beginResponse = await request(app.getHttpServer())
+        .post('/auth/register/begin')
+        .send({ inviteToken: 'cookie-flag-token' })
+        .expect(200);
+      const { stateId } = beginResponse.body as BeginRegistrationResponse;
+      const completeResponse = await request(app.getHttpServer())
+        .post('/auth/register/complete')
+        .send({ stateId, attestation: {} })
+        .expect(204);
+      return completeResponse.headers['set-cookie']![0]!;
+    };
+
+    it('sets a Secure session cookie when COOKIE_SECURE is true', async () => {
+      process.env['COOKIE_SECURE'] = 'true';
+      try {
+        expect(await registerAndReadCookie()).toMatch(/;\s*Secure/);
+      } finally {
+        delete process.env['COOKIE_SECURE'];
+      }
+    });
+
+    it('sets a non-Secure session cookie by default', async () => {
+      expect(await registerAndReadCookie()).not.toMatch(/;\s*Secure/);
+    });
+
     it('a freshly-registered user can call a guarded endpoint immediately', async () => {
       const { id: groupId } = await seedGroup(pgClient);
       await seedInviteLink(pgClient, {

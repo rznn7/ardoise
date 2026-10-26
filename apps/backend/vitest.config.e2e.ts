@@ -12,6 +12,7 @@ export default defineConfig({
   resolve: {
     alias: {
       src: resolve(__dirname, 'src'),
+      scripts: resolve(__dirname, 'scripts'),
       '@ardoise/shared': resolve(__dirname, '../../libs/shared/src/index.ts'),
     },
   },

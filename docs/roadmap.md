@@ -80,7 +80,8 @@ A settlement overlays the balance calculation; it never mutates payments.
 
 ## Hardening & ship
 - [x] **Drizzle migrations** — migration setup and baseline.
-- [ ] **deploy** — Docker compose + Hetzner.
+- [x] **preview deploy** — every main push publishes images; deployed by hand on the homelab at ardoise.rznn.dev, demo data reset, accounts kept.
+- [ ] **production deploy** — Docker compose + Hetzner.
 - [ ] **PWA** — manifest, icons, installability, standalone mode, iOS keyboard handling
   (needed by the add-payment form at the latest).
 - [ ] **multi-device passkey** — lift the v1 single-passkey non-goal.
