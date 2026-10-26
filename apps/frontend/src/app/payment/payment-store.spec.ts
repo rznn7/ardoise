@@ -327,4 +327,20 @@ describe(PaymentStore.name, () => {
 
     expect(store.confirmedUpdate(1)).toBeNull();
   });
+
+  it('counts each settled mutation of a group, confirmed or failed', () => {
+    loadFeed();
+    const version = store.settledVersion(7);
+    expect(version()).toBe(0);
+
+    store.create(body);
+    http.expectOne('/api/payments').flush({ payment: payment(9, body.paidAt), shares: [] });
+    expect(version()).toBe(1);
+
+    const { groupId: _groupId, ...unchanged } = body;
+    store.update(7, 1, unchanged);
+    http.expectOne('/api/payments/1').flush(null, { status: 400, statusText: 'Bad Request' });
+    expect(version()).toBe(2);
+    expect(store.settledVersion(8)()).toBe(0);
+  });
 });

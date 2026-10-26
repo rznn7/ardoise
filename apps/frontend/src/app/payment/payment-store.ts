@@ -1,4 +1,4 @@
-import { computed, inject, Injectable, type Signal, signal } from '@angular/core';
+import { computed, inject, Injectable, type Signal, signal, untracked } from '@angular/core';
 import {
   type CreatePaymentBody,
   type PaymentResponse,
@@ -46,13 +46,17 @@ export class PaymentStore {
   private readonly deleting = signal<ReadonlySet<number>>(new Set());
   private readonly updating = signal<ReadonlyMap<number, UpdatePaymentBody>>(new Map());
   private readonly confirmedUpdates = new Map<number, UpdatePaymentBody>();
-  private readonly settledMutations = new Map<number, number>();
+  private readonly settledMutations = signal<ReadonlyMap<number, number>>(new Map());
   private readonly latestLoads = new Map<number, number>();
   private nextTemporaryId = -1;
   private nextLoadId = 1;
 
   feed(groupId: number): Signal<FeedState> {
     return computed(() => this.feedOf(groupId));
+  }
+
+  settledVersion(groupId: number): Signal<number> {
+    return computed(() => this.settledMutations().get(groupId) ?? 0);
   }
 
   pendingUpdate(id: number): Signal<UpdatePaymentBody | null> {
@@ -202,11 +206,13 @@ export class PaymentStore {
   }
 
   private settledCount(groupId: number): number {
-    return this.settledMutations.get(groupId) ?? 0;
+    return untracked(() => this.settledMutations().get(groupId) ?? 0);
   }
 
   private markSettled(groupId: number): void {
-    this.settledMutations.set(groupId, this.settledCount(groupId) + 1);
+    this.settledMutations.update((counts) =>
+      new Map(counts).set(groupId, (counts.get(groupId) ?? 0) + 1),
+    );
   }
 
   private setFetched(groupId: number, state: FetchedState): void {
