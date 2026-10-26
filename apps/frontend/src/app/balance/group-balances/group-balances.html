@@ -1,0 +1,65 @@
+@switch (state().status) {
+  @case ('loading') {
+    <app-page-state state="loading" />
+  }
+  @case ('error') {
+    <app-page-state
+      state="error"
+      heading="Couldn't load balances"
+      description="Check your connection and try again."
+      (retry)="retry.emit()"
+    />
+  }
+  @case ('loaded') {
+    @if (!hasPayments()) {
+      <app-page-state
+        state="empty"
+        heading="Nothing to settle yet"
+        description="Add a payment with + to see who owes whom."
+      />
+    } @else {
+      <div class="flex flex-col pb-28">
+        <section class="flex flex-col">
+          <h2 appMeta class="px-4 pt-6 pb-2">Balances</h2>
+          <ul class="flex flex-col divide-y divide-border border-y border-border">
+            @for (row of memberLines(); track row.memberId) {
+              <li class="flex min-h-11 items-center gap-3 px-4 py-3" [class.bg-muted]="row.isMe">
+                <span class="w-16 truncate" appBody>{{ row.name }}</span>
+                <app-balance-bar class="flex-1" [ratio]="row.ratio" />
+                <app-balance-indicator
+                  class="text-foreground"
+                  [cents]="row.amount"
+                  [currency]="currency()"
+                />
+              </li>
+            }
+          </ul>
+        </section>
+
+        @if (repayments().length === 0) {
+          <p appMeta class="px-4 pt-6">All settled</p>
+        } @else {
+          <section class="flex flex-col">
+            <h2 appMeta class="px-4 pt-6 pb-2">Repayments</h2>
+            <ul class="flex flex-col divide-y divide-border border-y border-border">
+              @for (row of repayments(); track $index) {
+                <li [class.text-muted-foreground]="!row.mine">
+                  <app-list-row>
+                    <span appListRowTitle>{{ row.label }}</span>
+                    <app-money-amount
+                      appListRowTrailing
+                      [class.text-foreground]="row.mine"
+                      [class.text-muted-foreground]="!row.mine"
+                      [cents]="row.amount"
+                      [currency]="currency()"
+                    />
+                  </app-list-row>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      </div>
+    }
+  }
+}
