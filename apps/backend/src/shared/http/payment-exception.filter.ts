@@ -1,6 +1,6 @@
+import { InvalidSplit } from '@ardoise/shared';
 import { ArgumentsHost, Catch, ExceptionFilter } from '@nestjs/common';
 import type { Response } from 'express';
-import { InvalidSplit } from 'src/payment/domain/compute-payment-shares';
 import {
   ParticipantNotInGroup,
   PayerNotInGroup,

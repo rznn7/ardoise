@@ -1,4 +1,6 @@
-export type SplitType = 'equal' | 'percent' | 'shares' | 'exact';
+import { type SplitType } from '@ardoise/shared';
+
+export type { SplitType };
 
 export type Payment = {
   readonly id: number;

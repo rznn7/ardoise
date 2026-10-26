@@ -3,7 +3,6 @@ export type Weighted = {
   readonly weight: number;
 };
 
-/** Precondition: totalWeight > 0. Throws nothing. */
 export const apportion = (
   fullAmount: number,
   weights: readonly Weighted[],

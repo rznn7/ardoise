@@ -1,7 +1,7 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 
-import { apportion, type Weighted } from './apportion';
+import { apportion, type Weighted } from './apportion.js';
 
 describe('apportion', () => {
   it('divides cleanly when there is no remainder', () => {

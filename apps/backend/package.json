@@ -58,7 +58,6 @@
     "eslint-plugin-import": "catalog:",
     "eslint-plugin-prettier": "catalog:",
     "eslint-plugin-simple-import-sort": "catalog:",
-    "fast-check": "catalog:",
     "globals": "catalog:",
     "prettier": "catalog:",
     "source-map-support": "^0.5.21",

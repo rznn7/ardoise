@@ -32,7 +32,7 @@ Without a join flow the app is unusable.
 Ink tokens and theme, Figtree, building blocks, backdrops, lint enforcement, screenshot and A/B
 tooling, Playwright e2e. Existing screens moved onto it.
 See `superpowers/specs/2026-10-25-design-system-and-workflow-design.md`.
-- [ ] **foundation** — `superpowers/plans/2026-10-25-design-system-foundation.md`.
+- [x] **foundation** — `superpowers/plans/2026-10-25-design-system-foundation.md`.
 
 ## Payments (the heart)
 Split computation and the create path are done; what remains is listing and the UI.

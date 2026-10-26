@@ -1,7 +1,6 @@
-import { type PaymentShare } from 'src/payment-share/domain/payment-share';
+import { apportion, type Weighted } from './apportion.js';
 
-import { apportion, type Weighted } from './apportion';
-import { type SplitType } from './payment';
+export type SplitType = 'equal' | 'percent' | 'shares' | 'exact';
 
 export type SplitParticipant = {
   readonly memberId: number;
@@ -15,7 +14,11 @@ export type ComputeSharesInput = {
   readonly participants: readonly SplitParticipant[];
 };
 
-export type ComputedShare = Omit<PaymentShare, 'paymentId'>;
+export type ComputedShare = {
+  readonly memberId: number;
+  readonly inputValue: number;
+  readonly amount: number;
+};
 
 export type InvalidSplitCode =
   | 'EMPTY_PARTICIPANTS'
@@ -34,7 +37,7 @@ export class InvalidSplit extends Error {
   }
 }
 
-const PERCENT_TOTAL = 10_000;
+export const PERCENT_TOTAL = 10_000;
 export const MAX_SHARE_WEIGHT = 1_000_000;
 
 const sumOf = (participants: readonly SplitParticipant[]): number =>

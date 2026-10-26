@@ -1,17 +1,17 @@
+import {
+  computePaymentShares,
+  type SplitParticipant,
+  type SplitType,
+} from '@ardoise/shared';
 import { NotAMember } from 'src/member/domain/member';
 import { type MemberRepository } from 'src/member/domain/member-repository';
 import { type PaymentShare } from 'src/payment-share/domain/payment-share';
 import { type PaymentShareRepository } from 'src/payment-share/domain/payment-share-repository';
 
 import {
-  computePaymentShares,
-  type SplitParticipant,
-} from './compute-payment-shares';
-import {
   ParticipantNotInGroup,
   PayerNotInGroup,
   type Payment,
-  type SplitType,
 } from './payment';
 import { type PaymentRepository } from './payment-repository';
 
