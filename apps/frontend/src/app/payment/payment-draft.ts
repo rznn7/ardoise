@@ -119,7 +119,7 @@ export class PaymentDraft {
 
   readonly valid = computed(() => this.preview().size > 0);
 
-  readonly toRequest = computed((): UpdatePaymentBody => {
+  toRequest(): UpdatePaymentBody {
     const type = this.splitType();
     const date = this.date();
     return {
@@ -133,7 +133,7 @@ export class PaymentDraft {
         inputValue: type === 'equal' ? 0 : p.inputValue,
       })),
     };
-  });
+  }
 
   startNew(groupId: number, members: readonly GroupMember[], me: number): void {
     this.reset();

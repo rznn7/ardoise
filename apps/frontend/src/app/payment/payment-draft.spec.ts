@@ -139,6 +139,22 @@ describe('PaymentDraft', () => {
       ]);
     });
 
+    it('follows the clock between calls', () => {
+      draft.amountText.set('10');
+      let current = clock;
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [{ provide: NOW, useValue: () => current }],
+      });
+      const live = TestBed.inject(PaymentDraft);
+      live.startNew(7, members, 3);
+      live.amountText.set('10');
+      const first = live.toRequest().paidAt;
+      current = new Date(2026, 9, 26, 15, 45);
+      expect(first).toBe(clock.toISOString());
+      expect(live.toRequest().paidAt).toBe(current.toISOString());
+    });
+
     it('uses noon local time for a past date', () => {
       draft.amountText.set('10');
       draft.title.set('Dinner');
