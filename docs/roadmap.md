@@ -54,11 +54,11 @@ See `superpowers/specs/2026-10-25-design-system-and-workflow-design.md`.
 
 ## Balances + debt simplification
 Pure domain, no DB — high value, isolated, easy win.
-- [ ] **net balance (pure domain)** — net balance per member (paid − owed).
-- [ ] **debt simplification (pure domain)** — greedy creditor/debtor matching to minimize
+- [x] **net balance (pure domain)** — net balance per member (paid − owed).
+- [x] **debt simplification (pure domain)** — greedy creditor/debtor matching to minimize
   transaction count.
-- [ ] **balance endpoint (backend)** — use-case wiring + contract.
-- [ ] **balance view (frontend)** — who-owes-whom display, hosted on the group page.
+- [x] **balance endpoint (backend)** — use-case wiring + contract.
+- [x] **balance view (frontend)** — who-owes-whom display, hosted on the group page.
 
 ## Settlement
 A settlement overlays the balance calculation; it never mutates payments.

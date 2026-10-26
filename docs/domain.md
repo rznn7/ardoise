@@ -98,5 +98,6 @@ Rather than displaying all raw debts (A→B, B→C, A→C...), we minimize the n
 1. Compute each member's net balance `(amount paid - amount owed)`
 2. Split into creditors `(balance > 0)` and debtors `(balance < 0)`
 3. Greedy match: the largest debtor repays the largest creditor, until zero
+4. Ties go to the lowest member id, so the result is deterministic
 
 > This algorithm lives entirely in the domain layer with no DB dependency — a perfect use case for hexagonal architecture.
