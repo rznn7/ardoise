@@ -34,6 +34,16 @@ describe('PaymentDraft', () => {
     expect(draft.active()).toBe(false);
   });
 
+  it('forgets the group on clear and on a new start', () => {
+    const group = { id: 7, name: 'Lisbon trip', currencyCode: 'EUR', createdAt: '' };
+    draft.group.set(group);
+    draft.clear();
+    expect(draft.group()).toBeNull();
+    draft.group.set(group);
+    draft.startNew(8, members, 3);
+    expect(draft.group()).toBeNull();
+  });
+
   it('starts new with equal split, everyone included, me as payer', () => {
     expect(draft.mode()).toBe('new');
     expect(draft.groupId()).toBe(7);

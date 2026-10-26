@@ -1,6 +1,7 @@
 import { computed, inject, Injectable, InjectionToken, signal } from '@angular/core';
 import {
   computePaymentShares,
+  type ExpenseGroupSummary,
   type GroupMember,
   InvalidSplit,
   type PaymentResponse,
@@ -57,6 +58,7 @@ export class PaymentDraft {
 
   readonly mode = signal<'new' | 'edit'>('new');
   readonly groupId = signal(0);
+  readonly group = signal<ExpenseGroupSummary | null>(null);
   readonly paymentId = signal<number | null>(null);
   readonly members = signal<readonly GroupMember[]>([]);
   readonly amountText = signal('');
@@ -197,6 +199,7 @@ export class PaymentDraft {
   private reset(): void {
     this.mode.set('new');
     this.groupId.set(0);
+    this.group.set(null);
     this.paymentId.set(null);
     this.members.set([]);
     this.amountText.set('');

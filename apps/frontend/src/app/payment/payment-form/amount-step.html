@@ -1,0 +1,55 @@
+<app-mobile-shell>
+  <div appShellHeader class="flex items-center gap-3 bg-background px-4 py-2">
+    @if (editing()) {
+      <button
+        aria-label="Back"
+        class="size-11 shrink-0 rounded-full"
+        hlmBtn
+        size="icon-lg"
+        type="button"
+        variant="ghost"
+        (click)="backToOptions()"
+      >
+        <ng-icon hlm name="lucideChevronLeft" size="sm" aria-hidden="true" />
+      </button>
+    } @else {
+      <button
+        aria-label="Cancel"
+        class="size-11 shrink-0 rounded-full"
+        hlmBtn
+        size="icon-lg"
+        type="button"
+        variant="ghost"
+        (click)="cancel()"
+      >
+        <ng-icon hlm name="lucideX" size="sm" aria-hidden="true" />
+      </button>
+    }
+    @if (draft.group(); as group) {
+      <app-group-chip [groupId]="group.id" [name]="group.name" />
+    }
+  </div>
+
+  <form class="flex min-h-full flex-col gap-6 px-4 pt-10 pb-4" (submit)="next($event)">
+    <div class="flex flex-col gap-2">
+      <div class="flex items-center gap-3">
+        <input
+          #amountInput
+          appFigureInput
+          autocomplete="off"
+          enterkeyhint="next"
+          id="payment-amount"
+          inputmode="decimal"
+          placeholder="0,00"
+          [value]="draft.amountText()"
+          (input)="draft.amountText.set(amountInput.value)"
+        />
+        <span appTitle>{{ draft.group()?.currencyCode }}</span>
+      </div>
+      <label appMeta for="payment-amount">Amount</label>
+    </div>
+    <button class="mt-auto w-full" hlmBtn size="xl" type="submit" [disabled]="!canContinue()">
+      {{ editing() ? 'Done' : 'Next' }}
+    </button>
+  </form>
+</app-mobile-shell>
