@@ -28,7 +28,7 @@ import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
 import { forkJoin } from 'rxjs';
-import { AuthApiService } from 'src/app/auth/auth-api.service';
+import { AuthService } from 'src/app/auth/auth.service';
 import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.service';
 import { MemberApiService } from 'src/app/member/member-api.service';
 import { PaymentApiService } from 'src/app/payment/payment-api.service';
@@ -136,7 +136,7 @@ export class PaymentDetails {
   private readonly paymentApi = inject(PaymentApiService);
   private readonly memberApi = inject(MemberApiService);
   private readonly groupApi = inject(ExpenseGroupApiService);
-  private readonly authApi = inject(AuthApiService);
+  private readonly auth = inject(AuthService);
   private readonly store = inject(PaymentStore);
   private readonly draft = inject(PaymentDraft);
   private readonly router = inject(Router);
@@ -240,7 +240,7 @@ export class PaymentDetails {
       shares: this.paymentApi.sharesOf(paymentId),
       members: this.memberApi.listByGroup(groupId),
       group: this.groupApi.findOne({ params: { id: groupId } }),
-      me: this.authApi.me(),
+      me: this.auth.currentUser(),
     }).subscribe({
       next: (details) => {
         if (loadId !== this.latestLoad) return;

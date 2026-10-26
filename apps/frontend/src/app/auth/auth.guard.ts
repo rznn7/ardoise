@@ -1,23 +1,23 @@
 import { inject } from '@angular/core';
 import { type CanActivateFn, Router } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
-import { AuthApiService } from 'src/app/auth/auth-api.service';
+import { AuthService } from 'src/app/auth/auth.service';
 
 export const authGuard: CanActivateFn = () => {
-  const authApi = inject(AuthApiService);
+  const auth = inject(AuthService);
   const router = inject(Router);
 
-  return authApi.me().pipe(
+  return auth.currentUser().pipe(
     map(() => true),
     catchError(() => of(router.createUrlTree(['/login']))),
   );
 };
 
 export const guestGuard: CanActivateFn = () => {
-  const authApi = inject(AuthApiService);
+  const auth = inject(AuthService);
   const router = inject(Router);
 
-  return authApi.me().pipe(
+  return auth.currentUser().pipe(
     map(() => router.createUrlTree(['/home'])),
     catchError(() => of(true)),
   );

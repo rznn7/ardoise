@@ -7,7 +7,7 @@ import {
   Router,
 } from '@angular/router';
 import { catchError, forkJoin, map, type Observable, of } from 'rxjs';
-import { AuthApiService } from 'src/app/auth/auth-api.service';
+import { AuthService } from 'src/app/auth/auth.service';
 import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.service';
 import { MemberApiService } from 'src/app/member/member-api.service';
 import { PaymentApiService } from 'src/app/payment/payment-api.service';
@@ -46,7 +46,7 @@ function guardNewStep(
   return forkJoin({
     group: inject(ExpenseGroupApiService).findOne({ params: { id: groupId } }),
     members: inject(MemberApiService).listByGroup(groupId),
-    me: inject(AuthApiService).me(),
+    me: inject(AuthService).currentUser(),
   }).pipe(
     map(({ group, members, me }) => {
       const myMember = members.find((member) => member.userId === me.id);
@@ -78,7 +78,7 @@ function guardEditStep(groupId: number, paymentId: number): GuardResult | Observ
     shares: payments.sharesOf(paymentId),
     members: inject(MemberApiService).listByGroup(groupId),
     group: inject(ExpenseGroupApiService).findOne({ params: { id: groupId } }),
-    me: inject(AuthApiService).me(),
+    me: inject(AuthService).currentUser(),
   }).pipe(
     map(({ payment, shares, members, group, me }) => {
       if (payment.groupId !== groupId) return groupUrl;

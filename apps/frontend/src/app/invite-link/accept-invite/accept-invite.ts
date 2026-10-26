@@ -12,7 +12,7 @@ import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
 import { catchError, map, of, switchMap, tap } from 'rxjs';
-import { AuthApiService } from 'src/app/auth/auth-api.service';
+import { AuthService } from 'src/app/auth/auth.service';
 import { LastGroupService } from 'src/app/expense-group/last-group.service';
 import { AcceptInviteFlow } from 'src/app/invite-link/accept-invite-flow.service';
 import { InviteLinkApiService } from 'src/app/invite-link/invite-link-api.service';
@@ -54,7 +54,7 @@ const SUCCESS_DISPLAY_MS = 800;
 export class AcceptInvite {
   private readonly router = inject(Router);
   private readonly inviteLinkApi = inject(InviteLinkApiService);
-  private readonly authApi = inject(AuthApiService);
+  private readonly auth = inject(AuthService);
   private readonly flow = inject(AcceptInviteFlow);
   private readonly lastGroup = inject(LastGroupService);
 
@@ -85,7 +85,7 @@ export class AcceptInvite {
           this.groupName.set(groupName);
         }),
         switchMap(() =>
-          this.authApi.me().pipe(
+          this.auth.currentUser().pipe(
             map(() => 'loggedIn' as const),
             catchError(() => of('loggedOut' as const)),
           ),

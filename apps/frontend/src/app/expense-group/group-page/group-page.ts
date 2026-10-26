@@ -19,7 +19,7 @@ import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
 import { forkJoin } from 'rxjs';
-import { AuthApiService } from 'src/app/auth/auth-api.service';
+import { AuthService } from 'src/app/auth/auth.service';
 import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.service';
 import { LastGroupService } from 'src/app/expense-group/last-group.service';
 import { InviteLinkPanel } from 'src/app/invite-link/invite-link-panel/invite-link-panel';
@@ -76,7 +76,7 @@ const isNotAccessible = (error: unknown): boolean =>
 export class GroupPage {
   private readonly groupApi = inject(ExpenseGroupApiService);
   private readonly memberApi = inject(MemberApiService);
-  private readonly authApi = inject(AuthApiService);
+  private readonly auth = inject(AuthService);
   private readonly paymentStore = inject(PaymentStore);
   private readonly lastGroup = inject(LastGroupService);
 
@@ -160,7 +160,7 @@ export class GroupPage {
     forkJoin({
       group: this.groupApi.findOne({ params: { id: groupId } }),
       members: this.memberApi.listByGroup(groupId),
-      me: this.authApi.me(),
+      me: this.auth.currentUser(),
     }).subscribe({
       next: ({ group, members, me }) => {
         this.lastGroup.remember(groupId);
