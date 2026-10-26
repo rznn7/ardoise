@@ -5,6 +5,7 @@ import request from 'supertest';
 import { type App } from 'supertest/types';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
+import { seedGroup, seedMember, seedSession, seedUser } from './helpers/seed';
 import { setupTestApp } from './helpers/test-app';
 
 describe('GroupMembers', () => {
@@ -157,10 +158,68 @@ describe('GroupMembers', () => {
 
       // THEN — ordered by member id, no groupId leaked.
       expect(response.body).toEqual([
-        { id: memberAId, userId: userAId, nickname: null, isModerator: false },
-        { id: memberBId, userId: userBId, nickname: 'Bob', isModerator: false },
-        { id: memberCId, userId: userCId, nickname: null, isModerator: true },
+        {
+          id: memberAId,
+          userId: userAId,
+          name: 'alice',
+          nickname: null,
+          isModerator: false,
+        },
+        {
+          id: memberBId,
+          userId: userBId,
+          name: 'Bob',
+          nickname: 'Bob',
+          isModerator: false,
+        },
+        {
+          id: memberCId,
+          userId: userCId,
+          name: 'carol',
+          nickname: null,
+          isModerator: true,
+        },
       ]);
+    });
+
+    it("returns each member's account name when no nickname is set", async () => {
+      const alice = await seedUser(pgClient, { name: 'alice' });
+      const bob = await seedUser(pgClient, { name: 'bob' });
+      const group = await seedGroup(pgClient);
+      await seedMember(pgClient, { userId: alice.id, groupId: group.id });
+      await seedMember(pgClient, { userId: bob.id, groupId: group.id });
+      const { token } = await seedSession(pgClient, { userId: alice.id });
+
+      const response = await request(app.getHttpServer())
+        .get(`/expense-groups/${String(group.id)}/members`)
+        .set('Cookie', `session_token=${token}`)
+        .expect(200);
+
+      expect(
+        (response.body as { name: string }[]).map((entry) => entry.name),
+      ).toEqual(['alice', 'bob']);
+    });
+
+    it('prefers the group nickname over the account name', async () => {
+      const alice = await seedUser(pgClient, { name: 'alice' });
+      const bob = await seedUser(pgClient, { name: 'bob' });
+      const group = await seedGroup(pgClient);
+      await seedMember(pgClient, { userId: alice.id, groupId: group.id });
+      await seedMember(pgClient, {
+        userId: bob.id,
+        groupId: group.id,
+        nickname: 'Bobby',
+      });
+      const { token } = await seedSession(pgClient, { userId: alice.id });
+
+      const response = await request(app.getHttpServer())
+        .get(`/expense-groups/${String(group.id)}/members`)
+        .set('Cookie', `session_token=${token}`)
+        .expect(200);
+
+      expect(
+        (response.body as { name: string }[]).map((entry) => entry.name),
+      ).toEqual(['alice', 'Bobby']);
     });
 
     it('returns 401 (not 400) for unauthenticated + malformed groupId', async () => {

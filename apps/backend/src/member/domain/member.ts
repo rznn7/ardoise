@@ -6,4 +6,6 @@ export type Member = {
   readonly isModerator: boolean;
 };
 
+export type NamedMember = Member & { readonly name: string };
+
 export class NotAMember extends Error {}

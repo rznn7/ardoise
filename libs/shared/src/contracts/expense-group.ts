@@ -23,6 +23,7 @@ export type ExpenseGroupSummary = z.infer<typeof expenseGroupSummarySchema>;
 export const groupMemberSchema = z.object({
   id: z.number(),
   userId: z.number(),
+  name: z.string(),
   nickname: z.string().nullable(),
   isModerator: z.boolean(),
 });

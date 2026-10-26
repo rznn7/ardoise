@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { type Member, NotAMember } from 'src/member/domain/member';
+import { type NamedMember, NotAMember } from 'src/member/domain/member';
 import {
   MEMBER_REPOSITORY,
   type MemberRepository,
@@ -17,10 +17,10 @@ export class ListGroupMembersUseCase {
   }: {
     userId: number;
     groupId: number;
-  }): Promise<Member[]> {
+  }): Promise<NamedMember[]> {
     const membership = await this.members.findByUserAndGroup(userId, groupId);
     if (!membership) throw new NotAMember();
 
-    return this.members.findByGroupId(groupId);
+    return this.members.findNamedByGroupId(groupId);
   }
 }
