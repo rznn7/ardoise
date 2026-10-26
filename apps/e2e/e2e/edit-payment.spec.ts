@@ -35,6 +35,14 @@ test("a member edits a payment's payer", async ({
   await expect(alice.getByText(`Paid by ${bobName}`)).toBeVisible();
   expect((await saved).ok()).toBe(true);
 
+  await alice.goBack();
+  await expect(alice).toHaveURL(/\/group\/\d+$/);
+  await expect(
+    alice.getByRole('heading', { name: 'Lisbon trip' }),
+  ).toBeVisible();
+  await alice.goForward();
+  await expect(alice.getByRole('heading', { name: 'Taxi' })).toBeVisible();
+
   await alice.reload();
   await expect(alice.getByText(`Paid by ${bobName}`)).toBeVisible();
 });

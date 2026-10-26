@@ -26,6 +26,13 @@ test('a member adds a payment with the defaults', async ({
   await expect(row).toContainText('Paid by you');
   await expect(row).toContainText('€24.50');
 
+  await page.goBack();
+  await expect(page).toHaveURL(/\/home$/);
+  await expect(page.getByRole('heading', { name: 'Groups' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save' })).toHaveCount(0);
+  await page.goForward();
+  await expect(feedRow(page, 'Pizza')).toContainText('€24.50');
+
   await page.reload();
   await expect(feedRow(page, 'Pizza')).toContainText('Paid by you');
   await expect(feedRow(page, 'Pizza')).toContainText('€24.50');
