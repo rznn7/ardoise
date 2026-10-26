@@ -5,13 +5,14 @@ import { Client } from 'pg';
 import { seedDemo } from './seed/demo-scenario';
 
 async function main() {
+  const origin = process.env['EXPECTED_ORIGIN'];
+  if (!origin) throw new Error('EXPECTED_ORIGIN missing');
+
   const client = new Client({ connectionString: process.env['DATABASE_URL'] });
   await client.connect();
 
   try {
-    const report = await seedDemo(client, {
-      origin: process.env['EXPECTED_ORIGIN'] ?? 'http://localhost:4200',
-    });
+    const report = await seedDemo(client, { origin });
     const you = report.realAccountCount > 0 ? 'you' : 'Alice';
 
     console.log('\n✅ Dev DB seeded.\n');
