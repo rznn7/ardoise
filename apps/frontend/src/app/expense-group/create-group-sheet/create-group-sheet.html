@@ -6,29 +6,10 @@
     <h3 hlmSheetTitle>Create a group</h3>
   }
 </div>
-<form class="flex flex-col gap-4 p-4 pb-8">
-  @if (sheet.step === 'invite') {
-    @if (sheet.status === 'error') {
-      <p appError>Group created, but we couldn't generate an invite link. Try again.</p>
-      <button hlmBtn size="xl" type="button" variant="outline" (click)="retryInvite()">
-        Retry link
-      </button>
-    } @else {
-      <div hlmField>
-        <label hlmFieldLabel for="invite-link">Invite link</label>
-        <input hlmInput id="invite-link" readonly [value]="sheet.url ?? ''" />
-      </div>
-      <button hlmBtn size="xl" type="button" (click)="copyLink()">
-        <ng-icon hlm size="sm" [name]="copied() ? 'lucideCheck' : 'lucideCopy'" />
-        <span [attr.role]="copied() ? 'status' : null">{{ copied() ? 'Copied' : 'Copy' }}</span>
-      </button>
-      <button hlmBtn size="xl" type="button" variant="outline" (click)="shareLink()">Share</button>
-      @if (sharedViaCopy()) {
-        <p appMeta role="status" aria-live="polite">Link copied — paste it to share</p>
-      }
-      <button hlmBtn size="xl" type="button" variant="ghost" (click)="done()">Done</button>
-    }
-  } @else {
+@if (sheet.step === 'invite') {
+  <app-invite-link-panel class="p-4 pb-8" [groupId]="sheet.groupId" (done)="done()" />
+} @else {
+  <form class="flex flex-col gap-4 p-4 pb-8">
     <div hlmField>
       <label hlmFieldLabel for="group-name">Group name</label>
       <input
@@ -67,5 +48,5 @@
         <button hlmBtn size="xl" type="button" variant="outline" (click)="create()">Retry</button>
       </div>
     }
-  }
-</form>
+  </form>
+}

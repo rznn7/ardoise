@@ -24,6 +24,11 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
+    path: 'group/:groupId',
+    loadComponent: () => import('./expense-group/group-page/group-page').then((m) => m.GroupPage),
+    canActivate: [authGuard],
+  },
+  {
     path: 'join',
     loadComponent: () =>
       import('./invite-link/accept-invite/accept-invite').then((m) => m.AcceptInvite),
