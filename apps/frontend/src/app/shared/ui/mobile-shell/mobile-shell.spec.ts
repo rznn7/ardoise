@@ -35,6 +35,19 @@ class FabHost {}
 })
 class BleedHost {}
 
+@Component({
+  imports: [MobileShellImports],
+  template: `
+    <app-mobile-shell bleed>
+      <button appShellFab>Add</button>
+    </app-mobile-shell>
+  `,
+})
+class BleedFabHost {}
+
+const fabSlot = (container: Element): Element =>
+  within(container as HTMLElement).getByText('Add').parentElement!;
+
 describe('MobileShell', () => {
   it('is full width on phones', async () => {
     const { container } = await render(NoHeaderHost);
@@ -105,6 +118,20 @@ describe('MobileShell', () => {
 
     expect(fab).not.toBeNull();
     expect(main!.contains(fab)).toBe(false);
+  });
+
+  it('sits the FAB on the safe area without counting it twice', async () => {
+    const { container } = await render(FabHost);
+
+    expect(fabSlot(container).className).toContain(
+      'pb-[max(0px,calc(1rem-env(safe-area-inset-bottom)))]',
+    );
+  });
+
+  it('sits the FAB on the safe area when the shell bleeds', async () => {
+    const { container } = await render(BleedFabHost);
+
+    expect(fabSlot(container).className).toContain('pb-[max(1rem,env(safe-area-inset-bottom))]');
   });
 
   it.todo('has no accessibility violations', () => {

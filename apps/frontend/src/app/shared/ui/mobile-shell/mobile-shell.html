@@ -8,7 +8,11 @@
     <ng-content />
   </main>
   @if (fab()) {
-    <div class="absolute right-0 bottom-0 z-10 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+    <div
+      class="absolute right-0 bottom-0 z-10 p-4"
+      [class.pb-[max(1rem,env(safe-area-inset-bottom))]]="bleed()"
+      [class.pb-[max(0px,calc(1rem-env(safe-area-inset-bottom)))]]="!bleed()"
+    >
       <ng-content select="[appShellFab]" />
     </div>
   }
