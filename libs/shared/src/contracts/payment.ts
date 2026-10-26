@@ -71,8 +71,13 @@ export const createPaymentErrorSchema = z.object({
 });
 export type CreatePaymentError = z.infer<typeof createPaymentErrorSchema>;
 
-export const updatePaymentErrorSchema = createPaymentErrorSchema;
-export type UpdatePaymentError = CreatePaymentError;
+export const updatePaymentErrorSchema = z.object({
+  error: z.enum([
+    ...createPaymentErrorSchema.shape.error.options,
+    'PAYMENT_NOT_FOUND',
+  ]),
+});
+export type UpdatePaymentError = z.infer<typeof updatePaymentErrorSchema>;
 
 export const paymentApi = {
   findOne: {
