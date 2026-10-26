@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { type Payment } from 'src/payment/domain/payment';
 import { PaymentRepository } from 'src/payment/domain/payment-repository';
 import {
@@ -20,6 +20,16 @@ export class PaymentRepositoryDrizzle implements PaymentRepository {
     });
 
     return row ? this.toDomain(row) : null;
+  }
+
+  async findByGroupId(groupId: number): Promise<Payment[]> {
+    const rows = await this.database
+      .select()
+      .from(payment)
+      .where(eq(payment.groupId, groupId))
+      .orderBy(desc(payment.paidAt), desc(payment.id));
+
+    return rows.map((row) => this.toDomain(row));
   }
 
   async create(input: Omit<Payment, 'id' | 'createdAt'>): Promise<Payment> {
