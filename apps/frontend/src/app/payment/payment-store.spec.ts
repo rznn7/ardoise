@@ -302,4 +302,29 @@ describe(PaymentStore.name, () => {
     expect(titleOf1()).toBe('Payment 1');
     expect(store.pendingUpdate(1)()).toBeNull();
   });
+
+  it('remembers the body of an update the server confirmed', () => {
+    const { groupId: _groupId, ...updateBody } = { ...body, title: 'Renamed' };
+    store.update(7, 1, updateBody);
+    expect(store.confirmedUpdate(1)).toBeNull();
+
+    http
+      .expectOne('/api/payments/1')
+      .flush({ payment: { ...payment(1, updateBody.paidAt), title: 'Renamed' }, shares: [] });
+
+    expect(store.confirmedUpdate(1)).toEqual(updateBody);
+  });
+
+  it('forgets the confirmed body when a later update is refused', () => {
+    const { groupId: _groupId, ...updateBody } = { ...body, title: 'Renamed' };
+    store.update(7, 1, updateBody);
+    http
+      .expectOne('/api/payments/1')
+      .flush({ payment: { ...payment(1, updateBody.paidAt), title: 'Renamed' }, shares: [] });
+
+    store.update(7, 1, { ...updateBody, title: 'Again' });
+    http.expectOne('/api/payments/1').flush(null, { status: 400, statusText: 'Bad Request' });
+
+    expect(store.confirmedUpdate(1)).toBeNull();
+  });
 });

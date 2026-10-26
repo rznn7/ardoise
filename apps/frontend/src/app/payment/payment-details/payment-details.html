@@ -94,7 +94,15 @@
             >
               Delete
             </button>
-            <button hlmBtn size="xl" type="button" (click)="edit()">Edit</button>
+            <button
+              hlmBtn
+              size="xl"
+              type="button"
+              [disabled]="pendingUpdate() !== null"
+              (click)="edit()"
+            >
+              Edit
+            </button>
           </div>
         </div>
       }

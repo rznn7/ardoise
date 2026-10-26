@@ -97,7 +97,7 @@ const sharesOf = (body: UpdatePaymentBody): readonly MemberAmount[] | null => {
   }
 };
 
-const withPendingUpdate = (details: Details, body: UpdatePaymentBody): Details => ({
+const withUpdate = (details: Details, body: UpdatePaymentBody): Details => ({
   ...details,
   payment: {
     ...details.payment,
@@ -149,13 +149,15 @@ export class PaymentDetails {
   private readonly pendingUpdateOfPayment = computed(() =>
     this.store.pendingUpdate(this.paymentId()),
   );
-  private readonly pendingUpdate = computed(() => this.pendingUpdateOfPayment()());
+  protected readonly pendingUpdate = computed(() => this.pendingUpdateOfPayment()());
+  private readonly confirmedUpdate = signal<UpdatePaymentBody | null>(null);
+  private latestLoad = 0;
 
   protected readonly state = computed((): DetailsState => {
     const state = this.fetched();
-    const pending = this.pendingUpdate();
-    if (state.status !== 'loaded' || pending === null) return state;
-    return { status: 'loaded', ...withPendingUpdate(state, pending) };
+    const update = this.pendingUpdate() ?? this.confirmedUpdate();
+    if (state.status !== 'loaded' || update === null) return state;
+    return { status: 'loaded', ...withUpdate(state, update) };
   });
 
   protected readonly groupUrl = computed(() => `/group/${String(this.groupId())}`);
@@ -201,6 +203,7 @@ export class PaymentDetails {
       const pending = this.pendingUpdate() !== null;
       if (hadPendingUpdate && !pending) {
         untracked(() => {
+          this.confirmedUpdate.set(this.store.confirmedUpdate(this.paymentId()));
           this.load(this.groupId(), this.paymentId());
         });
       }
@@ -229,6 +232,7 @@ export class PaymentDetails {
   }
 
   private load(groupId: number, paymentId: number): void {
+    const loadId = ++this.latestLoad;
     const revalidating = this.fetched().status === 'loaded';
     if (!revalidating) this.fetched.set({ status: 'loading' });
     forkJoin({
@@ -239,9 +243,12 @@ export class PaymentDetails {
       me: this.authApi.me(),
     }).subscribe({
       next: (details) => {
+        if (loadId !== this.latestLoad) return;
         this.fetched.set({ status: 'loaded', ...details });
+        this.confirmedUpdate.set(null);
       },
       error: (error: unknown) => {
+        if (loadId !== this.latestLoad) return;
         if (revalidating && !isNotAccessible(error)) return;
         this.fetched.set({ status: isNotAccessible(error) ? 'not-found' : 'error' });
       },

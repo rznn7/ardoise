@@ -68,6 +68,7 @@ interface Setup {
   findOne: FindOne;
   remove: ReturnType<typeof vi.fn<(groupId: number, id: number) => void>>;
   pending: WritableSignal<UpdatePaymentBody | null>;
+  confirm: (body: UpdatePaymentBody | null) => void;
   clear: ReturnType<typeof vi.fn<() => void>>;
   router: Router;
   harness: RouterTestingHarness;
@@ -86,6 +87,10 @@ async function setup({
 } = {}): Promise<Setup> {
   const remove = vi.fn<(groupId: number, id: number) => void>();
   const pending = signal<UpdatePaymentBody | null>(pendingBody);
+  let confirmed: UpdatePaymentBody | null = null;
+  const confirm = (body: UpdatePaymentBody | null): void => {
+    confirmed = body;
+  };
   const clear = vi.fn<() => void>();
   TestBed.configureTestingModule({
     providers: [
@@ -102,7 +107,10 @@ async function setup({
       { provide: MemberApiService, useValue: { listByGroup: () => of(MEMBERS) } },
       { provide: ExpenseGroupApiService, useValue: { findOne: () => of(GROUP) } },
       { provide: AuthApiService, useValue: { me: () => of(ME) } },
-      { provide: PaymentStore, useValue: { remove, pendingUpdate: () => pending } },
+      {
+        provide: PaymentStore,
+        useValue: { remove, pendingUpdate: () => pending, confirmedUpdate: () => confirmed },
+      },
       { provide: PaymentDraft, useValue: { clear } },
     ],
   });
@@ -114,7 +122,7 @@ async function setup({
     await openFirstPage(harness, '/group/7/payments/5');
   }
   harness.detectChanges();
-  return { findOne, remove, pending, clear, router: TestBed.inject(Router), harness };
+  return { findOne, remove, pending, confirm, clear, router: TestBed.inject(Router), harness };
 }
 
 const failingWith = (status: number): FindOne =>
@@ -203,6 +211,72 @@ describe('PaymentDetails', () => {
 
     expect(findOne).toHaveBeenCalledTimes(2);
     expect(screen.getByRole('heading', { name: 'Market' })).toBeTruthy();
+  });
+
+  it('keeps showing a confirmed edit while the payment is fetched again', async () => {
+    const edited: UpdatePaymentBody = {
+      payerMemberId: 11,
+      title: 'Market',
+      paidAt: PAYMENT.paidAt,
+      fullAmount: 3000,
+      splitType: 'equal',
+      participants: [{ memberId: 11 }, { memberId: 12 }],
+    };
+    const { findOne, pending, confirm, harness } = await setup({ pendingBody: edited });
+    const refetch = new Subject<PaymentResponse>();
+    findOne.mockReturnValue(refetch);
+
+    confirm(edited);
+    pending.set(null);
+    harness.detectChanges();
+
+    expect(screen.getByRole('heading', { name: 'Market' })).toBeTruthy();
+    expect(screen.getByText('€30.00')).toBeTruthy();
+
+    refetch.next({ ...PAYMENT, title: 'Market (server)', fullAmount: 3000 });
+    refetch.complete();
+    harness.detectChanges();
+
+    expect(screen.getByRole('heading', { name: 'Market (server)' })).toBeTruthy();
+  });
+
+  it('shows the stored payment again once a pending edit is refused', async () => {
+    const { findOne, pending, harness } = await setup({
+      pendingBody: {
+        payerMemberId: 12,
+        title: 'Market',
+        paidAt: PAYMENT.paidAt,
+        fullAmount: 2450,
+        splitType: 'equal',
+        participants: [{ memberId: 12 }],
+      },
+    });
+    findOne.mockReturnValue(new Subject());
+
+    pending.set(null);
+    harness.detectChanges();
+
+    expect(screen.getByRole('heading', { name: 'Groceries' })).toBeTruthy();
+  });
+
+  it('disables Edit while an edit of this payment is pending', async () => {
+    const { pending, harness } = await setup({
+      pendingBody: {
+        payerMemberId: 12,
+        title: 'Market',
+        paidAt: PAYMENT.paidAt,
+        fullAmount: 2450,
+        splitType: 'equal',
+        participants: [{ memberId: 12 }],
+      },
+    });
+
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Edit' }).disabled).toBe(true);
+
+    pending.set(null);
+    harness.detectChanges();
+
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Edit' }).disabled).toBe(false);
   });
 
   it('clears the draft before opening the edit options', async () => {

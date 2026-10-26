@@ -45,6 +45,7 @@ export class PaymentStore {
   private readonly creating = signal<ReadonlyMap<number, FeedPayment>>(new Map());
   private readonly deleting = signal<ReadonlySet<number>>(new Set());
   private readonly updating = signal<ReadonlyMap<number, UpdatePaymentBody>>(new Map());
+  private readonly confirmedUpdates = new Map<number, UpdatePaymentBody>();
   private readonly settledMutations = new Map<number, number>();
   private readonly latestLoads = new Map<number, number>();
   private nextTemporaryId = -1;
@@ -56,6 +57,10 @@ export class PaymentStore {
 
   pendingUpdate(id: number): Signal<UpdatePaymentBody | null> {
     return computed(() => this.updating().get(id) ?? null);
+  }
+
+  confirmedUpdate(id: number): UpdatePaymentBody | null {
+    return this.confirmedUpdates.get(id) ?? null;
   }
 
   load(groupId: number): void {
@@ -130,10 +135,12 @@ export class PaymentStore {
 
     this.api.update(id, body).subscribe({
       next: ({ payment }) => {
+        this.confirmedUpdates.set(id, body);
         this.upsert(groupId, payment);
         settle();
       },
       error: () => {
+        this.confirmedUpdates.delete(id);
         settle();
         this.toast.error("Couldn't update the payment");
       },
