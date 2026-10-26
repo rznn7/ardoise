@@ -9,7 +9,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { type ExpenseGroupSummary, type GroupMember, type MeResponse } from '@ardoise/shared';
 import { provideIcons } from '@ng-icons/core';
 import { lucideChevronLeft, lucideEllipsis, lucidePlus, lucideUserPlus } from '@ng-icons/lucide';
@@ -18,8 +18,11 @@ import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
+import { HlmToggleGroupImports } from '@spartan-ng/helm/toggle-group';
 import { forkJoin } from 'rxjs';
 import { AuthService } from 'src/app/auth/auth.service';
+import { BalanceStore } from 'src/app/balance/balance-store';
+import { GroupBalances } from 'src/app/balance/group-balances/group-balances';
 import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.service';
 import { LastGroupService } from 'src/app/expense-group/last-group.service';
 import { InviteLinkPanel } from 'src/app/invite-link/invite-link-panel/invite-link-panel';
@@ -27,6 +30,7 @@ import { MemberApiService } from 'src/app/member/member-api.service';
 import { dayLabel } from 'src/app/payment/day-label';
 import { type FeedPayment, PaymentStore } from 'src/app/payment/payment-store';
 import { injectGoBack } from 'src/app/shared/navigation/back';
+import { BalanceIndicator } from 'src/app/shared/ui/balance-indicator/balance-indicator';
 import { GroupHero } from 'src/app/shared/ui/group-hero/group-hero';
 import { ListRowImports } from 'src/app/shared/ui/list-row/list-row';
 import { MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
@@ -50,6 +54,11 @@ interface PaymentDay {
   readonly payments: FeedPayment[];
 }
 
+export type GroupTab = 'payments' | 'balances';
+
+const toTab = (value: string | undefined): GroupTab =>
+  value === 'balances' ? 'balances' : 'payments';
+
 const isNotAccessible = (error: unknown): boolean =>
   error instanceof HttpErrorResponse && (error.status === 403 || error.status === 404);
 
@@ -69,6 +78,9 @@ const isNotAccessible = (error: unknown): boolean =>
     BrnSheetImports,
     HlmSkeletonImports,
     InviteLinkPanel,
+    HlmToggleGroupImports,
+    BalanceIndicator,
+    GroupBalances,
   ],
   providers: [provideIcons({ lucideChevronLeft, lucideEllipsis, lucidePlus, lucideUserPlus })],
   templateUrl: './group-page.html',
@@ -79,16 +91,47 @@ export class GroupPage {
   private readonly auth = inject(AuthService);
   private readonly paymentStore = inject(PaymentStore);
   private readonly lastGroup = inject(LastGroupService);
+  private readonly balanceStore = inject(BalanceStore);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly goBack = injectGoBack();
 
   readonly groupId = input.required({ transform: numberAttribute });
+  readonly tab = input<GroupTab, string | undefined>('payments', { transform: toTab });
 
   readonly groupState = signal<GroupState>({ status: 'loading' });
   readonly inviting = signal(false);
 
   private readonly feedOfGroup = computed(() => this.paymentStore.feed(this.groupId()));
   readonly feed = computed(() => this.feedOfGroup()());
+
+  private readonly balancesOfGroup = computed(() => this.balanceStore.balances(this.groupId()));
+  readonly balances = computed(() => this.balancesOfGroup()());
+
+  private readonly settledOfGroup = computed(() =>
+    this.paymentStore.settledVersion(this.groupId()),
+  );
+
+  readonly hasPayments = computed(() => {
+    const feed = this.feed();
+    return feed.status === 'loaded' && feed.payments.length > 0;
+  });
+
+  readonly myBalance = computed(() => {
+    const state = this.groupState();
+    const balances = this.balances();
+    if (state.status !== 'loaded' || balances.status !== 'loaded') return null;
+    const me = state.members.find((member) => member.userId === state.me.id);
+    return balances.balances.balances.find((b) => b.memberId === me?.id)?.amount ?? 0;
+  });
+
+  readonly myBalanceLabel = computed(() => {
+    const amount = this.myBalance() ?? 0;
+    if (amount < 0) return 'You owe';
+    if (amount > 0) return 'Owed to you';
+    return 'Settled up';
+  });
 
   readonly memberNames = computed(() => {
     const state = this.groupState();
@@ -139,6 +182,31 @@ export class GroupPage {
         this.open(groupId);
       });
     });
+
+    let lastSettled: number | null = null;
+    effect(() => {
+      const settled = this.settledOfGroup()();
+      if (lastSettled !== null && settled !== lastSettled) {
+        untracked(() => {
+          this.balanceStore.load(this.groupId());
+        });
+      }
+      lastSettled = settled;
+    });
+  }
+
+  selectTab(value: GroupTab | readonly GroupTab[] | null | undefined): void {
+    const tab = typeof value === 'string' ? value : value?.[0];
+    if (!tab || tab === this.tab()) return;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: tab === 'balances' ? 'balances' : null },
+      replaceUrl: true,
+    });
+  }
+
+  retryBalances(): void {
+    this.balanceStore.load(this.groupId());
   }
 
   retryGroup(): void {
@@ -152,6 +220,7 @@ export class GroupPage {
   private open(groupId: number): void {
     this.lastGroup.skipLaunchRedirect();
     this.paymentStore.load(groupId);
+    this.balanceStore.load(groupId);
     this.loadGroup(groupId);
   }
 

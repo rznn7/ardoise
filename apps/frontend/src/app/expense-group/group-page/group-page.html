@@ -59,6 +59,29 @@
             <div class="flex flex-col gap-1">
               <h1 appFigure>{{ group.group.name }}</h1>
               <p appBody>{{ memberNames() }}</p>
+              @if (hasPayments()) {
+                @let mine = myBalance();
+                @if (mine !== null) {
+                  <button
+                    class="mt-3 flex flex-col items-end gap-1 self-end"
+                    type="button"
+                    (click)="selectTab('balances')"
+                  >
+                    <span appEyebrow>{{ myBalanceLabel() }}</span>
+                    <app-balance-indicator
+                      appTitle
+                      [cents]="mine"
+                      [currency]="group.group.currencyCode"
+                      [signed]="false"
+                    />
+                  </button>
+                } @else if (balances().status === 'loading') {
+                  <div class="mt-3 flex flex-col items-end gap-1 self-end">
+                    <hlm-skeleton class="h-3 w-16" />
+                    <hlm-skeleton class="h-6 w-20" />
+                  </div>
+                }
+              }
             </div>
           } @else {
             <div class="flex flex-col gap-2">
@@ -69,66 +92,92 @@
         </app-group-hero>
 
         @if (group.status === 'loaded') {
-          @let currentFeed = feed();
-          @switch (currentFeed.status) {
-            @case ('loading') {
-              <app-page-state state="loading" />
-            }
-            @case ('error') {
-              <app-page-state
-                state="error"
-                heading="Couldn't load payments"
-                description="Check your connection and try again."
-                (retry)="retryFeed()"
-              />
-            }
-            @case ('loaded') {
-              @if (currentFeed.payments.length === 0) {
+          <div class="px-4 pt-3">
+            <div
+              aria-label="View"
+              class="w-full"
+              hlmToggleGroup
+              type="single"
+              variant="outline"
+              [nullable]="false"
+              [value]="tab()"
+              (valueChange)="selectTab($event)"
+            >
+              <button class="h-11 flex-1" hlmToggleGroupItem value="payments">Payments</button>
+              <button class="h-11 flex-1" hlmToggleGroupItem value="balances">Balances</button>
+            </div>
+          </div>
+          @if (tab() === 'balances') {
+            <app-group-balances
+              [state]="balances()"
+              [members]="group.members"
+              [meUserId]="group.me.id"
+              [currency]="group.group.currencyCode"
+              [hasPayments]="hasPayments()"
+              (retry)="retryBalances()"
+            />
+          } @else {
+            @let currentFeed = feed();
+            @switch (currentFeed.status) {
+              @case ('loading') {
+                <app-page-state state="loading" />
+              }
+              @case ('error') {
                 <app-page-state
-                  state="empty"
-                  heading="No payments yet"
-                  [description]="
-                    isModerator()
-                      ? 'Add the first one with +, or invite people from ⋯.'
-                      : 'Add the first one with +.'
-                  "
+                  state="error"
+                  heading="Couldn't load payments"
+                  description="Check your connection and try again."
+                  (retry)="retryFeed()"
                 />
-              } @else {
-                <div class="flex flex-col pb-28">
-                  @for (day of days(); track day.label) {
-                    <section class="flex flex-col">
-                      <h2 appMeta class="px-4 pt-6 pb-2">{{ day.label }}</h2>
-                      <ul class="flex flex-col divide-y divide-border border-y border-border">
-                        @for (payment of day.payments; track payment.id) {
-                          <li>
-                            <a
-                              class="block"
-                              [routerLink]="payment.pending ? null : ['payments', payment.id]"
-                            >
-                              <app-list-row>
-                                <span appListRowTitle>{{ payment.title }}</span>
-                                @if (payment.pending) {
-                                  <span appListRowMeta>Saving…</span>
-                                } @else {
-                                  <span appListRowMeta>
-                                    Paid by
-                                    {{ payerNames().get(payment.payerMemberId) ?? 'someone' }}
-                                  </span>
-                                }
-                                <app-money-amount
-                                  appListRowTrailing
-                                  class="text-foreground"
-                                  [cents]="payment.fullAmount"
-                                  [currency]="group.group.currencyCode"
-                                />
-                              </app-list-row>
-                            </a>
-                          </li>
-                        }
-                      </ul>
-                    </section>
-                  }
-                </div>
+              }
+              @case ('loaded') {
+                @if (currentFeed.payments.length === 0) {
+                  <app-page-state
+                    state="empty"
+                    heading="No payments yet"
+                    [description]="
+                      isModerator()
+                        ? 'Add the first one with +, or invite people from ⋯.'
+                        : 'Add the first one with +.'
+                    "
+                  />
+                } @else {
+                  <div class="flex flex-col pb-28">
+                    @for (day of days(); track day.label) {
+                      <section class="flex flex-col">
+                        <h2 appMeta class="px-4 pt-6 pb-2">{{ day.label }}</h2>
+                        <ul class="flex flex-col divide-y divide-border border-y border-border">
+                          @for (payment of day.payments; track payment.id) {
+                            <li>
+                              <a
+                                class="block"
+                                [routerLink]="payment.pending ? null : ['payments', payment.id]"
+                              >
+                                <app-list-row>
+                                  <span appListRowTitle>{{ payment.title }}</span>
+                                  @if (payment.pending) {
+                                    <span appListRowMeta>Saving…</span>
+                                  } @else {
+                                    <span appListRowMeta>
+                                      Paid by
+                                      {{ payerNames().get(payment.payerMemberId) ?? 'someone' }}
+                                    </span>
+                                  }
+                                  <app-money-amount
+                                    appListRowTrailing
+                                    class="text-foreground"
+                                    [cents]="payment.fullAmount"
+                                    [currency]="group.group.currencyCode"
+                                  />
+                                </app-list-row>
+                              </a>
+                            </li>
+                          }
+                        </ul>
+                      </section>
+                    }
+                  </div>
+                }
               }
             }
           }
@@ -139,13 +188,7 @@
     }
 
     @if (group.status === 'loading' || group.status === 'loaded') {
-      <a
-        appShellFab
-        aria-label="Add a payment"
-        hlmBtn
-        routerLink="payments/new/amount"
-        size="fab"
-      >
+      <a appShellFab aria-label="Add a payment" hlmBtn routerLink="payments/new/amount" size="fab">
         <ng-icon hlm name="lucidePlus" size="sm" aria-hidden="true" />
       </a>
     }
