@@ -75,24 +75,22 @@ export class PaymentStore {
 
   update(groupId: number, id: number, body: UpdatePaymentBody): void {
     const state = this.feeds().get(groupId);
-    const previous = state?.status === 'loaded' ? state.payments : undefined;
-    if (previous) {
-      this.setPayments(
-        groupId,
-        previous.map((row) =>
-          row.id === id
-            ? {
-                ...row,
-                payerMemberId: body.payerMemberId,
-                title: body.title,
-                paidAt: body.paidAt,
-                fullAmount: body.fullAmount,
-                splitType: body.splitType,
-              }
-            : row,
-        ),
-      );
-    }
+    const previousRow =
+      state?.status === 'loaded' ? state.payments.find((row) => row.id === id) : undefined;
+    this.changePayments(groupId, (rows) =>
+      rows.map((row) =>
+        row.id === id
+          ? {
+              ...row,
+              payerMemberId: body.payerMemberId,
+              title: body.title,
+              paidAt: body.paidAt,
+              fullAmount: body.fullAmount,
+              splitType: body.splitType,
+            }
+          : row,
+      ),
+    );
 
     this.api.update(id, body).subscribe({
       next: ({ payment }) => {
@@ -101,7 +99,11 @@ export class PaymentStore {
         );
       },
       error: () => {
-        if (previous) this.setPayments(groupId, previous);
+        if (previousRow) {
+          this.changePayments(groupId, (rows) =>
+            rows.map((row) => (row.id === id ? previousRow : row)),
+          );
+        }
         this.toast.error("Couldn't update the payment");
       },
     });
@@ -109,16 +111,17 @@ export class PaymentStore {
 
   remove(groupId: number, id: number): void {
     const state = this.feeds().get(groupId);
-    if (state?.status !== 'loaded') return;
-    const previous = state.payments;
-    this.setPayments(
-      groupId,
-      previous.filter((row) => row.id !== id),
-    );
+    const removedRow =
+      state?.status === 'loaded' ? state.payments.find((row) => row.id === id) : undefined;
+    this.changePayments(groupId, (rows) => rows.filter((row) => row.id !== id));
 
     this.api.delete(id).subscribe({
       error: () => {
-        this.setPayments(groupId, previous);
+        if (removedRow) {
+          this.changePayments(groupId, (rows) =>
+            rows.some((row) => row.id === id) ? rows : [...rows, removedRow],
+          );
+        }
         this.toast.error("Couldn't delete the payment");
       },
     });

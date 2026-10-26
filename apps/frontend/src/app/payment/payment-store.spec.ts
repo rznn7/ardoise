@@ -174,4 +174,40 @@ describe(PaymentStore.name, () => {
 
     http.expectOne({ method: 'PUT', url: '/api/payments/1' });
   });
+
+  it('remove with no loaded feed still issues DELETE', () => {
+    store.remove(7, 1);
+
+    http.expectOne({ method: 'DELETE', url: '/api/payments/1' });
+  });
+
+  it('create with no loaded feed still POSTs', () => {
+    expect(() => {
+      store.create(body);
+    }).not.toThrow();
+
+    http.expectOne({ method: 'POST', url: '/api/payments' });
+  });
+
+  it('a failed remove keeps a payment created meanwhile', () => {
+    loadFeed();
+
+    store.remove(7, 2);
+    store.create(body);
+    http.expectOne('/api/payments/2').flush(null, { status: 403, statusText: 'Forbidden' });
+    http.expectOne('/api/payments').flush({ payment: payment(9, body.paidAt), shares: [] });
+
+    expect(loadedIds()).toEqual([3, 9, 2, 1]);
+  });
+
+  it('a failed remove does not resurrect another removed payment', () => {
+    loadFeed();
+
+    store.remove(7, 1);
+    store.remove(7, 2);
+    http.expectOne('/api/payments/2').flush(null, { status: 204, statusText: 'No Content' });
+    http.expectOne('/api/payments/1').flush(null, { status: 403, statusText: 'Forbidden' });
+
+    expect(loadedIds()).toEqual([3, 1]);
+  });
 });
