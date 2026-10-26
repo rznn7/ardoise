@@ -20,10 +20,17 @@ test('the app opens on the last group, and back returns to the list', async ({
     page.getByRole('heading', { name: 'Lisbon trip' }),
   ).toBeVisible();
 
+  const groupsListed = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'GET' &&
+      new URL(response.url()).pathname === '/api/expense-groups',
+  );
   await page.getByRole('button', { name: 'Back to groups' }).click();
+  await groupsListed;
 
   await expect(page).toHaveURL(/\/home$/);
+  await expect(page.getByRole('heading', { name: 'Groups' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Flatshare' })).toBeVisible();
-  await page.waitForTimeout(500);
+  await expect(page.getByRole('link', { name: 'Lisbon trip' })).toBeVisible();
   await expect(page).toHaveURL(/\/home$/);
 });

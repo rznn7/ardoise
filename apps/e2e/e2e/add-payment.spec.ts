@@ -63,6 +63,6 @@ test('a member adds a payment split by shares, leaving one member out', async ({
     .getByRole('listitem');
   await expect(shares.nth(0)).toContainText('You');
   await expect(shares.nth(0)).toContainText('€20.00');
-  await expect(shares.nth(1)).toContainText('€0.00');
+  await expect(shares.nth(1)).toContainText('—');
   await expect(shares.nth(2)).toContainText('€10.00');
 });
