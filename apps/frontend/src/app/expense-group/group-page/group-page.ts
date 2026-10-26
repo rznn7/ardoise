@@ -27,7 +27,7 @@ import { MemberApiService } from 'src/app/member/member-api.service';
 import { dayLabel } from 'src/app/payment/day-label';
 import { type FeedPayment, PaymentStore } from 'src/app/payment/payment-store';
 import { injectGoBack } from 'src/app/shared/navigation/back';
-import { BackdropSurface } from 'src/app/shared/ui/backdrop/backdrop-surface';
+import { GroupHero } from 'src/app/shared/ui/group-hero/group-hero';
 import { ListRowImports } from 'src/app/shared/ui/list-row/list-row';
 import { MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
 import { MoneyAmount } from 'src/app/shared/ui/money-amount/money-amount';
@@ -58,7 +58,7 @@ const isNotAccessible = (error: unknown): boolean =>
   imports: [
     RouterLink,
     MobileShellImports,
-    BackdropSurface,
+    GroupHero,
     ListRowImports,
     MoneyAmount,
     PageStateImports,

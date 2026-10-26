@@ -47,6 +47,16 @@ describe('LastGroupService', () => {
     expect(service.takeLaunchRedirect()).toBeNull();
   });
 
+  it('skips the launch redirect without changing the remembered group', () => {
+    localStorage.setItem(KEY, '7');
+    const service = TestBed.inject(LastGroupService);
+
+    service.skipLaunchRedirect();
+
+    expect(service.takeLaunchRedirect()).toBeNull();
+    expect(localStorage.getItem(KEY)).toBe('7');
+  });
+
   it('gives null without an error when localStorage throws', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('denied');

@@ -202,7 +202,27 @@ describe('GroupPage', () => {
     });
 
     expect(screen.getByText('Groceries')).toBeTruthy();
+    expect(screen.getByText('Saving…')).toBeTruthy();
+    expect(screen.queryByText(/paid by/i)).toBeNull();
     expect(screen.queryByRole('link', { name: /groceries/i })).toBeNull();
+  });
+
+  it('draws the hero under the status bar', async () => {
+    await setup();
+
+    const shell = document.querySelector('app-mobile-shell')!;
+    expect(shell.className).not.toContain('safe-area-inset-top');
+    expect(document.querySelector('app-group-hero')).toBeTruthy();
+  });
+
+  it('keeps the safe areas when the group cannot be opened', async () => {
+    await setup({
+      findOne: vi
+        .fn<() => Observable<ExpenseGroupSummary>>()
+        .mockReturnValue(throwError(() => new HttpErrorResponse({ status: 403 }))),
+    });
+
+    expect(document.querySelector('app-mobile-shell')!.className).toContain('safe-area-inset-top');
   });
 
   it('shows skeleton rows while the feed loads', async () => {

@@ -28,6 +28,10 @@ export class LastGroupService {
     writeStoredGroupId(groupId);
   }
 
+  skipLaunchRedirect(): void {
+    this.launchRedirectUsed = true;
+  }
+
   takeLaunchRedirect(): number | null {
     if (this.launchRedirectUsed) return null;
     this.launchRedirectUsed = true;
