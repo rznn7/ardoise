@@ -1,0 +1,8 @@
+**/node_modules
+**/dist
+**/coverage
+**/.env
+.git
+.superpowers
+apps/e2e/test-results
+apps/e2e/playwright-report
