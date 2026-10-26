@@ -1,9 +1,10 @@
 import { type GroupMember, type MemberResponse } from '@ardoise/shared';
-import { type Member } from 'src/member/domain/member';
+import { type Member, type NamedMember } from 'src/member/domain/member';
 
-export const toGroupMember = (member: Member): GroupMember => ({
+export const toGroupMember = (member: NamedMember): GroupMember => ({
   id: member.id,
   userId: member.userId,
+  name: member.name,
   nickname: member.nickname,
   isModerator: member.isModerator,
 });

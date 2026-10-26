@@ -1,0 +1,170 @@
+@let group = groupState();
+<hlm-sheet #sheet="hlmSheet">
+  <app-mobile-shell [bleed]="group.status === 'loading' || group.status === 'loaded'">
+    @switch (group.status) {
+      @case ('forbidden') {
+        <app-page-state
+          state="empty"
+          heading="You can't open this group"
+          description="It may have been deleted, or you're not a member."
+        >
+          <a appPageStateAction hlmBtn routerLink="/home" size="xl" [replaceUrl]="true">
+            Back to groups
+          </a>
+        </app-page-state>
+      }
+      @case ('error') {
+        <app-page-state
+          state="error"
+          heading="Couldn't load this group"
+          description="Check your connection and try again."
+          (retry)="retryGroup()"
+        >
+          <a appPageStateAction hlmBtn routerLink="/home" size="xl" [replaceUrl]="true">
+            Back to groups
+          </a>
+        </app-page-state>
+      }
+      @default {
+        <app-group-hero [groupId]="groupId()">
+          <div class="flex items-center justify-between">
+            <button
+              aria-label="Back to groups"
+              class="size-11 rounded-full"
+              hlmBtn
+              size="icon-lg"
+              type="button"
+              variant="inverted-outline"
+              (click)="goBack('/home')"
+            >
+              <ng-icon hlm name="lucideChevronLeft" size="sm" aria-hidden="true" />
+            </button>
+            @if (isModerator()) {
+              <button
+                aria-label="Group menu"
+                class="size-11 rounded-full"
+                hlmBtn
+                hlmSheetTrigger
+                side="bottom"
+                size="icon-lg"
+                type="button"
+                variant="inverted-outline"
+                (click)="inviting.set(false)"
+              >
+                <ng-icon hlm name="lucideEllipsis" size="sm" aria-hidden="true" />
+              </button>
+            }
+          </div>
+          @if (group.status === 'loaded') {
+            <div class="flex flex-col gap-1">
+              <h1 appFigure>{{ group.group.name }}</h1>
+              <p appBody>{{ memberNames() }}</p>
+            </div>
+          } @else {
+            <div class="flex flex-col gap-2">
+              <hlm-skeleton class="h-9 w-3/5" />
+              <hlm-skeleton class="h-4 w-2/5" />
+            </div>
+          }
+        </app-group-hero>
+
+        @if (group.status === 'loaded') {
+          @let currentFeed = feed();
+          @switch (currentFeed.status) {
+            @case ('loading') {
+              <app-page-state state="loading" />
+            }
+            @case ('error') {
+              <app-page-state
+                state="error"
+                heading="Couldn't load payments"
+                description="Check your connection and try again."
+                (retry)="retryFeed()"
+              />
+            }
+            @case ('loaded') {
+              @if (currentFeed.payments.length === 0) {
+                <app-page-state
+                  state="empty"
+                  heading="No payments yet"
+                  [description]="
+                    isModerator()
+                      ? 'Add the first one with +, or invite people from ⋯.'
+                      : 'Add the first one with +.'
+                  "
+                />
+              } @else {
+                <div class="flex flex-col pb-28">
+                  @for (day of days(); track day.label) {
+                    <section class="flex flex-col">
+                      <h2 appMeta class="px-4 pt-6 pb-2">{{ day.label }}</h2>
+                      <ul class="flex flex-col divide-y divide-border border-y border-border">
+                        @for (payment of day.payments; track payment.id) {
+                          <li>
+                            <a
+                              class="block"
+                              [routerLink]="payment.pending ? null : ['payments', payment.id]"
+                            >
+                              <app-list-row>
+                                <span appListRowTitle>{{ payment.title }}</span>
+                                @if (payment.pending) {
+                                  <span appListRowMeta>Saving…</span>
+                                } @else {
+                                  <span appListRowMeta>
+                                    Paid by
+                                    {{ payerNames().get(payment.payerMemberId) ?? 'someone' }}
+                                  </span>
+                                }
+                                <app-money-amount
+                                  appListRowTrailing
+                                  class="text-foreground"
+                                  [cents]="payment.fullAmount"
+                                  [currency]="group.group.currencyCode"
+                                />
+                              </app-list-row>
+                            </a>
+                          </li>
+                        }
+                      </ul>
+                    </section>
+                  }
+                </div>
+              }
+            }
+          }
+        } @else {
+          <app-page-state state="loading" />
+        }
+      }
+    }
+
+    @if (group.status === 'loading' || group.status === 'loaded') {
+      <a
+        appShellFab
+        aria-label="Add a payment"
+        class="size-14 rounded-full"
+        hlmBtn
+        routerLink="payments/new/amount"
+        size="icon-lg"
+      >
+        <ng-icon hlm name="lucidePlus" size="sm" aria-hidden="true" />
+      </a>
+    }
+  </app-mobile-shell>
+
+  <hlm-sheet-content *brnSheetContent>
+    <div hlmSheetHeader>
+      <h3 hlmSheetTitle>{{ inviting() ? 'Invite people' : 'Group' }}</h3>
+    </div>
+    @if (inviting()) {
+      <app-invite-link-panel class="p-4 pb-8" [groupId]="groupId()" (done)="sheet.close()" />
+    } @else {
+      <div class="flex flex-col p-4 pb-8">
+        <button hlmBtn size="xl" type="button" variant="ghost" (click)="inviting.set(true)">
+          <ng-icon hlm name="lucideUserPlus" size="sm" aria-hidden="true" />
+          <span>Invite people</span>
+        </button>
+      </div>
+    }
+  </hlm-sheet-content>
+</hlm-sheet>

@@ -24,6 +24,24 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
+    path: 'group/:groupId',
+    loadComponent: () => import('./expense-group/group-page/group-page').then((m) => m.GroupPage),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'group/:groupId/payments/:paymentId',
+    pathMatch: 'full',
+    loadComponent: () =>
+      import('./payment/payment-details/payment-details').then((m) => m.PaymentDetails),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'group/:groupId/payments',
+    canActivate: [authGuard],
+    loadChildren: () =>
+      import('./payment/payment-form/payment-form.routes').then((m) => m.paymentFormRoutes),
+  },
+  {
     path: 'join',
     loadComponent: () =>
       import('./invite-link/accept-invite/accept-invite').then((m) => m.AcceptInvite),

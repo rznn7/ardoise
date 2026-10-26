@@ -9,6 +9,7 @@ import { render, screen, waitFor } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { type Observable, of, throwError } from 'rxjs';
 import { AuthApiService } from 'src/app/auth/auth-api.service';
+import { LastGroupService } from 'src/app/expense-group/last-group.service';
 import { AcceptInviteFlow } from 'src/app/invite-link/accept-invite-flow.service';
 import { InviteLinkApiService } from 'src/app/invite-link/invite-link-api.service';
 import { describe, expect, it, vi } from 'vitest';
@@ -364,5 +365,61 @@ describe(AcceptInvite.name, () => {
     expect(
       await screen.findByRole('button', { name: 'Log in to join Trip to Lisbon' }),
     ).toBeTruthy();
+  });
+
+  it('remembers the joined group so home does not bounce to another one', async () => {
+    const preview = vi
+      .fn<(token: string) => Observable<PreviewInviteLinkResponse>>()
+      .mockReturnValue(of({ groupName: 'Trip to Lisbon' }));
+    const me = vi
+      .fn<() => Observable<MeResponse>>()
+      .mockReturnValue(of({ id: 1, name: 'john', role: 'user' }));
+    const consume = vi
+      .fn<(token: string) => Observable<ConsumeInviteLinkResponse>>()
+      .mockReturnValue(of({ groupId: 42, alreadyMember: false }));
+    const remember = vi.fn<(groupId: number) => void>();
+    const navigate = vi.fn();
+    await render(AcceptInvite, {
+      inputs: { token: 'x' },
+      providers: [
+        { provide: InviteLinkApiService, useValue: { preview, consume } },
+        { provide: AuthApiService, useValue: { me } },
+        { provide: LastGroupService, useValue: { remember } },
+        { provide: Router, useValue: { navigate } },
+      ],
+    });
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Join Trip to Lisbon' }));
+
+    expect(remember).toHaveBeenCalledWith(42);
+    await waitFor(() => {
+      expect(navigate).toHaveBeenCalledWith(['/home']);
+    });
+  });
+
+  it('skips the launch redirect after joining by registering', async () => {
+    const preview = vi
+      .fn<(token: string) => Observable<PreviewInviteLinkResponse>>()
+      .mockReturnValue(of({ groupName: 'Trip to Lisbon' }));
+    const me = vi
+      .fn<() => Observable<MeResponse>>()
+      .mockReturnValue(throwError(() => new HttpErrorResponse({ status: 401 })));
+    const skipLaunchRedirect = vi.fn<() => void>();
+    await render(AcceptInvite, {
+      inputs: { token: 'x' },
+      providers: [
+        { provide: InviteLinkApiService, useValue: { preview } },
+        { provide: AuthApiService, useValue: { me } },
+        { provide: AcceptInviteFlow, useValue: { registerThenJoin: () => of(undefined) } },
+        { provide: LastGroupService, useValue: { remember: vi.fn(), skipLaunchRedirect } },
+        { provide: Router, useValue: { navigate: vi.fn() } },
+      ],
+    });
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'New here? Join with a passkey' }),
+    );
+
+    expect(skipLaunchRedirect).toHaveBeenCalled();
   });
 });

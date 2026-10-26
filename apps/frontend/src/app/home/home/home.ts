@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { type ExpenseGroupSummary } from '@ardoise/shared';
 import { provideIcons } from '@ng-icons/core';
 import { lucidePlus } from '@ng-icons/lucide';
@@ -8,6 +9,7 @@ import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
 import { CreateGroupSheet } from 'src/app/expense-group/create-group-sheet/create-group-sheet';
 import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.service';
+import { LastGroupService } from 'src/app/expense-group/last-group.service';
 import { GroupFade } from 'src/app/shared/ui/backdrop/group-fade';
 import { ListRowImports } from 'src/app/shared/ui/list-row/list-row';
 import { MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
@@ -30,12 +32,15 @@ type HomeState =
     HlmSheetImports,
     BrnSheetImports,
     CreateGroupSheet,
+    RouterLink,
   ],
   templateUrl: './home.html',
   providers: [provideIcons({ lucidePlus })],
 })
 export class Home {
   private readonly expenseGroupApi = inject(ExpenseGroupApiService);
+  private readonly lastGroup = inject(LastGroupService);
+  private readonly router = inject(Router);
 
   readonly state = signal<HomeState>({ status: 'loading' });
 
@@ -61,10 +66,17 @@ export class Home {
     this.expenseGroupApi.listMine().subscribe({
       next: (groups) => {
         this.state.set({ status: 'loaded', groups });
+        this.openLastGroupOnLaunch(groups);
       },
       error: () => {
         this.state.set({ status: 'error' });
       },
     });
+  }
+
+  private openLastGroupOnLaunch(groups: readonly ExpenseGroupSummary[]): void {
+    const groupId = this.lastGroup.takeLaunchRedirect();
+    if (groupId === null || !groups.some((group) => group.id === groupId)) return;
+    void this.router.navigateByUrl(`/group/${String(groupId)}`);
   }
 }

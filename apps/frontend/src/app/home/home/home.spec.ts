@@ -1,16 +1,23 @@
-import { Router } from '@angular/router';
+import { Component } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { provideRouter, Router } from '@angular/router';
 import { type CreateInviteLinkResponse, type ExpenseGroupSummary } from '@ardoise/shared';
 import { render, screen, waitFor, within } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { type Observable, of, Subject, throwError } from 'rxjs';
 import { AuthService } from 'src/app/auth/auth.service';
 import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.service';
+import { LastGroupService } from 'src/app/expense-group/last-group.service';
 import { InviteLinkApiService } from 'src/app/invite-link/invite-link-api.service';
 
 import { Home } from './home';
 
 type ListMineMock = ReturnType<typeof vi.fn<() => Observable<ExpenseGroupSummary[]>>>;
 type CreateMock = ReturnType<typeof vi.fn<() => Observable<ExpenseGroupSummary>>>;
+type TakeLaunchRedirectMock = ReturnType<typeof vi.fn<() => number | null>>;
+
+@Component({ template: '' })
+class Blank {}
 
 const NEW_GROUP: ExpenseGroupSummary = {
   id: 99,
@@ -22,11 +29,17 @@ const NEW_GROUP: ExpenseGroupSummary = {
 async function setup({
   listMine = vi.fn<() => Observable<ExpenseGroupSummary[]>>().mockReturnValue(of([])),
   create = vi.fn<() => Observable<ExpenseGroupSummary>>().mockReturnValue(of(NEW_GROUP)),
-}: { listMine?: ListMineMock; create?: CreateMock } = {}): Promise<{
+  takeLaunchRedirect = vi.fn<() => number | null>().mockReturnValue(null),
+}: {
+  listMine?: ListMineMock;
+  create?: CreateMock;
+  takeLaunchRedirect?: TakeLaunchRedirectMock;
+} = {}): Promise<{
   listMine: ListMineMock;
   create: CreateMock;
+  home: Home;
 }> {
-  await render(Home, {
+  const { fixture } = await render(Home, {
     providers: [
       { provide: ExpenseGroupApiService, useValue: { listMine, create } },
       {
@@ -37,12 +50,18 @@ async function setup({
             .mockReturnValue(of({ token: 'abc' })),
         },
       },
-      { provide: Router, useValue: {} },
+      { provide: LastGroupService, useValue: { takeLaunchRedirect } },
+      provideRouter([{ path: 'group/:groupId', component: Blank }]),
       { provide: AuthService, useValue: {} },
     ],
   });
-  return { listMine, create };
+  return { listMine, create, home: fixture.componentInstance };
 }
+
+const TWO_GROUPS: ExpenseGroupSummary[] = [
+  { id: 1, name: 'Trip', currencyCode: 'EUR', createdAt: '2026-01-01T00:00:00.000Z' },
+  { id: 2, name: 'Flat', currencyCode: 'EUR', createdAt: '2026-01-02T00:00:00.000Z' },
+];
 
 describe('Home', () => {
   it('shows a loading skeleton while groups load', async () => {
@@ -174,6 +193,47 @@ describe('Home', () => {
 
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).toBeNull();
+    });
+  });
+
+  it('opens the remembered group once when it is in the list', async () => {
+    const navigateByUrl = vi.spyOn(Router.prototype, 'navigateByUrl');
+    const takeLaunchRedirect = vi
+      .fn<() => number | null>()
+      .mockReturnValueOnce(2)
+      .mockReturnValue(null);
+    const { home } = await setup({
+      listMine: vi.fn<() => Observable<ExpenseGroupSummary[]>>().mockReturnValue(of(TWO_GROUPS)),
+      takeLaunchRedirect,
+    });
+
+    home.refresh();
+
+    expect(navigateByUrl).toHaveBeenCalledTimes(1);
+    expect(navigateByUrl).toHaveBeenCalledWith('/group/2');
+    navigateByUrl.mockRestore();
+  });
+
+  it('stays home when the remembered group is not in the list', async () => {
+    const navigateByUrl = vi.spyOn(Router.prototype, 'navigateByUrl');
+    await setup({
+      listMine: vi.fn<() => Observable<ExpenseGroupSummary[]>>().mockReturnValue(of(TWO_GROUPS)),
+      takeLaunchRedirect: vi.fn<() => number | null>().mockReturnValue(42),
+    });
+
+    expect(navigateByUrl).not.toHaveBeenCalled();
+    navigateByUrl.mockRestore();
+  });
+
+  it('opens a group when its row is tapped', async () => {
+    await setup({
+      listMine: vi.fn<() => Observable<ExpenseGroupSummary[]>>().mockReturnValue(of(TWO_GROUPS)),
+    });
+
+    await userEvent.click(screen.getByRole('link', { name: /flat/i }));
+
+    await waitFor(() => {
+      expect(TestBed.inject(Router).url).toBe('/group/2');
     });
   });
 });

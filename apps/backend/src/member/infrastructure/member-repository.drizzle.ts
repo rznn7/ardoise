@@ -1,12 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, eq } from 'drizzle-orm';
-import { Member } from 'src/member/domain/member';
+import { and, asc, eq, sql } from 'drizzle-orm';
+import { Member, NamedMember } from 'src/member/domain/member';
 import { MemberRepository } from 'src/member/domain/member-repository';
 import {
   type Database,
   DATABASE_CONNECTION,
 } from 'src/shared/database/database.module';
-import { member } from 'src/shared/database/schema';
+import { member, users } from 'src/shared/database/schema';
 
 @Injectable()
 export class MemberRepositoryDrizzle implements MemberRepository {
@@ -40,6 +40,24 @@ export class MemberRepositoryDrizzle implements MemberRepository {
     });
 
     return rows.map((row) => this.toDomain(row));
+  }
+
+  async findNamedByGroupId(groupId: number): Promise<NamedMember[]> {
+    const rows = await this.database
+      .select({
+        id: member.id,
+        userId: member.userId,
+        groupId: member.groupId,
+        nickname: member.nickname,
+        isModerator: member.isModerator,
+        name: sql<string>`coalesce(${member.nickname}, ${users.name})`,
+      })
+      .from(member)
+      .innerJoin(users, eq(users.id, member.userId))
+      .where(eq(member.groupId, groupId))
+      .orderBy(asc(member.id));
+
+    return rows;
   }
 
   async create(input: {

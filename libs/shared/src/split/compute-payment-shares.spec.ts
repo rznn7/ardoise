@@ -6,7 +6,7 @@ import {
   InvalidSplit,
   type InvalidSplitCode,
   MAX_SHARE_WEIGHT,
-} from './compute-payment-shares';
+} from './compute-payment-shares.js';
 
 describe('computePaymentShares', () => {
   it('splits EQUAL evenly and normalizes inputValue to zero', () => {

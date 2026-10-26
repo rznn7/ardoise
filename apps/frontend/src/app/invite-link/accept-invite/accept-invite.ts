@@ -12,7 +12,8 @@ import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
 import { catchError, map, of, switchMap, tap } from 'rxjs';
-import { AuthApiService } from 'src/app/auth/auth-api.service';
+import { AuthService } from 'src/app/auth/auth.service';
+import { LastGroupService } from 'src/app/expense-group/last-group.service';
 import { AcceptInviteFlow } from 'src/app/invite-link/accept-invite-flow.service';
 import { InviteLinkApiService } from 'src/app/invite-link/invite-link-api.service';
 import { HeroScreen } from 'src/app/shared/ui/hero-screen/hero-screen';
@@ -53,8 +54,9 @@ const SUCCESS_DISPLAY_MS = 800;
 export class AcceptInvite {
   private readonly router = inject(Router);
   private readonly inviteLinkApi = inject(InviteLinkApiService);
-  private readonly authApi = inject(AuthApiService);
+  private readonly auth = inject(AuthService);
   private readonly flow = inject(AcceptInviteFlow);
+  private readonly lastGroup = inject(LastGroupService);
 
   /** Bound from the `?token=` query param via withComponentInputBinding(). */
   readonly token = input<string>();
@@ -83,7 +85,7 @@ export class AcceptInvite {
           this.groupName.set(groupName);
         }),
         switchMap(() =>
-          this.authApi.me().pipe(
+          this.auth.currentUser().pipe(
             map(() => 'loggedIn' as const),
             catchError(() => of('loggedOut' as const)),
           ),
@@ -108,7 +110,8 @@ export class AcceptInvite {
     if (!token) return;
 
     this.flow.joinLoggedIn(token).subscribe({
-      next: () => {
+      next: ({ groupId }) => {
+        this.lastGroup.remember(groupId);
         this.onJoinSuccess();
       },
       error: () => {
@@ -122,7 +125,8 @@ export class AcceptInvite {
     if (!token) return;
 
     this.flow.loginThenJoin(token).subscribe({
-      next: () => {
+      next: ({ groupId }) => {
+        this.lastGroup.remember(groupId);
         this.onJoinSuccess();
       },
       error: (error: unknown) => {
@@ -140,6 +144,7 @@ export class AcceptInvite {
 
     this.flow.registerThenJoin(token).subscribe({
       next: () => {
+        this.lastGroup.skipLaunchRedirect();
         this.onJoinSuccess();
       },
     });

@@ -1,0 +1,200 @@
+<app-mobile-shell>
+  <div appShellHeader class="flex items-center gap-3 bg-background px-4 py-2">
+    <button
+      aria-label="Back"
+      class="size-11 shrink-0 rounded-full"
+      hlmBtn
+      size="icon-lg"
+      type="button"
+      variant="ghost"
+      (click)="back()"
+    >
+      <ng-icon hlm name="lucideChevronLeft" size="sm" aria-hidden="true" />
+    </button>
+    @if (draft.group(); as group) {
+      <app-group-chip [groupId]="group.id" [name]="group.name" />
+    }
+  </div>
+
+  <div class="flex min-h-full flex-col">
+    <div class="flex flex-col gap-6 px-4 pt-4 pb-4">
+      <div class="flex flex-col items-start">
+        @if (draft.group(); as group) {
+          <button class="min-h-11 text-left" type="button" (click)="openAmount()">
+            <app-money-amount
+              appTitle
+              [cents]="draft.amountCents() ?? 0"
+              [currency]="group.currencyCode"
+            />
+          </button>
+        }
+        <button appMeta class="min-h-11 max-w-full text-left" type="button" (click)="openTitle()">
+          {{ displayTitle() }}
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="flex min-w-0 flex-col gap-2">
+          <hlm-native-select
+            class="w-full"
+            selectClass="h-11"
+            selectId="payment-payer"
+            [value]="payerValue()"
+            (valueChange)="selectPayer($event)"
+          >
+            @for (row of rows(); track row.id) {
+              <option hlmNativeSelectOption [value]="row.id">{{ row.name }}</option>
+            }
+          </hlm-native-select>
+          <label appMeta for="payment-payer">Paid by</label>
+        </div>
+        <div class="flex min-w-0 flex-col gap-2">
+          <input
+            #dateInput
+            class="h-11 w-full"
+            hlmInput
+            id="payment-date"
+            type="date"
+            [value]="draft.date()"
+            (input)="draft.date.set(dateInput.value)"
+          />
+          <label appMeta for="payment-date">Date</label>
+        </div>
+      </div>
+
+      <div
+        aria-label="Split"
+        class="w-full"
+        hlmToggleGroup
+        type="single"
+        variant="outline"
+        [nullable]="false"
+        [value]="draft.splitType()"
+        (valueChange)="selectSplit($event)"
+      >
+        @for (mode of splitModes; track mode.type) {
+          <button class="h-11 flex-1" hlmToggleGroupItem [value]="mode.type">
+            {{ mode.label }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <ul class="flex flex-col divide-y divide-border border-y border-border">
+      @for (row of rows(); track row.id) {
+        <li>
+          @switch (draft.splitType()) {
+            @case ('equal') {
+              <label
+                class="flex h-15 items-center gap-3 px-4"
+                [class.text-muted-foreground]="!draft.included().has(row.id)"
+              >
+                <input
+                  class="size-5 shrink-0 accent-primary"
+                  type="checkbox"
+                  [checked]="draft.included().has(row.id)"
+                  (change)="toggle(row.id)"
+                />
+                <span class="min-w-0 flex-1 truncate">{{ row.name }}</span>
+                @if (shareOf(row.id) > 0 && draft.group(); as group) {
+                  <app-money-amount [cents]="shareOf(row.id)" [currency]="group.currencyCode" />
+                } @else {
+                  <span>—</span>
+                }
+              </label>
+            }
+            @case ('shares') {
+              <div class="flex h-15 items-center gap-3 px-4">
+                <div class="flex min-w-0 flex-1 flex-col">
+                  <span class="truncate">{{ row.name }}</span>
+                  <span appMeta>
+                    @if (shareOf(row.id) > 0 && draft.group(); as group) {
+                      <app-money-amount [cents]="shareOf(row.id)" [currency]="group.currencyCode" />
+                    } @else {
+                      —
+                    }
+                  </span>
+                </div>
+                <app-stepper
+                  [label]="row.name"
+                  [value]="weightOf(row.id)"
+                  (valueChange)="setWeight(row.id, $event)"
+                />
+              </div>
+            }
+            @case ('percent') {
+              <div class="flex h-15 items-center gap-3 px-4">
+                <div class="flex min-w-0 flex-1 flex-col">
+                  <span class="truncate">{{ row.name }}</span>
+                  <span appMeta>
+                    @if (shareOf(row.id) > 0 && draft.group(); as group) {
+                      <app-money-amount [cents]="shareOf(row.id)" [currency]="group.currencyCode" />
+                    } @else {
+                      —
+                    }
+                  </span>
+                </div>
+                <input
+                  #percentInput
+                  autocomplete="off"
+                  class="h-11 w-24"
+                  hlmInput
+                  inputmode="decimal"
+                  placeholder="0"
+                  [attr.aria-label]="row.name + ' percent'"
+                  [value]="draft.percentTexts().get(row.id) ?? ''"
+                  (input)="setPercent(row.id, percentInput.value)"
+                />
+              </div>
+            }
+            @case ('exact') {
+              <div class="flex h-15 items-center gap-3 px-4">
+                <span class="min-w-0 flex-1 truncate">{{ row.name }}</span>
+                <input
+                  #exactInput
+                  autocomplete="off"
+                  class="h-11 w-28"
+                  hlmInput
+                  inputmode="decimal"
+                  placeholder="0,00"
+                  [attr.aria-label]="row.name + ' amount'"
+                  [value]="draft.exactTexts().get(row.id) ?? ''"
+                  (input)="setExact(row.id, exactInput.value)"
+                />
+              </div>
+            }
+          }
+        </li>
+      }
+    </ul>
+
+    <div class="sticky bottom-0 mt-auto flex flex-col gap-3 bg-background px-4 pt-3 pb-4">
+      @if (runningTotal(); as total) {
+        <ng-template #totalText>
+          @if (total.percentText) {
+            {{ total.percentText }}
+          } @else if (draft.group(); as group) {
+            <app-money-amount [cents]="total.entered" [currency]="group.currencyCode" />
+            of
+            <app-money-amount [cents]="total.target" [currency]="group.currencyCode" />
+          }
+        </ng-template>
+        <p appMeta role="status">
+          <span [class.text-destructive]="total.over">
+            <ng-container [ngTemplateOutlet]="totalText" />
+          </span>
+        </p>
+      }
+      <button
+        class="w-full"
+        hlmBtn
+        size="xl"
+        type="button"
+        [disabled]="!draft.valid()"
+        (click)="save()"
+      >
+        Save
+      </button>
+    </div>
+  </div>
+</app-mobile-shell>

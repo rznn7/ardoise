@@ -20,7 +20,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx scripts/seed-dev.ts"
+    "db:seed": "tsx scripts/seed-dev.ts",
+    "db:fresh": "pnpm db:reset && pnpm db:up && pnpm db:migrate && pnpm db:seed"
   },
   "dependencies": {
     "@ardoise/shared": "workspace:*",
@@ -58,7 +59,6 @@
     "eslint-plugin-import": "catalog:",
     "eslint-plugin-prettier": "catalog:",
     "eslint-plugin-simple-import-sort": "catalog:",
-    "fast-check": "catalog:",
     "globals": "catalog:",
     "prettier": "catalog:",
     "source-map-support": "^0.5.21",

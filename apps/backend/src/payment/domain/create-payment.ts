@@ -1,18 +1,14 @@
-import { NotAMember } from 'src/member/domain/member';
+import {
+  computePaymentShares,
+  type SplitParticipant,
+  type SplitType,
+} from '@ardoise/shared';
 import { type MemberRepository } from 'src/member/domain/member-repository';
 import { type PaymentShare } from 'src/payment-share/domain/payment-share';
 import { type PaymentShareRepository } from 'src/payment-share/domain/payment-share-repository';
 
-import {
-  computePaymentShares,
-  type SplitParticipant,
-} from './compute-payment-shares';
-import {
-  ParticipantNotInGroup,
-  PayerNotInGroup,
-  type Payment,
-  type SplitType,
-} from './payment';
+import { assertPaymentMembers } from './assert-payment-members';
+import { type Payment } from './payment';
 import { type PaymentRepository } from './payment-repository';
 
 export type CreatePaymentInput = {
@@ -35,13 +31,7 @@ export const createPayment = async (
   input: CreatePaymentInput,
 ): Promise<{ payment: Payment; shares: PaymentShare[] }> => {
   const groupMembers = await deps.members.findByGroupId(input.groupId);
-  const memberIds = new Set(groupMembers.map((m) => m.id));
-
-  if (!groupMembers.some((m) => m.userId === input.userId))
-    throw new NotAMember();
-  if (!memberIds.has(input.payerMemberId)) throw new PayerNotInGroup();
-  if (input.participants.some((p) => !memberIds.has(p.memberId)))
-    throw new ParticipantNotInGroup();
+  assertPaymentMembers(groupMembers, input);
 
   const computed = computePaymentShares({
     fullAmount: input.fullAmount,

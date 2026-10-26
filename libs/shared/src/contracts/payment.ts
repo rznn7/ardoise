@@ -40,6 +40,13 @@ export const createPaymentRequestSchema = z
   })
   .strict();
 export type CreatePaymentRequest = z.infer<typeof createPaymentRequestSchema>;
+export type CreatePaymentBody = z.input<typeof createPaymentRequestSchema>;
+
+export const updatePaymentRequestSchema = createPaymentRequestSchema.omit({
+  groupId: true,
+});
+export type UpdatePaymentRequest = z.infer<typeof updatePaymentRequestSchema>;
+export type UpdatePaymentBody = z.input<typeof updatePaymentRequestSchema>;
 
 export const createPaymentResponseSchema = z.object({
   payment: paymentResponseSchema,
@@ -64,16 +71,40 @@ export const createPaymentErrorSchema = z.object({
 });
 export type CreatePaymentError = z.infer<typeof createPaymentErrorSchema>;
 
+export const updatePaymentErrorSchema = z.object({
+  error: z.enum([
+    ...createPaymentErrorSchema.shape.error.options,
+    'PAYMENT_NOT_FOUND',
+  ]),
+});
+export type UpdatePaymentError = z.infer<typeof updatePaymentErrorSchema>;
+
 export const paymentApi = {
   findOne: {
     method: 'GET',
     path: '/payments/:id',
     res: paymentResponseSchema,
   },
+  listByGroup: {
+    method: 'GET',
+    path: '/expense-groups/:groupId/payments',
+    res: z.array(paymentResponseSchema),
+  },
   create: {
     method: 'POST',
     path: '/payments',
     body: createPaymentRequestSchema,
     res: createPaymentResponseSchema,
+  },
+  update: {
+    method: 'PUT',
+    path: '/payments/:id',
+    body: updatePaymentRequestSchema,
+    res: createPaymentResponseSchema,
+  },
+  delete: {
+    method: 'DELETE',
+    path: '/payments/:id',
+    status: 204,
   },
 } as const satisfies Record<string, Endpoint>;

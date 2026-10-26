@@ -6,6 +6,7 @@ const member = {
   id: 3,
   userId: 11,
   groupId: 5,
+  name: 'Al',
   nickname: 'Al',
   isModerator: true,
 };
@@ -15,6 +16,7 @@ describe('toGroupMember', () => {
     expect(toGroupMember(member)).toEqual({
       id: 3,
       userId: 11,
+      name: 'Al',
       nickname: 'Al',
       isModerator: true,
     });

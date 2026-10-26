@@ -24,4 +24,8 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    files: ['src/**/*.spec.ts'],
+    rules: { '@typescript-eslint/no-restricted-imports': 'off' },
+  },
 );
