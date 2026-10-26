@@ -53,6 +53,10 @@ export class PaymentRepositoryDrizzle implements PaymentRepository {
     return this.toDomain(row);
   }
 
+  async delete(id: number): Promise<void> {
+    await this.database.delete(payment).where(eq(payment.id, id));
+  }
+
   private toDomain(row: typeof payment.$inferSelect): Payment {
     return {
       id: row.id,

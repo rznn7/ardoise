@@ -13,6 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CreatePaymentUseCase } from 'src/payment/application/create-payment.use-case';
+import { DeletePaymentUseCase } from 'src/payment/application/delete-payment.use-case';
 import { FindPaymentUseCase } from 'src/payment/application/find-payment.use-case';
 import { UpdatePaymentUseCase } from 'src/payment/application/update-payment.use-case';
 import { toPaymentResponse } from 'src/payment/infrastructure/payment.mapper';
@@ -30,6 +31,7 @@ export class PaymentController {
     private readonly findPayment: FindPaymentUseCase,
     private readonly createPayment: CreatePaymentUseCase,
     private readonly updatePayment: UpdatePaymentUseCase,
+    private readonly deletePayment: DeletePaymentUseCase,
   ) {}
 
   @Route(paymentApi.findOne)
@@ -78,5 +80,13 @@ export class PaymentController {
       payment: toPaymentResponse(payment),
       shares: shares.map(toPaymentShareResponse),
     };
+  }
+
+  @Route(paymentApi.delete)
+  async delete(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: SessionUser,
+  ): Promise<void> {
+    await this.deletePayment.execute({ userId: user.id, paymentId: id });
   }
 }

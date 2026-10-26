@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { UNIT_OF_WORK } from 'src/auth/domain/unit-of-work';
 import { MemberModule } from 'src/member/infrastructure/member.module';
 import { CreatePaymentUseCase } from 'src/payment/application/create-payment.use-case';
+import { DeletePaymentUseCase } from 'src/payment/application/delete-payment.use-case';
 import { FindPaymentUseCase } from 'src/payment/application/find-payment.use-case';
 import { ListGroupPaymentsUseCase } from 'src/payment/application/list-group-payments.use-case';
 import { UpdatePaymentUseCase } from 'src/payment/application/update-payment.use-case';
@@ -25,6 +26,7 @@ import { PaymentRepositoryDrizzle } from './payment-repository.drizzle';
     FindPaymentUseCase,
     CreatePaymentUseCase,
     UpdatePaymentUseCase,
+    DeletePaymentUseCase,
     ListGroupPaymentsUseCase,
   ],
   exports: [PAYMENT_REPOSITORY],

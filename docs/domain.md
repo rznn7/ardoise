@@ -87,6 +87,7 @@ id, groupId, fromMemberId, toMemberId, amount (cents), settledAt
 - Only a moderator (`Member.isModerator = true`) can configure the group (currency, invite duration, removing members)
 - The group creator automatically becomes a moderator
 - Any member can add a payment
+- Any member can edit or delete a payment
 
 ---
 

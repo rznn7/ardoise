@@ -10,4 +10,5 @@ export interface PaymentRepository {
     id: number,
     fields: Omit<Payment, 'id' | 'groupId' | 'createdAt'>,
   ): Promise<Payment>;
+  delete(id: number): Promise<void>;
 }

@@ -97,4 +97,9 @@ export const paymentApi = {
     body: updatePaymentRequestSchema,
     res: createPaymentResponseSchema,
   },
+  delete: {
+    method: 'DELETE',
+    path: '/payments/:id',
+    status: 204,
+  },
 } as const satisfies Record<string, Endpoint>;
