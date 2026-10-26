@@ -29,6 +29,13 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
+    path: 'group/:groupId/payments/:paymentId',
+    pathMatch: 'full',
+    loadComponent: () =>
+      import('./payment/payment-details/payment-details').then((m) => m.PaymentDetails),
+    canActivate: [authGuard],
+  },
+  {
     path: 'group/:groupId/payments',
     canActivate: [authGuard],
     loadChildren: () =>

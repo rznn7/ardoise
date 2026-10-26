@@ -1,0 +1,126 @@
+@let details = state();
+<hlm-sheet #sheet="hlmSheet">
+  <app-mobile-shell>
+    <div appShellHeader class="flex items-center gap-3 bg-background px-4 py-2">
+      <button
+        aria-label="Back"
+        class="size-11 shrink-0 rounded-full"
+        hlmBtn
+        size="icon-lg"
+        type="button"
+        variant="ghost"
+        (click)="back()"
+      >
+        <ng-icon hlm name="lucideChevronLeft" size="sm" aria-hidden="true" />
+      </button>
+      @if (details.status === 'loaded') {
+        <app-group-chip [groupId]="details.group.id" [name]="details.group.name" />
+      }
+    </div>
+
+    @switch (details.status) {
+      @case ('loading') {
+        <div class="flex flex-col gap-2 px-4 pt-4 pb-6">
+          <hlm-skeleton class="h-10 w-2/5" />
+          <hlm-skeleton class="h-6 w-3/5" />
+          <hlm-skeleton class="h-3.5 w-4/5" />
+        </div>
+        <app-page-state state="loading" [skeletonRows]="3" />
+      }
+      @case ('not-found') {
+        <app-page-state
+          state="empty"
+          heading="This payment no longer exists"
+          description="Someone may have deleted it."
+        >
+          <a appPageStateAction hlmBtn size="xl" [routerLink]="groupUrl()">Back to group</a>
+        </app-page-state>
+      }
+      @case ('error') {
+        <app-page-state
+          state="error"
+          heading="Couldn't load this payment"
+          description="Check your connection and try again."
+          (retry)="retry()"
+        />
+      }
+      @case ('loaded') {
+        <div class="flex min-h-full flex-col">
+          <div class="flex flex-col gap-1 px-4 pt-4 pb-6">
+            <app-money-amount
+              appFigure
+              [cents]="details.payment.fullAmount"
+              [currency]="details.group.currencyCode"
+            />
+            <h1 appTitle>{{ details.payment.title }}</h1>
+            <p appMeta>{{ meta() }}</p>
+          </div>
+
+          <section class="flex flex-col">
+            <h2 appMeta class="px-4 pb-2" id="payment-shares">Shares</h2>
+            <ul
+              aria-labelledby="payment-shares"
+              class="flex flex-col divide-y divide-border border-y border-border"
+            >
+              @for (row of shareRows(); track row.memberId) {
+                <li>
+                  <app-list-row>
+                    <span appListRowTitle>{{ row.name }}</span>
+                    @if (row.amount === null) {
+                      <span appListRowTrailing class="text-muted-foreground">—</span>
+                    } @else {
+                      <app-money-amount
+                        appListRowTrailing
+                        class="text-foreground"
+                        [cents]="row.amount"
+                        [currency]="details.group.currencyCode"
+                      />
+                    }
+                  </app-list-row>
+                </li>
+              }
+            </ul>
+          </section>
+
+          <div class="sticky bottom-0 mt-auto grid grid-cols-2 gap-3 bg-background px-4 pt-3 pb-4">
+            <button
+              class="text-destructive"
+              hlmBtn
+              hlmSheetTrigger
+              side="bottom"
+              size="xl"
+              type="button"
+              variant="outline"
+            >
+              Delete
+            </button>
+            <button hlmBtn size="xl" type="button" (click)="edit()">Edit</button>
+          </div>
+        </div>
+      }
+    }
+  </app-mobile-shell>
+
+  <hlm-sheet-content *brnSheetContent>
+    @if (details.status === 'loaded') {
+      <div hlmSheetHeader>
+        <h3 hlmSheetTitle>Delete "{{ details.payment.title }}"?</h3>
+        <p hlmSheetDescription>Everyone's balances will be updated.</p>
+      </div>
+      <div class="flex flex-col gap-3 p-4 pb-8">
+        <button
+          hlmBtn
+          size="xl"
+          type="button"
+          variant="destructive"
+          (click)="sheet.close(); confirmDelete()"
+        >
+          Delete
+        </button>
+        <button hlmBtn size="xl" type="button" variant="outline" (click)="sheet.close()">
+          Cancel
+        </button>
+      </div>
+    }
+  </hlm-sheet-content>
+</hlm-sheet>
