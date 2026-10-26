@@ -3,11 +3,14 @@ import { expect, type Page } from '@playwright/test';
 import {
   abort,
   type ApiMocks,
+  balancesWhereIAmAt,
   GROUP,
+  GROUP_BALANCES,
   GROUPS,
   json,
   ME,
   MEMBERS,
+  MY_BALANCES,
   NEW_GROUP,
   PAYMENTS,
   pending,
@@ -29,6 +32,9 @@ const PREVIEW = 'GET /invite-link/[^/]+/preview';
 const GROUPS_LIST = 'GET /expense-groups';
 const GROUP_PATH = `/group/${String(GROUP.id)}`;
 const GROUP_FEED = `GET /expense-groups/${String(GROUP.id)}/payments`;
+const GROUP_BALANCES_PATH = `GET /expense-groups/${String(GROUP.id)}/balances`;
+const MY_BALANCES_PATH = 'GET /balances/mine';
+const BALANCES_TAB = `${GROUP_PATH}?tab=balances`;
 const INVITE_TOKEN = 'aGVsbG8td29ybGQtdGhpcy1pcy1hLWRlbW8tdG9rZW4';
 const [DETAILED_PAYMENT] = PAYMENTS;
 if (DETAILED_PAYMENT === undefined) throw new Error('PAYMENTS is empty');
@@ -39,6 +45,7 @@ const groupMocks: ApiMocks = {
   [`GET /expense-groups/${String(GROUP.id)}`]: json(GROUP),
   [`GET /expense-groups/${String(GROUP.id)}/members`]: json(MEMBERS),
   [GROUP_FEED]: json(PAYMENTS),
+  [GROUP_BALANCES_PATH]: json(GROUP_BALANCES),
   [`GET /payments/${String(DETAILED_PAYMENT.id)}`]: json(DETAILED_PAYMENT),
   [`GET /payment-shares/by-payment/${String(DETAILED_PAYMENT.id)}`]:
     json(SHARES),
@@ -184,8 +191,12 @@ export const CELLS: ScreenshotCell[] = [
     route: 'home',
     state: 'filled',
     path: '/home',
-    mocks: { ...loggedIn, [GROUPS_LIST]: json(GROUPS) },
-    ready: visible('Lisbon trip'),
+    mocks: {
+      ...loggedIn,
+      [GROUPS_LIST]: json(GROUPS),
+      [MY_BALANCES_PATH]: json(MY_BALANCES),
+    },
+    ready: visible('−€42.50'),
   },
   {
     route: 'home-create-sheet',
@@ -256,6 +267,85 @@ export const CELLS: ScreenshotCell[] = [
       await page.getByRole('button', { name: 'Invite people' }).click();
       await expect(page.getByLabel('Invite link')).toHaveValue(/token=/);
     },
+  },
+  {
+    route: 'group',
+    state: 'owe',
+    path: GROUP_PATH,
+    mocks: {
+      ...groupMocks,
+      [GROUP_BALANCES_PATH]: json(balancesWhereIAmAt(-4250)),
+    },
+    ready: visible('You owe'),
+  },
+  {
+    route: 'group',
+    state: 'owed',
+    path: GROUP_PATH,
+    mocks: {
+      ...groupMocks,
+      [GROUP_BALANCES_PATH]: json(balancesWhereIAmAt(1830)),
+    },
+    ready: visible('Owed to you'),
+  },
+  {
+    route: 'group',
+    state: 'settled-up',
+    path: GROUP_PATH,
+    mocks: {
+      ...groupMocks,
+      [GROUP_BALANCES_PATH]: json(balancesWhereIAmAt(0)),
+    },
+    ready: visible('Settled up'),
+  },
+  {
+    route: 'group',
+    state: 'balance-loading',
+    path: GROUP_PATH,
+    mocks: { ...groupMocks, [GROUP_BALANCES_PATH]: pending },
+    ready: visible('Pastéis de nata'),
+  },
+  {
+    route: 'group-balances',
+    state: 'filled',
+    path: BALANCES_TAB,
+    mocks: groupMocks,
+    ready: visible('You pay Max'),
+  },
+  {
+    route: 'group-balances',
+    state: 'all-settled',
+    path: BALANCES_TAB,
+    mocks: {
+      ...groupMocks,
+      [GROUP_BALANCES_PATH]: json(balancesWhereIAmAt(0)),
+    },
+    ready: visible('All settled'),
+  },
+  {
+    route: 'group-balances',
+    state: 'no-payments',
+    path: BALANCES_TAB,
+    mocks: {
+      ...groupMocks,
+      [GROUP_FEED]: json([]),
+      [GROUP_BALANCES_PATH]: json(balancesWhereIAmAt(0)),
+    },
+    ready: visible('Nothing to settle yet'),
+  },
+  {
+    route: 'group-balances',
+    state: 'loading',
+    path: BALANCES_TAB,
+    mocks: { ...groupMocks, [GROUP_BALANCES_PATH]: pending },
+    ready: loadingStatus,
+  },
+  {
+    route: 'group-balances',
+    state: 'error',
+    path: BALANCES_TAB,
+    mocks: { ...groupMocks, [GROUP_BALANCES_PATH]: status(500) },
+    ready: visible("Couldn't load balances"),
   },
   {
     route: 'payment-amount',
