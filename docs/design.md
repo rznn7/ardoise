@@ -40,7 +40,7 @@ Animations come later, not now.
 - Fluid from 360 to 430 wide, full bleed on phones, 16px content padding. Width capped from the `sm` breakpoint.
 - Backdrops run edge to edge, under the status bar.
 - Primary actions in the thumb zone. Tap targets ≥ 44px.
-- PWA on iOS and Android: respect safe areas. Manifest, standalone mode and iOS keyboard handling arrive with the add-expense slice.
+- PWA on iOS and Android: respect safe areas. Keyboard handling landed with the payments slice (`interactive-widget=resizes-content` in the viewport meta); the manifest and standalone mode are still pending with the PWA item.
 - Checked at 360×780, 393×852 (main), 375×667.
 
 ## Building blocks

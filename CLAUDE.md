@@ -56,7 +56,7 @@ Rules:
 Full model in `docs/domain.md`. The ones code must never break:
 
 - Money is integer cents. No floats.
-- Shares of a payment always sum to `fullAmount`. Rounding is in `payment/domain/apportion.ts`.
+- Shares of a payment always sum to `fullAmount`. Rounding is in `libs/shared/src/split/apportion.ts`.
 - `User.role` is the app admin. `Member.isModerator` is the group role. Keep them separate.
 - A settlement overlays balances and never mutates payments.
 

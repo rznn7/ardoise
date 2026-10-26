@@ -80,7 +80,7 @@ id, groupId, fromMemberId, toMemberId, amount (cents), settledAt
 - Rounding (`equal` / `percent` / `shares`): each share is floored, then the leftover cents (at
   most `participants − 1`) are distributed one each by largest fractional remainder, tie-broken
   in favor of the payer, then by lowest `memberId`. No member ever absorbs more than one extra
-  cent. `exact` never rounds. Implemented in `apps/backend/src/payment/domain/apportion.ts`.
+  cent. `exact` never rounds. Implemented in `libs/shared/src/split/apportion.ts`.
 - On payment edit: recompute `PaymentShare.amount` from `splitType` + `inputValue` against new total
 - The payer is excluded from their own debt calculation
 - A `Settlement` does not modify payments — it overlays the balance calculation
