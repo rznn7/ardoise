@@ -35,6 +35,15 @@ describe('PaymentDraft', () => {
     expect(draft.myMemberId()).toBeNull();
   });
 
+  it('forgets a direct entry on clear and on a new start', () => {
+    draft.enteredDirectly.set(true);
+    draft.startNew(7, members, 3);
+    expect(draft.enteredDirectly()).toBe(false);
+    draft.enteredDirectly.set(true);
+    draft.clear();
+    expect(draft.enteredDirectly()).toBe(false);
+  });
+
   it('forgets the group on clear and on a new start', () => {
     const group = { id: 7, name: 'Lisbon trip', currencyCode: 'EUR', createdAt: '' };
     draft.group.set(group);

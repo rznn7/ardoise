@@ -1,4 +1,4 @@
-import { Location } from '@angular/common';
+import { Location, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { type GroupMember, type SplitType } from '@ardoise/shared';
@@ -9,7 +9,7 @@ import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmInputImports } from '@spartan-ng/helm/input';
 import { HlmNativeSelectImports } from '@spartan-ng/helm/native-select';
 import { HlmToggleGroupImports } from '@spartan-ng/helm/toggle-group';
-import { formatAmountInput, formatPercentInput } from 'src/app/payment/money-input';
+import { formatPercentInput } from 'src/app/payment/money-input';
 import { PaymentDraft } from 'src/app/payment/payment-draft';
 import { PaymentStore } from 'src/app/payment/payment-store';
 import { injectGoBack } from 'src/app/shared/navigation/back';
@@ -31,11 +31,6 @@ const SPLIT_MODES: readonly { readonly type: SplitType; readonly label: string }
   { type: 'exact', label: 'Exact' },
 ];
 
-const currencySymbol = (currency: string): string =>
-  new Intl.NumberFormat('en', { style: 'currency', currency, currencyDisplay: 'narrowSymbol' })
-    .formatToParts(0)
-    .find((part) => part.type === 'currency')?.value ?? currency;
-
 const withTextOf = (
   texts: ReadonlyMap<number, string>,
   memberId: number,
@@ -45,6 +40,7 @@ const withTextOf = (
 @Component({
   selector: 'app-options-step',
   imports: [
+    NgTemplateOutlet,
     MobileShellImports,
     GroupChip,
     MoneyAmount,
@@ -85,11 +81,11 @@ export class OptionsStep {
   protected readonly runningTotal = computed(() => {
     const total = this.draft.runningTotal();
     if (total === null) return null;
-    const text =
+    const percentText =
       this.draft.splitType() === 'percent'
         ? `${formatPercentInput(total.entered)} of ${formatPercentInput(total.target)} %`
-        : `${formatAmountInput(total.entered)} of ${formatAmountInput(total.target)} ${currencySymbol(this.draft.group()?.currencyCode ?? 'EUR')}`;
-    return { text, over: total.entered > total.target };
+        : null;
+    return { ...total, percentText, over: total.entered > total.target };
   });
 
   protected back(): void {
@@ -162,13 +158,21 @@ export class OptionsStep {
       const paymentId = this.draft.paymentId();
       if (paymentId === null) return;
       this.store.update(this.draft.groupId(), paymentId, body);
-      this.draft.clear();
-      this.location.historyGo(-1);
+      this.leave(`/group/${String(this.draft.groupId())}/payments/${String(paymentId)}`, -1);
       return;
     }
     this.store.create({ ...body, groupId: this.draft.groupId() });
+    this.leave(`/group/${String(this.draft.groupId())}`, -3);
+  }
+
+  private leave(url: string, historySteps: number): void {
+    const enteredDirectly = this.draft.enteredDirectly();
     this.draft.clear();
-    this.location.historyGo(-3);
+    if (enteredDirectly) {
+      void this.router.navigateByUrl(url, { replaceUrl: true });
+      return;
+    }
+    this.location.historyGo(historySteps);
   }
 
   private editUrl(step: string): string {

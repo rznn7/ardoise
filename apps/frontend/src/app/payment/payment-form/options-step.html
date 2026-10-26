@@ -175,10 +175,23 @@
 
     <div class="sticky bottom-0 mt-auto flex flex-col gap-3 bg-background px-4 pt-3 pb-4">
       @if (runningTotal(); as total) {
+        <ng-template #totalText>
+          @if (total.percentText) {
+            {{ total.percentText }}
+          } @else if (draft.group(); as group) {
+            <app-money-amount [cents]="total.entered" [currency]="group.currencyCode" />
+            of
+            <app-money-amount [cents]="total.target" [currency]="group.currencyCode" />
+          }
+        </ng-template>
         @if (total.over) {
-          <p appError aria-live="polite">{{ total.text }}</p>
+          <p appError role="status">
+            <ng-container [ngTemplateOutlet]="totalText" />
+          </p>
         } @else {
-          <p appMeta aria-live="polite">{{ total.text }}</p>
+          <p appMeta role="status">
+            <ng-container [ngTemplateOutlet]="totalText" />
+          </p>
         }
       }
       <button

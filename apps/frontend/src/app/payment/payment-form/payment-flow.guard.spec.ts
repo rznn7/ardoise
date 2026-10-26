@@ -230,4 +230,51 @@ describe('paymentFlowGuard', () => {
 
     expect(draft.title()).toBe('Changed');
   });
+
+  describe('entry', () => {
+    it('marks a new flow started from an in-app page as entered in-app', async () => {
+      const { harness, draft } = await setup();
+      await harness.navigateByUrl('/group/7');
+
+      await harness.navigateByUrl('/group/7/payments/new/amount');
+
+      expect(draft.enteredDirectly()).toBe(false);
+    });
+
+    it('marks a new flow redirected to amount on a fresh load as entered directly', async () => {
+      const { harness, draft, router } = await setup();
+
+      await harness.navigateByUrl('/group/7/payments/new/options');
+
+      expect(router.url).toBe('/group/7/payments/new/amount');
+      expect(draft.enteredDirectly()).toBe(true);
+    });
+
+    it('keeps the entry of a new flow through its later steps', async () => {
+      const { harness, draft } = await setup();
+      await harness.navigateByUrl('/group/7/payments/new/amount');
+
+      await harness.navigateByUrl('/group/7/payments/new/title');
+      await harness.navigateByUrl('/group/7/payments/new/options');
+
+      expect(draft.enteredDirectly()).toBe(true);
+    });
+
+    it('marks edit opened from the details page as entered in-app', async () => {
+      const { harness, draft } = await setup();
+      await harness.navigateByUrl('/group/7');
+
+      await harness.navigateByUrl('/group/7/payments/5/edit/options');
+
+      expect(draft.enteredDirectly()).toBe(false);
+    });
+
+    it('marks edit loaded directly as entered directly', async () => {
+      const { harness, draft } = await setup();
+
+      await harness.navigateByUrl('/group/7/payments/5/edit/options');
+
+      expect(draft.enteredDirectly()).toBe(true);
+    });
+  });
 });

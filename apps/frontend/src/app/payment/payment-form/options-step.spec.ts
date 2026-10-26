@@ -110,6 +110,8 @@ const rowOf = (name: string): HTMLElement => {
   return row;
 };
 const segment = (name: string): HTMLElement => screen.getByRole('button', { name });
+const runningTotal = (): HTMLElement => screen.getByRole('status');
+const totalText = (): string => runningTotal().textContent.replace(/\s+/g, ' ').trim();
 const save = (): HTMLButtonElement =>
   screen.getByRole<HTMLButtonElement>('button', { name: 'Save' });
 
@@ -270,7 +272,7 @@ describe('OptionsStep', () => {
       await userEvent.type(screen.getByLabelText('Gabriel percent'), '30');
 
       expect(draft.percentTexts().get(12)).toBe('50');
-      expect(screen.getByText('80 of 100 %')).toBeTruthy();
+      expect(totalText()).toBe('80 of 100 %');
       expect(save().disabled).toBe(true);
     });
   });
@@ -283,8 +285,8 @@ describe('OptionsStep', () => {
       await userEvent.type(screen.getByLabelText('You amount'), '10');
       await userEvent.type(screen.getByLabelText('Gabriel amount'), '8,5');
 
-      const total = screen.getByText('18,50 of 24,50 €');
-      expect(total.classList.contains('text-destructive')).toBe(false);
+      expect(totalText()).toBe('€18.50 of €24.50');
+      expect(runningTotal().classList.contains('text-destructive')).toBe(false);
     });
 
     it('shows an over total as an error', async () => {
@@ -293,9 +295,8 @@ describe('OptionsStep', () => {
 
       await userEvent.type(screen.getByLabelText('You amount'), '30');
 
-      expect(screen.getByText('30,00 of 24,50 €').classList.contains('text-destructive')).toBe(
-        true,
-      );
+      expect(totalText()).toBe('€30.00 of €24.50');
+      expect(runningTotal().classList.contains('text-destructive')).toBe(true);
     });
   });
 
@@ -344,6 +345,38 @@ describe('OptionsStep', () => {
       );
       expect(draft.active()).toBe(false);
       expect(historyGo).toHaveBeenCalledWith(-1);
+    });
+
+    it('goes to the group, replacing the url, when the new flow was not entered in-app', async () => {
+      const { draft, store, location, router } = await setup();
+      draft.enteredDirectly.set(true);
+      const historyGo = vi.spyOn(location, 'historyGo').mockImplementation(() => undefined);
+      const navigate = vi.spyOn(router, 'navigateByUrl');
+
+      await userEvent.click(save());
+
+      expect(store.create).toHaveBeenCalledTimes(1);
+      expect(historyGo).not.toHaveBeenCalled();
+      expect(navigate).toHaveBeenCalledWith('/group/7', { replaceUrl: true });
+      await waitFor(() => {
+        expect(router.url).toBe('/group/7');
+      });
+    });
+
+    it('goes to the details, replacing the url, when edit was opened directly', async () => {
+      const { draft, store, location, router } = await setup('edit');
+      draft.enteredDirectly.set(true);
+      const historyGo = vi.spyOn(location, 'historyGo').mockImplementation(() => undefined);
+      const navigate = vi.spyOn(router, 'navigateByUrl');
+
+      await userEvent.click(save());
+
+      expect(store.update).toHaveBeenCalledTimes(1);
+      expect(historyGo).not.toHaveBeenCalled();
+      expect(navigate).toHaveBeenCalledWith('/group/7/payments/5', { replaceUrl: true });
+      await waitFor(() => {
+        expect(router.url).toBe('/group/7/payments/5');
+      });
     });
   });
 });

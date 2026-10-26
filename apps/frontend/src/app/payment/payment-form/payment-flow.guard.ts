@@ -42,6 +42,7 @@ function guardNewStep(
   if (drafting && router.currentNavigation()?.trigger === 'popstate') return true;
 
   const groupUrl = router.createUrlTree(['/group', groupId]);
+  const enteredDirectly = router.lastSuccessfulNavigation() === null;
   return forkJoin({
     group: inject(ExpenseGroupApiService).findOne({ params: { id: groupId } }),
     members: inject(MemberApiService).listByGroup(groupId),
@@ -51,6 +52,7 @@ function guardNewStep(
       const myMember = members.find((member) => member.userId === me.id);
       if (myMember === undefined) return groupUrl;
       draft.startNew(groupId, members, myMember.id);
+      draft.enteredDirectly.set(enteredDirectly);
       draft.group.set(group);
       return true;
     }),
@@ -70,6 +72,7 @@ function guardEditStep(groupId: number, paymentId: number): GuardResult | Observ
 
   const payments = inject(PaymentApiService);
   const groupUrl = router.createUrlTree(['/group', groupId]);
+  const enteredDirectly = router.lastSuccessfulNavigation() === null;
   return forkJoin({
     payment: payments.findOne(paymentId),
     shares: payments.sharesOf(paymentId),
@@ -81,6 +84,7 @@ function guardEditStep(groupId: number, paymentId: number): GuardResult | Observ
       if (payment.groupId !== groupId) return groupUrl;
       draft.startEdit(payment, shares, members);
       draft.myMemberId.set(members.find((member) => member.userId === me.id)?.id ?? null);
+      draft.enteredDirectly.set(enteredDirectly);
       draft.group.set(group);
       return true;
     }),

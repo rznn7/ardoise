@@ -62,6 +62,7 @@ export class PaymentDraft {
   readonly paymentId = signal<number | null>(null);
   readonly members = signal<readonly GroupMember[]>([]);
   readonly myMemberId = signal<number | null>(null);
+  readonly enteredDirectly = signal(false);
   readonly amountText = signal('');
   readonly title = signal('');
   readonly payerMemberId = signal<number | null>(null);
@@ -205,6 +206,7 @@ export class PaymentDraft {
     this.paymentId.set(null);
     this.members.set([]);
     this.myMemberId.set(null);
+    this.enteredDirectly.set(false);
     this.amountText.set('');
     this.title.set('');
     this.payerMemberId.set(null);
