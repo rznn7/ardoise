@@ -22,6 +22,12 @@ export class PaymentShareRepositoryDrizzle implements PaymentShareRepository {
     return rows.map((row) => this.toDomain(row));
   }
 
+  async deleteByPayment(paymentId: number): Promise<void> {
+    await this.database
+      .delete(paymentShare)
+      .where(eq(paymentShare.paymentId, paymentId));
+  }
+
   async createMany(shares: readonly PaymentShare[]): Promise<PaymentShare[]> {
     if (shares.length === 0) return [];
 

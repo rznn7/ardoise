@@ -4,5 +4,6 @@ export const PAYMENT_SHARE_REPOSITORY = Symbol('PAYMENT_SHARE_REPOSITORY');
 
 export interface PaymentShareRepository {
   findByPayment(paymentId: number): Promise<PaymentShare[]>;
+  deleteByPayment(paymentId: number): Promise<void>;
   createMany(shares: readonly PaymentShare[]): Promise<PaymentShare[]>;
 }

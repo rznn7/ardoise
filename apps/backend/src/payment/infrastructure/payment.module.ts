@@ -4,6 +4,7 @@ import { MemberModule } from 'src/member/infrastructure/member.module';
 import { CreatePaymentUseCase } from 'src/payment/application/create-payment.use-case';
 import { FindPaymentUseCase } from 'src/payment/application/find-payment.use-case';
 import { ListGroupPaymentsUseCase } from 'src/payment/application/list-group-payments.use-case';
+import { UpdatePaymentUseCase } from 'src/payment/application/update-payment.use-case';
 import { PAYMENT_REPOSITORY } from 'src/payment/domain/payment-repository';
 import { SessionModule } from 'src/session/infrastructure/session.module';
 import { DatabaseModule } from 'src/shared/database/database.module';
@@ -23,6 +24,7 @@ import { PaymentRepositoryDrizzle } from './payment-repository.drizzle';
     { provide: UNIT_OF_WORK, useClass: UnitOfWorkDrizzle },
     FindPaymentUseCase,
     CreatePaymentUseCase,
+    UpdatePaymentUseCase,
     ListGroupPaymentsUseCase,
   ],
   exports: [PAYMENT_REPOSITORY],

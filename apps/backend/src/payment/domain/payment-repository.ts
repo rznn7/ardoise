@@ -6,4 +6,8 @@ export interface PaymentRepository {
   findById(id: number): Promise<Payment | null>;
   findByGroupId(groupId: number): Promise<Payment[]>;
   create(input: Omit<Payment, 'id' | 'createdAt'>): Promise<Payment>;
+  update(
+    id: number,
+    fields: Omit<Payment, 'id' | 'groupId' | 'createdAt'>,
+  ): Promise<Payment>;
 }

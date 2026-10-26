@@ -13,5 +13,6 @@ export type Payment = {
   readonly createdAt: Date;
 };
 
+export class PaymentNotFound extends Error {}
 export class PayerNotInGroup extends Error {}
 export class ParticipantNotInGroup extends Error {}

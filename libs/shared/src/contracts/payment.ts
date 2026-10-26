@@ -40,6 +40,13 @@ export const createPaymentRequestSchema = z
   })
   .strict();
 export type CreatePaymentRequest = z.infer<typeof createPaymentRequestSchema>;
+export type CreatePaymentBody = z.input<typeof createPaymentRequestSchema>;
+
+export const updatePaymentRequestSchema = createPaymentRequestSchema.omit({
+  groupId: true,
+});
+export type UpdatePaymentRequest = z.infer<typeof updatePaymentRequestSchema>;
+export type UpdatePaymentBody = z.input<typeof updatePaymentRequestSchema>;
 
 export const createPaymentResponseSchema = z.object({
   payment: paymentResponseSchema,
@@ -64,6 +71,9 @@ export const createPaymentErrorSchema = z.object({
 });
 export type CreatePaymentError = z.infer<typeof createPaymentErrorSchema>;
 
+export const updatePaymentErrorSchema = createPaymentErrorSchema;
+export type UpdatePaymentError = CreatePaymentError;
+
 export const paymentApi = {
   findOne: {
     method: 'GET',
@@ -79,6 +89,12 @@ export const paymentApi = {
     method: 'POST',
     path: '/payments',
     body: createPaymentRequestSchema,
+    res: createPaymentResponseSchema,
+  },
+  update: {
+    method: 'PUT',
+    path: '/payments/:id',
+    body: updatePaymentRequestSchema,
     res: createPaymentResponseSchema,
   },
 } as const satisfies Record<string, Endpoint>;
