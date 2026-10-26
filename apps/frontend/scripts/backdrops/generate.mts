@@ -10,6 +10,7 @@ import {
   type BackdropPalette,
 } from 'src/app/shared/ui/backdrop/backdrop-palettes';
 
+import { renderAppIcon } from './icon';
 import { renderBackdrop } from './render';
 import { hashString, mulberry32 } from './rng';
 
@@ -20,6 +21,15 @@ const WEBP_QUALITY = 82;
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const outputDir = resolve(root, 'public/backdrops');
 const tokensFile = resolve(root, 'src/styles/backdrop-tokens.css');
+const iconsDir = resolve(root, 'public/icons');
+
+const APP_ICONS: readonly { file: string; size: number; textSpan: number }[] = [
+  { file: 'apple-touch-icon.png', size: 180, textSpan: 0.8 },
+  { file: 'icon-192.png', size: 192, textSpan: 0.8 },
+  { file: 'icon-512.png', size: 512, textSpan: 0.8 },
+  { file: 'icon-maskable-512.png', size: 512, textSpan: 0.56 },
+  { file: 'favicon-48.png', size: 48, textSpan: 0.8 },
+];
 
 const palettes = Object.keys(BACKDROP_PALETTES) as BackdropPalette[];
 
@@ -55,5 +65,15 @@ function generateTokens(): void {
   console.log(`wrote ${tokensFile}`);
 }
 
+async function generateIcons(): Promise<void> {
+  mkdirSync(iconsDir, { recursive: true });
+  for (const { file, size, textSpan } of APP_ICONS) {
+    const target = resolve(iconsDir, file);
+    writeFileSync(target, await renderAppIcon(size, textSpan));
+    console.log(`wrote ${target}`);
+  }
+}
+
 await generateImages();
 generateTokens();
+await generateIcons();
