@@ -1,11 +1,12 @@
 import { NgComponentOutlet } from '@angular/common';
 import { Component, resource } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { HlmToaster } from '@spartan-ng/helm/sonner';
 import { VARIANTS_ENABLED } from 'src/environments/environment';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, NgComponentOutlet],
+  imports: [RouterOutlet, NgComponentOutlet, HlmToaster],
   templateUrl: './app.html',
 })
 export class App {
