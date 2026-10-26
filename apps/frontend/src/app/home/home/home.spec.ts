@@ -142,6 +142,14 @@ describe('Home', () => {
     expect(await screen.findByRole('dialog', { name: /create a group/i })).toBeTruthy();
   });
 
+  it('sizes the FAB like every floating action', async () => {
+    await setup();
+
+    const fab = screen.getByRole('button', { name: /create a group/i });
+    expect(fab.classList).toContain('h-14');
+    expect(fab.classList).toContain('min-w-14');
+  });
+
   it('refreshes the list without a spinner when a group is created', async () => {
     const flat: ExpenseGroupSummary = {
       id: 1,

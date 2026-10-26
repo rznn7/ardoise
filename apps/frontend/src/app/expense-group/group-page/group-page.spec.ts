@@ -255,6 +255,14 @@ describe('GroupPage', () => {
     expect(screen.getByText('No payments yet')).toBeTruthy();
   });
 
+  it('sizes the FAB like every floating action', async () => {
+    await setup();
+
+    const fab = screen.getByRole('link', { name: 'Add a payment' });
+    expect(fab.classList).toContain('h-14');
+    expect(fab.classList).toContain('min-w-14');
+  });
+
   it('adds a payment from the FAB', async () => {
     await setup();
 

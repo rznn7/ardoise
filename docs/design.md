@@ -40,6 +40,7 @@ Animations come later, not now.
 - Fluid from 360 to 430 wide, full bleed on phones, 16px content padding. Width capped from the `sm` breakpoint.
 - Backdrops run edge to edge, under the status bar.
 - Primary actions in the thumb zone. Tap targets ≥ 44px.
+- Floating actions (`appShellFab`) use `hlmBtn size="fab"`: 56px high, round when icon-only, a pill with text.
 - PWA on iOS and Android: respect safe areas. Keyboard handling landed with the payments slice (`interactive-widget=resizes-content` in the viewport meta); standalone mode runs content under a translucent status bar (`apple-mobile-web-app-status-bar-style: black-translucent`), with the manifest scoped to `/`.
 - Checked at 360×780, 393×852 (main), 375×667.
 
