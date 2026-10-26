@@ -8,7 +8,9 @@
           heading="You can't open this group"
           description="It may have been deleted, or you're not a member."
         >
-          <a appPageStateAction hlmBtn routerLink="/home" size="xl">Back to groups</a>
+          <a appPageStateAction hlmBtn routerLink="/home" size="xl" [replaceUrl]="true">
+            Back to groups
+          </a>
         </app-page-state>
       }
       @case ('error') {
@@ -17,7 +19,11 @@
           heading="Couldn't load this group"
           description="Check your connection and try again."
           (retry)="retryGroup()"
-        />
+        >
+          <a appPageStateAction hlmBtn routerLink="/home" size="xl" [replaceUrl]="true">
+            Back to groups
+          </a>
+        </app-page-state>
       }
       @default {
         <app-group-hero [groupId]="groupId()">

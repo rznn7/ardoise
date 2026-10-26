@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -18,9 +19,10 @@ export class PageStateAction {}
 @Component({
   selector: 'app-page-state',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [HlmEmptyImports, HlmSkeletonImports, HlmButtonImports],
+  imports: [NgTemplateOutlet, HlmEmptyImports, HlmSkeletonImports, HlmButtonImports],
   host: { class: 'flex min-h-full flex-col' },
   template: `
+    <ng-template #action><ng-content select="[appPageStateAction]" /></ng-template>
     @switch (state()) {
       @case ('loading') {
         <div role="status" aria-label="Loading" class="flex flex-col">
@@ -45,7 +47,7 @@ export class PageStateAction {}
             }
           </hlm-empty-header>
           <hlm-empty-content>
-            <ng-content select="[appPageStateAction]" />
+            <ng-container [ngTemplateOutlet]="action" />
           </hlm-empty-content>
         </hlm-empty>
       }
@@ -61,6 +63,7 @@ export class PageStateAction {}
             <button hlmBtn variant="outline" size="xl" type="button" (click)="retry.emit()">
               Retry
             </button>
+            <ng-container [ngTemplateOutlet]="action" />
           </hlm-empty-content>
         </hlm-empty>
       }

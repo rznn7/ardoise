@@ -76,6 +76,7 @@ interface Setup {
   feed: WritableSignal<FeedState>;
   load: ReturnType<typeof vi.fn<(groupId: number) => void>>;
   remember: ReturnType<typeof vi.fn<(groupId: number) => void>>;
+  skipLaunchRedirect: ReturnType<typeof vi.fn<() => void>>;
   findOne: ReturnType<typeof vi.fn<() => Observable<ExpenseGroupSummary>>>;
 }
 
@@ -93,6 +94,7 @@ async function setup({
   const feed = signal<FeedState>(feedState);
   const load = vi.fn<(groupId: number) => void>();
   const remember = vi.fn<(groupId: number) => void>();
+  const skipLaunchRedirect = vi.fn<() => void>();
   TestBed.configureTestingModule({
     providers: [
       provideRouter(
@@ -109,7 +111,7 @@ async function setup({
       { provide: MemberApiService, useValue: { listByGroup: () => of(members) } },
       { provide: AuthApiService, useValue: { me: () => of(ME) } },
       { provide: PaymentStore, useValue: { feed: () => feed, load } },
-      { provide: LastGroupService, useValue: { remember } },
+      { provide: LastGroupService, useValue: { remember, skipLaunchRedirect } },
       {
         provide: InviteLinkApiService,
         useValue: {
@@ -130,7 +132,7 @@ async function setup({
     await openFirstPage(harness, '/group/7');
   }
   harness.detectChanges();
-  return { feed, load, remember, findOne };
+  return { feed, load, remember, skipLaunchRedirect, findOne };
 }
 
 describe('GroupPage', () => {
@@ -287,12 +289,42 @@ describe('GroupPage', () => {
     });
 
     expect(screen.getByText("You can't open this group")).toBeTruthy();
+    const navigateByUrl = vi.spyOn(TestBed.inject(Router), 'navigateByUrl');
 
     await userEvent.click(screen.getByRole('link', { name: /back to groups/i }));
 
     await waitFor(() => {
       expect(TestBed.inject(Router).url).toBe('/home');
     });
+    expect(navigateByUrl.mock.calls[0]?.[1]).toMatchObject({ replaceUrl: true });
+  });
+
+  it.each([403, 500])('does not remember a group that fails to load with a %i', async (status) => {
+    const { remember, skipLaunchRedirect } = await setup({
+      findOne: vi
+        .fn<() => Observable<ExpenseGroupSummary>>()
+        .mockReturnValue(throwError(() => new HttpErrorResponse({ status }))),
+    });
+
+    expect(remember).not.toHaveBeenCalled();
+    expect(skipLaunchRedirect).toHaveBeenCalled();
+  });
+
+  it('offers Back to groups next to Retry when the group fails to load', async () => {
+    await setup({
+      findOne: vi
+        .fn<() => Observable<ExpenseGroupSummary>>()
+        .mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 }))),
+    });
+    const navigateByUrl = vi.spyOn(TestBed.inject(Router), 'navigateByUrl');
+
+    expect(screen.getByRole('button', { name: /retry/i })).toBeTruthy();
+    await userEvent.click(screen.getByRole('link', { name: 'Back to groups' }));
+
+    await waitFor(() => {
+      expect(TestBed.inject(Router).url).toBe('/home');
+    });
+    expect(navigateByUrl.mock.calls[0]?.[1]).toMatchObject({ replaceUrl: true });
   });
 
   it('shows an error with retry when the group fails to load', async () => {

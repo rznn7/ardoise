@@ -150,7 +150,7 @@ export class GroupPage {
   }
 
   private open(groupId: number): void {
-    this.lastGroup.remember(groupId);
+    this.lastGroup.skipLaunchRedirect();
     this.paymentStore.load(groupId);
     this.loadGroup(groupId);
   }
@@ -163,6 +163,7 @@ export class GroupPage {
       me: this.authApi.me(),
     }).subscribe({
       next: ({ group, members, me }) => {
+        this.lastGroup.remember(groupId);
         this.groupState.set({ status: 'loaded', group, members, me });
       },
       error: (error: unknown) => {
