@@ -132,10 +132,12 @@ export class PaymentDraft {
       paidAt: this.paidAtOf(date),
       fullAmount: this.amountCents() ?? 0,
       splitType: type,
-      participants: (this.participants() ?? []).map((p) => ({
-        memberId: p.memberId,
-        inputValue: type === 'equal' ? 0 : p.inputValue,
-      })),
+      participants: (this.participants() ?? [])
+        .filter((p) => type === 'equal' || p.inputValue > 0)
+        .map((p) => ({
+          memberId: p.memberId,
+          inputValue: type === 'equal' ? 0 : p.inputValue,
+        })),
     };
   }
 
@@ -166,14 +168,18 @@ export class PaymentDraft {
     this.title.set(payment.title);
     this.payerMemberId.set(payment.payerMemberId);
     this.splitTypeState.set(payment.splitType);
-    this.included.set(new Set(shares.map((s) => s.memberId)));
+    this.included.set(
+      new Set(
+        payment.splitType === 'equal' ? shares.map((s) => s.memberId) : members.map((m) => m.id),
+      ),
+    );
     this.weights.set(
-      new Map([
-        ...allWeightsOne(members),
-        ...(payment.splitType === 'shares'
-          ? shares.map((s): [number, number] => [s.memberId, s.inputValue])
-          : []),
-      ]),
+      payment.splitType === 'shares'
+        ? new Map([
+            ...members.map((m): [number, number] => [m.id, 0]),
+            ...shares.map((s): [number, number] => [s.memberId, s.inputValue]),
+          ])
+        : allWeightsOne(members),
     );
     if (payment.splitType === 'percent') {
       this.percentTexts.set(textsOf(shares, formatPercentInput));

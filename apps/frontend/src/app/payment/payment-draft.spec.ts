@@ -160,6 +160,40 @@ describe('PaymentDraft', () => {
       ]);
     });
 
+    it('leaves out members set to 0 in shares, percent and exact', () => {
+      draft.amountText.set('30');
+      draft.setSplitType('shares');
+      draft.weights.set(
+        new Map([
+          [1, 2],
+          [2, 0],
+          [3, 1],
+          [4, 0],
+        ]),
+      );
+      expect(draft.toRequest().participants).toEqual([
+        { memberId: 1, inputValue: 2 },
+        { memberId: 3, inputValue: 1 },
+      ]);
+
+      draft.setSplitType('percent');
+      draft.percentTexts.set(
+        new Map([
+          [1, '60'],
+          [2, '0'],
+          [3, '40'],
+        ]),
+      );
+      expect(draft.toRequest().participants).toEqual([
+        { memberId: 1, inputValue: 6000 },
+        { memberId: 3, inputValue: 4000 },
+      ]);
+
+      draft.setSplitType('exact');
+      draft.exactTexts.set(new Map([[2, '30']]));
+      expect(draft.toRequest().participants).toEqual([{ memberId: 2, inputValue: 3000 }]);
+    });
+
     it('follows the clock between calls', () => {
       draft.amountText.set('10');
       let current = clock;
@@ -214,7 +248,7 @@ describe('PaymentDraft', () => {
       expect(draft.payerMemberId()).toBe(2);
       expect(draft.date()).toBe('2026-10-20');
       expect(draft.splitType()).toBe('percent');
-      expect([...draft.included()]).toEqual([1, 2]);
+      expect([...draft.included()]).toEqual([1, 2, 3, 4]);
       expect(draft.percentTexts().get(1)).toBe('50');
       expect(draft.percentTexts().get(2)).toBe('50');
       expect(draft.valid()).toBe(true);
@@ -240,6 +274,13 @@ describe('PaymentDraft', () => {
       );
       expect(draft.weights().get(1)).toBe(2);
       expect(draft.weights().get(2)).toBe(1);
+      expect(draft.weights().get(3)).toBe(0);
+      expect(draft.toRequest().participants).toEqual([
+        { memberId: 1, inputValue: 2 },
+        { memberId: 2, inputValue: 1 },
+      ]);
+      draft.weights.update((weights) => new Map(weights).set(3, 1));
+      expect(draft.preview().get(3)).toBeGreaterThan(0);
       draft.startEdit(
         { ...payment, splitType: 'exact' },
         [
