@@ -82,8 +82,10 @@ A settlement overlays the balance calculation; it never mutates payments.
 - [x] **Drizzle migrations** — migration setup and baseline.
 - [x] **preview deploy** — every main push publishes images; deployed by hand on the homelab at ardoise.rznn.dev, demo data reset, accounts kept.
 - [ ] **production deploy** — Docker compose + Hetzner.
-- [ ] **PWA** — manifest, icons, installability, standalone mode, iOS keyboard handling
-  (needed by the add-payment form at the latest).
+- [x] **PWA** — manifest, app icon, standalone mode under a translucent status bar, reload onto a new
+  deploy. iOS keyboard handling landed with payments.
+- [ ] **status bar on light screens** — `black-translucent` draws a white clock over plain light
+  screens (payment form, payment details). Look at it on the phone first.
 - [ ] **multi-device passkey** — lift the v1 single-passkey non-goal.
 - [ ] **account recovery** — lift the v1 no-recovery non-goal.
 
