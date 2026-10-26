@@ -8,6 +8,7 @@ import {
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { withHistoryPageIds } from 'src/app/shared/navigation/back';
 import { ThemeService } from 'src/app/shared/theme/theme.service';
+import { VersionWatcher } from 'src/app/shared/version/version-watcher';
 
 import { routes } from './app.routes';
 
@@ -18,6 +19,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
     provideAppInitializer(() => {
       inject(ThemeService);
+      inject(VersionWatcher).start();
     }),
   ],
 };
