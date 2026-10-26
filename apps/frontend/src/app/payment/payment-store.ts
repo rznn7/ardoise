@@ -15,32 +15,68 @@ export type FeedState =
   | { readonly status: 'error' }
   | { readonly status: 'loaded'; readonly payments: readonly FeedPayment[] };
 
-const LOADING: FeedState = { status: 'loading' };
+type FetchedState =
+  | { readonly status: 'loading' }
+  | { readonly status: 'error' }
+  | { readonly status: 'loaded'; readonly payments: readonly PaymentResponse[] };
+
+const LOADING: FetchedState = { status: 'loading' };
 
 const newestFirst = (a: PaymentResponse, b: PaymentResponse): number =>
   Date.parse(b.paidAt) - Date.parse(a.paidAt) || b.id - a.id;
 
 const confirmed = (payment: PaymentResponse): FeedPayment => ({ ...payment, pending: false });
 
+const withUpdate = (payment: PaymentResponse, body: UpdatePaymentBody): FeedPayment => ({
+  ...payment,
+  payerMemberId: body.payerMemberId,
+  title: body.title,
+  paidAt: body.paidAt,
+  fullAmount: body.fullAmount,
+  splitType: body.splitType,
+  pending: false,
+});
+
 @Injectable({ providedIn: 'root' })
 export class PaymentStore {
   private readonly api = inject(PaymentApiService);
   private readonly toast = inject(ToastService);
-  private readonly feeds = signal<ReadonlyMap<number, FeedState>>(new Map());
+  private readonly fetched = signal<ReadonlyMap<number, FetchedState>>(new Map());
+  private readonly creating = signal<ReadonlyMap<number, FeedPayment>>(new Map());
+  private readonly deleting = signal<ReadonlySet<number>>(new Set());
+  private readonly updating = signal<ReadonlyMap<number, UpdatePaymentBody>>(new Map());
+  private readonly settledMutations = new Map<number, number>();
+  private readonly latestLoads = new Map<number, number>();
   private nextTemporaryId = -1;
+  private nextLoadId = 1;
 
   feed(groupId: number): Signal<FeedState> {
-    return computed(() => this.feeds().get(groupId) ?? LOADING);
+    return computed(() => this.feedOf(groupId));
+  }
+
+  pendingUpdate(id: number): Signal<UpdatePaymentBody | null> {
+    return computed(() => this.updating().get(id) ?? null);
   }
 
   load(groupId: number): void {
-    this.setFeed(groupId, LOADING);
+    const loadId = this.nextLoadId++;
+    this.latestLoads.set(groupId, loadId);
+    const settledBefore = this.settledCount(groupId);
+    const isLatest = (): boolean => this.latestLoads.get(groupId) === loadId;
+    if (this.fetched().get(groupId)?.status !== 'loaded') this.setFetched(groupId, LOADING);
+
     this.api.listByGroup(groupId).subscribe({
       next: (payments) => {
-        this.setPayments(groupId, payments.map(confirmed));
+        if (!isLatest()) return;
+        if (this.settledCount(groupId) !== settledBefore) {
+          this.load(groupId);
+          return;
+        }
+        this.setFetched(groupId, { status: 'loaded', payments });
       },
       error: () => {
-        this.setFeed(groupId, { status: 'error' });
+        if (!isLatest() || this.fetched().get(groupId)?.status === 'loaded') return;
+        this.setFetched(groupId, { status: 'error' });
       },
     });
   }
@@ -58,89 +94,115 @@ export class PaymentStore {
       createdAt: new Date().toISOString(),
       pending: true,
     };
-    this.changePayments(body.groupId, (rows) => [...rows, pendingRow]);
+    this.creating.update((rows) => new Map(rows).set(temporaryId, pendingRow));
+    const settle = (): void => {
+      this.creating.update((rows) => {
+        const next = new Map(rows);
+        next.delete(temporaryId);
+        return next;
+      });
+      this.markSettled(body.groupId);
+    };
 
     this.api.create(body).subscribe({
       next: ({ payment }) => {
-        this.changePayments(body.groupId, (rows) =>
-          rows.map((row) => (row.id === temporaryId ? confirmed(payment) : row)),
-        );
+        this.upsert(body.groupId, payment);
+        settle();
       },
       error: () => {
-        this.changePayments(body.groupId, (rows) => rows.filter((row) => row.id !== temporaryId));
+        settle();
         this.toast.error("Couldn't save the payment");
       },
     });
   }
 
   update(groupId: number, id: number, body: UpdatePaymentBody): void {
-    const state = this.feeds().get(groupId);
-    const previousRow =
-      state?.status === 'loaded' ? state.payments.find((row) => row.id === id) : undefined;
-    this.changePayments(groupId, (rows) =>
-      rows.map((row) =>
-        row.id === id
-          ? {
-              ...row,
-              payerMemberId: body.payerMemberId,
-              title: body.title,
-              paidAt: body.paidAt,
-              fullAmount: body.fullAmount,
-              splitType: body.splitType,
-            }
-          : row,
-      ),
-    );
+    this.updating.update((updates) => new Map(updates).set(id, body));
+    const settle = (): void => {
+      this.updating.update((updates) => {
+        if (updates.get(id) !== body) return updates;
+        const next = new Map(updates);
+        next.delete(id);
+        return next;
+      });
+      this.markSettled(groupId);
+    };
 
     this.api.update(id, body).subscribe({
       next: ({ payment }) => {
-        this.changePayments(groupId, (rows) =>
-          rows.map((row) => (row.id === id ? confirmed(payment) : row)),
-        );
+        this.upsert(groupId, payment);
+        settle();
       },
       error: () => {
-        if (previousRow) {
-          this.changePayments(groupId, (rows) =>
-            rows.map((row) => (row.id === id ? previousRow : row)),
-          );
-        }
+        settle();
         this.toast.error("Couldn't update the payment");
       },
     });
   }
 
   remove(groupId: number, id: number): void {
-    const state = this.feeds().get(groupId);
-    const removedRow =
-      state?.status === 'loaded' ? state.payments.find((row) => row.id === id) : undefined;
-    this.changePayments(groupId, (rows) => rows.filter((row) => row.id !== id));
+    this.deleting.update((ids) => new Set(ids).add(id));
+    const settle = (): void => {
+      this.deleting.update((ids) => {
+        const next = new Set(ids);
+        next.delete(id);
+        return next;
+      });
+      this.markSettled(groupId);
+    };
 
     this.api.delete(id).subscribe({
+      next: () => {
+        this.changeFetched(groupId, (rows) => rows.filter((row) => row.id !== id));
+        settle();
+      },
       error: () => {
-        if (removedRow) {
-          this.changePayments(groupId, (rows) =>
-            rows.some((row) => row.id === id) ? rows : [...rows, removedRow],
-          );
-        }
+        settle();
         this.toast.error("Couldn't delete the payment");
       },
     });
   }
 
-  private changePayments(
+  private feedOf(groupId: number): FeedState {
+    const state = this.fetched().get(groupId) ?? LOADING;
+    if (state.status !== 'loaded') return state;
+    const deleting = this.deleting();
+    const updating = this.updating();
+    const rows = state.payments
+      .filter((payment) => !deleting.has(payment.id))
+      .map((payment) => {
+        const update = updating.get(payment.id);
+        return update ? withUpdate(payment, update) : confirmed(payment);
+      });
+    const created = [...this.creating().values()].filter((row) => row.groupId === groupId);
+    return { status: 'loaded', payments: [...rows, ...created].sort(newestFirst) };
+  }
+
+  private upsert(groupId: number, payment: PaymentResponse): void {
+    this.changeFetched(groupId, (rows) => [
+      ...rows.filter((row) => row.id !== payment.id),
+      payment,
+    ]);
+  }
+
+  private changeFetched(
     groupId: number,
-    change: (rows: readonly FeedPayment[]) => readonly FeedPayment[],
+    change: (rows: readonly PaymentResponse[]) => readonly PaymentResponse[],
   ): void {
-    const state = this.feeds().get(groupId);
+    const state = this.fetched().get(groupId);
     if (state?.status !== 'loaded') return;
-    this.setPayments(groupId, change(state.payments));
+    this.setFetched(groupId, { status: 'loaded', payments: change(state.payments) });
   }
 
-  private setPayments(groupId: number, payments: readonly FeedPayment[]): void {
-    this.setFeed(groupId, { status: 'loaded', payments: [...payments].sort(newestFirst) });
+  private settledCount(groupId: number): number {
+    return this.settledMutations.get(groupId) ?? 0;
   }
 
-  private setFeed(groupId: number, state: FeedState): void {
-    this.feeds.update((feeds) => new Map(feeds).set(groupId, state));
+  private markSettled(groupId: number): void {
+    this.settledMutations.set(groupId, this.settledCount(groupId) + 1);
+  }
+
+  private setFetched(groupId: number, state: FetchedState): void {
+    this.fetched.update((states) => new Map(states).set(groupId, state));
   }
 }

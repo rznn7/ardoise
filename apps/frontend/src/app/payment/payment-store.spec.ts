@@ -210,4 +210,96 @@ describe(PaymentStore.name, () => {
 
     expect(loadedIds()).toEqual([3, 1]);
   });
+  it('a second load keeps the rows visible while it revalidates', () => {
+    loadFeed();
+
+    store.load(7);
+
+    expect(loadedIds()).toEqual([3, 2, 1]);
+    http.expectOne('/api/expense-groups/7/payments').flush([older, newer]);
+    expect(loadedIds()).toEqual([2, 1]);
+  });
+
+  it('a failed revalidation keeps the loaded rows', () => {
+    loadFeed();
+
+    store.load(7);
+    http
+      .expectOne('/api/expense-groups/7/payments')
+      .flush(null, { status: 500, statusText: 'Server Error' });
+
+    expect(loadedIds()).toEqual([3, 2, 1]);
+  });
+
+  it('a load during an in-flight delete keeps the row hidden', () => {
+    loadFeed();
+    store.remove(7, 2);
+
+    store.load(7);
+    http.expectOne('/api/expense-groups/7/payments').flush([older, newer, newest]);
+    expect(loadedIds()).toEqual([3, 1]);
+
+    http.expectOne('/api/payments/2').flush(null, { status: 204, statusText: 'No Content' });
+    expect(loadedIds()).toEqual([3, 1]);
+  });
+
+  it('a load during an in-flight create keeps the pending row, then confirms it', () => {
+    loadFeed();
+    store.create(body);
+
+    store.load(7);
+    http.expectOne('/api/expense-groups/7/payments').flush([older, newer, newest]);
+    const state = store.feed(7)();
+    if (state.status !== 'loaded') throw new Error('expected loaded');
+    expect(state.payments.filter((p) => p.pending).map((p) => p.title)).toEqual(['Dinner']);
+
+    http.expectOne('/api/payments').flush({ payment: payment(9, body.paidAt), shares: [] });
+    expect(loadedIds()).toEqual([3, 9, 2, 1]);
+  });
+
+  it('a load that started before a create settled is fetched again', () => {
+    loadFeed();
+    store.create(body);
+    store.load(7);
+
+    http.expectOne('/api/payments').flush({ payment: payment(9, body.paidAt), shares: [] });
+    http.expectOne('/api/expense-groups/7/payments').flush([older, newer, newest]);
+    expect(loadedIds()).toEqual([3, 9, 2, 1]);
+
+    http
+      .expectOne('/api/expense-groups/7/payments')
+      .flush([older, newer, newest, payment(9, body.paidAt)]);
+    expect(loadedIds()).toEqual([3, 9, 2, 1]);
+  });
+
+  it('the first load during an in-flight create shows the pending row', () => {
+    store.create(body);
+    store.load(7);
+
+    http.expectOne('/api/expense-groups/7/payments').flush([older]);
+
+    const state = store.feed(7)();
+    if (state.status !== 'loaded') throw new Error('expected loaded');
+    expect(state.payments.map((p) => p.title)).toEqual(['Dinner', 'Payment 1']);
+  });
+
+  it('an update overlay survives a refetch until the update settles', () => {
+    loadFeed();
+    const { groupId: _groupId, ...updateBody } = { ...body, title: 'Renamed' };
+    store.update(7, 1, updateBody);
+
+    store.load(7);
+    http.expectOne('/api/expense-groups/7/payments').flush([older, newer, newest]);
+
+    const titleOf1 = () => {
+      const state = store.feed(7)();
+      return state.status === 'loaded' ? state.payments.find((p) => p.id === 1)?.title : null;
+    };
+    expect(titleOf1()).toBe('Renamed');
+    expect(store.pendingUpdate(1)()).toEqual(updateBody);
+
+    http.expectOne('/api/payments/1').flush(null, { status: 400, statusText: 'Bad Request' });
+    expect(titleOf1()).toBe('Payment 1');
+    expect(store.pendingUpdate(1)()).toBeNull();
+  });
 });

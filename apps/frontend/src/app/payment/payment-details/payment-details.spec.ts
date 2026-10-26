@@ -1,6 +1,6 @@
 import { Location } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component } from '@angular/core';
+import { Component, signal, type WritableSignal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -11,6 +11,7 @@ import {
   type PaymentResponse,
   type PaymentShareResponse,
   type SplitType,
+  type UpdatePaymentBody,
 } from '@ardoise/shared';
 import { screen, waitFor, within } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
@@ -64,20 +65,25 @@ type FindOne = ReturnType<typeof vi.fn<(id: number) => Observable<PaymentRespons
 interface Setup {
   findOne: FindOne;
   remove: ReturnType<typeof vi.fn<(groupId: number, id: number) => void>>;
+  pending: WritableSignal<UpdatePaymentBody | null>;
   clear: ReturnType<typeof vi.fn<() => void>>;
   router: Router;
+  harness: RouterTestingHarness;
 }
 
 async function setup({
   payment = PAYMENT,
   findOne = vi.fn<(id: number) => Observable<PaymentResponse>>().mockReturnValue(of(payment)),
   from,
+  pendingBody = null,
 }: {
   payment?: PaymentResponse;
   findOne?: FindOne;
   from?: string;
+  pendingBody?: UpdatePaymentBody | null;
 } = {}): Promise<Setup> {
   const remove = vi.fn<(groupId: number, id: number) => void>();
+  const pending = signal<UpdatePaymentBody | null>(pendingBody);
   const clear = vi.fn<() => void>();
   TestBed.configureTestingModule({
     providers: [
@@ -93,7 +99,7 @@ async function setup({
       { provide: MemberApiService, useValue: { listByGroup: () => of(MEMBERS) } },
       { provide: ExpenseGroupApiService, useValue: { findOne: () => of(GROUP) } },
       { provide: AuthApiService, useValue: { me: () => of(ME) } },
-      { provide: PaymentStore, useValue: { remove } },
+      { provide: PaymentStore, useValue: { remove, pendingUpdate: () => pending } },
       { provide: PaymentDraft, useValue: { clear } },
     ],
   });
@@ -101,7 +107,7 @@ async function setup({
   if (from) await harness.navigateByUrl(from);
   await harness.navigateByUrl('/group/7/payments/5');
   harness.detectChanges();
-  return { findOne, remove, clear, router: TestBed.inject(Router) };
+  return { findOne, remove, pending, clear, router: TestBed.inject(Router), harness };
 }
 
 const failingWith = (status: number): FindOne =>
@@ -144,6 +150,52 @@ describe('PaymentDetails', () => {
       'Léa€12.25',
       'Tom—',
     ]);
+  });
+
+  it('shows a pending edit before the server confirms it', async () => {
+    await setup({
+      pendingBody: {
+        payerMemberId: 11,
+        title: 'Market',
+        paidAt: new Date(2026, 9, 24, 12).toISOString(),
+        fullAmount: 3000,
+        splitType: 'shares',
+        participants: [
+          { memberId: 11, inputValue: 2 },
+          { memberId: 13, inputValue: 1 },
+        ],
+      },
+    });
+
+    expect(screen.getByText('€30.00')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Market' })).toBeTruthy();
+    expect(screen.getByText('Paid by you · Sat 24 Oct · By shares')).toBeTruthy();
+    const rows = within(screen.getByRole('list', { name: 'Shares' })).getAllByRole('listitem');
+    expect(rows.map((row) => row.textContent.replace(/\s+/g, ''))).toEqual([
+      'You€20.00',
+      'Léa—',
+      'Tom€10.00',
+    ]);
+  });
+
+  it('fetches the payment again once a pending edit settles', async () => {
+    const { findOne, pending, harness } = await setup({
+      pendingBody: {
+        payerMemberId: 12,
+        title: 'Market',
+        paidAt: PAYMENT.paidAt,
+        fullAmount: 2450,
+        splitType: 'equal',
+        participants: [{ memberId: 12 }],
+      },
+    });
+    findOne.mockReturnValue(of({ ...PAYMENT, title: 'Market' }));
+
+    pending.set(null);
+    harness.detectChanges();
+
+    expect(findOne).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole('heading', { name: 'Market' })).toBeTruthy();
   });
 
   it('clears the draft before opening the edit options', async () => {

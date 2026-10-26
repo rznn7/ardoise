@@ -11,12 +11,14 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import {
+  computePaymentShares,
   type ExpenseGroupSummary,
   type GroupMember,
+  InvalidSplit,
   type MeResponse,
   type PaymentResponse,
-  type PaymentShareResponse,
   type SplitType,
+  type UpdatePaymentBody,
 } from '@ardoise/shared';
 import { provideIcons } from '@ng-icons/core';
 import { lucideChevronLeft } from '@ng-icons/lucide';
@@ -40,9 +42,14 @@ import { MoneyAmount } from 'src/app/shared/ui/money-amount/money-amount';
 import { PageStateImports } from 'src/app/shared/ui/page-state/page-state';
 import { AppTextImports } from 'src/app/shared/ui/text/text';
 
+interface MemberAmount {
+  readonly memberId: number;
+  readonly amount: number;
+}
+
 interface Details {
   readonly payment: PaymentResponse;
-  readonly shares: readonly PaymentShareResponse[];
+  readonly shares: readonly MemberAmount[];
   readonly members: readonly GroupMember[];
   readonly group: ExpenseGroupSummary;
   readonly me: MeResponse;
@@ -71,6 +78,36 @@ const paidOn = new Intl.DateTimeFormat('en-GB', {
   weekday: 'short',
   day: 'numeric',
   month: 'short',
+});
+
+const sharesOf = (body: UpdatePaymentBody): readonly MemberAmount[] | null => {
+  try {
+    return computePaymentShares({
+      fullAmount: body.fullAmount,
+      splitType: body.splitType,
+      payerMemberId: body.payerMemberId,
+      participants: body.participants.map((p) => ({
+        memberId: p.memberId,
+        inputValue: p.inputValue ?? 0,
+      })),
+    });
+  } catch (error) {
+    if (error instanceof InvalidSplit) return null;
+    throw error;
+  }
+};
+
+const withPendingUpdate = (details: Details, body: UpdatePaymentBody): Details => ({
+  ...details,
+  payment: {
+    ...details.payment,
+    payerMemberId: body.payerMemberId,
+    title: body.title,
+    paidAt: body.paidAt,
+    fullAmount: body.fullAmount,
+    splitType: body.splitType,
+  },
+  shares: sharesOf(body) ?? details.shares,
 });
 
 const isNotAccessible = (error: unknown): boolean =>
@@ -108,7 +145,18 @@ export class PaymentDetails {
   readonly groupId = input.required({ transform: numberAttribute });
   readonly paymentId = input.required({ transform: numberAttribute });
 
-  protected readonly state = signal<DetailsState>({ status: 'loading' });
+  private readonly fetched = signal<DetailsState>({ status: 'loading' });
+  private readonly pendingUpdateOfPayment = computed(() =>
+    this.store.pendingUpdate(this.paymentId()),
+  );
+  private readonly pendingUpdate = computed(() => this.pendingUpdateOfPayment()());
+
+  protected readonly state = computed((): DetailsState => {
+    const state = this.fetched();
+    const pending = this.pendingUpdate();
+    if (state.status !== 'loaded' || pending === null) return state;
+    return { status: 'loaded', ...withPendingUpdate(state, pending) };
+  });
 
   protected readonly groupUrl = computed(() => `/group/${String(this.groupId())}`);
 
@@ -147,6 +195,17 @@ export class PaymentDetails {
         this.load(groupId, paymentId);
       });
     });
+
+    let hadPendingUpdate = false;
+    effect(() => {
+      const pending = this.pendingUpdate() !== null;
+      if (hadPendingUpdate && !pending) {
+        untracked(() => {
+          this.load(this.groupId(), this.paymentId());
+        });
+      }
+      hadPendingUpdate = pending;
+    });
   }
 
   protected back(): void {
@@ -170,7 +229,8 @@ export class PaymentDetails {
   }
 
   private load(groupId: number, paymentId: number): void {
-    this.state.set({ status: 'loading' });
+    const revalidating = this.fetched().status === 'loaded';
+    if (!revalidating) this.fetched.set({ status: 'loading' });
     forkJoin({
       payment: this.paymentApi.findOne(paymentId),
       shares: this.paymentApi.sharesOf(paymentId),
@@ -179,10 +239,11 @@ export class PaymentDetails {
       me: this.authApi.me(),
     }).subscribe({
       next: (details) => {
-        this.state.set({ status: 'loaded', ...details });
+        this.fetched.set({ status: 'loaded', ...details });
       },
       error: (error: unknown) => {
-        this.state.set({ status: isNotAccessible(error) ? 'not-found' : 'error' });
+        if (revalidating && !isNotAccessible(error)) return;
+        this.fetched.set({ status: isNotAccessible(error) ? 'not-found' : 'error' });
       },
     });
   }
