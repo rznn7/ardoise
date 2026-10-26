@@ -42,15 +42,14 @@ export class PaymentRepositoryDrizzle implements PaymentRepository {
   async update(
     id: number,
     fields: Omit<Payment, 'id' | 'groupId' | 'createdAt'>,
-  ): Promise<Payment> {
+  ): Promise<Payment | null> {
     const [row] = await this.database
       .update(payment)
       .set(fields)
       .where(eq(payment.id, id))
       .returning();
 
-    if (!row) throw new Error('Payment update returned no row');
-    return this.toDomain(row);
+    return row ? this.toDomain(row) : null;
   }
 
   async delete(id: number): Promise<void> {

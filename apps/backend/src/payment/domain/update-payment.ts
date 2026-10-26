@@ -40,6 +40,7 @@ export const updatePayment = async (
     fullAmount: input.fullAmount,
     splitType: input.splitType,
   });
+  if (!payment) throw new PaymentNotFound();
 
   await deps.paymentShares.deleteByPayment(payment.id);
   const shares = await deps.paymentShares.createMany(

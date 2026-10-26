@@ -9,6 +9,6 @@ export interface PaymentRepository {
   update(
     id: number,
     fields: Omit<Payment, 'id' | 'groupId' | 'createdAt'>,
-  ): Promise<Payment>;
+  ): Promise<Payment | null>;
   delete(id: number): Promise<void>;
 }
