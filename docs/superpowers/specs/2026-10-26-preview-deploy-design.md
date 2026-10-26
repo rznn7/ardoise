@@ -65,7 +65,7 @@ A new `ardoise/` directory:
   - `ardoise-db`: Postgres 16, named volume, network `ardoise` only.
   - `ardoise-backend`: network `ardoise` only. Env from `.env`.
   - `ardoise-web`: networks `ardoise` and `homelab` (the only one on `homelab`, so `cloudflared` reaches it). No host port.
-- `.env.example`: `POSTGRES_PASSWORD`, `DATABASE_URL`, `RP_ID`, `RP_NAME`, `EXPECTED_ORIGIN`, the secure-cookie flag.
+- `.env.example`: `POSTGRES_PASSWORD`, `RP_ID`, `RP_NAME`, `EXPECTED_ORIGIN`, the secure-cookie flag. The compose file builds `DATABASE_URL` from `POSTGRES_PASSWORD`, so the password is typed once.
 - No timer. Updating is manual (see Operations). An automatic pull can be added later as a systemd timer, if wanted.
 - `ardoise` added to `EXCLUDE` in `automation/update-apply.sh` and ignored in `renovate.json`.
 - README: the service in both tables (`ardoise.rznn.dev`, from anywhere), the deploy and reset commands.
