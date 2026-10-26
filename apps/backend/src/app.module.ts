@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
 
 import { AuthModule } from './auth/infrastructure/auth.module';
+import { BalanceModule } from './balance/infrastructure/balance.module';
 import { ExpenseGroupModule } from './expense-group/infrastructure/expense-group.module';
 import { MemberModule } from './member/infrastructure/member.module';
 import { PaymentModule } from './payment/infrastructure/payment.module';
@@ -17,6 +18,7 @@ import { UserModule } from './user/infrastructure/user.module';
 @Module({
   imports: [
     AuthModule,
+    BalanceModule,
     ConfigModule.forRoot(),
     ExpenseGroupModule,
     MemberModule,
