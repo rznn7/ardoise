@@ -20,7 +20,7 @@ export class PageStateAction {}
   selector: 'app-page-state',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgTemplateOutlet, HlmEmptyImports, HlmSkeletonImports, HlmButtonImports],
-  host: { class: 'flex min-h-full flex-col' },
+  host: { class: 'flex flex-1 flex-col' },
   template: `
     <ng-template #action><ng-content select="[appPageStateAction]" /></ng-template>
     @switch (state()) {
