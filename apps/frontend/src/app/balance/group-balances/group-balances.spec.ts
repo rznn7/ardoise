@@ -79,4 +79,15 @@ describe('GroupBalances', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
     expect(retry).toHaveBeenCalledOnce();
   });
+
+  it('gives every amount the same width so the bars share one axis', async () => {
+    await renderBalances(OWING);
+
+    const amounts = document.querySelectorAll('app-balance-indicator');
+    expect(amounts).toHaveLength(2);
+    for (const amount of amounts) {
+      expect(amount.classList).toContain('w-24');
+      expect(amount.classList).toContain('justify-end');
+    }
+  });
 });

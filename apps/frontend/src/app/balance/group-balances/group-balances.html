@@ -27,7 +27,7 @@
                 <span class="w-16 truncate" appBody>{{ row.name }}</span>
                 <app-balance-bar class="flex-1" [ratio]="row.ratio" />
                 <app-balance-indicator
-                  class="text-foreground"
+                  class="w-24 justify-end text-foreground"
                   [cents]="row.amount"
                   [currency]="currency()"
                 />
