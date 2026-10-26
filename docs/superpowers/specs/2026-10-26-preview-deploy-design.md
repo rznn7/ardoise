@@ -89,7 +89,7 @@ The end-to-end check, a push to `main` going live, happens once the checklist is
 
 **Real vs fictional.** A real account is a user with at least one passkey, and the seed never creates passkeys. The `feat/payments` seed gives Alice a fake one (`dev-alice`), which nothing reads: no screen or endpoint lists passkeys, and her seeded session is what logs her in. That line goes. The rule then holds by construction: apart from the seed, the only code that writes a passkey is `CompleteRegistrationUseCase`, after the verifier has checked a real authenticator's attestation. No schema change, no naming convention. A local database seeded by the old version still holds `dev-alice` and needs one `db:fresh`.
 
-**First account on the preview.** Registration is invite-only today: `BeginRegistrationUseCase` refuses without a usable invite token and `CompleteRegistrationUseCase` consumes it. That is what keeps strangers out of `ardoise.rznn.dev`, and nothing in this slice may weaken it (no open sign-up, no deterministic invite tokens in the seed). The seed prints an invite link to the scenario's main group, built on `EXPECTED_ORIGIN`. On the first deploy the owner reads it from `docker compose logs ardoise-backend`, opens it on the phone and registers. From the next reset on, the owner is the real account the scenario is built around.
+**First account on the preview.** Registration is invite-only today: `BeginRegistrationUseCase` refuses without a usable invite token and `CompleteRegistrationUseCase` consumes it. That is what keeps strangers out of `ardoise.rznn.dev`, and nothing in this slice may weaken it (no open sign-up, no deterministic invite tokens in the seed). The seed prints an invite link to the scenario's main group, built on `EXPECTED_ORIGIN`. On the first deploy the owner reads it from `docker compose logs backend`, opens it on the phone and registers. From the next reset on, the owner is the real account the scenario is built around.
 
 The seed is tooling, not application code: it lives in `scripts/` and writes tables directly, outside the hexagonal layers. It must still produce data the domain accepts (shares summing to `fullAmount`, integer cents), which it does today by going through `computePaymentShares` from `@ardoise/shared`.
 
@@ -99,9 +99,9 @@ Local dev: `db:seed` gets the new behaviour. `db:fresh` still drops the volume, 
 
 From the tailnet, `ssh rznn-hl`, then in `~/homelab/ardoise`:
 
-- reset the demo data: `docker compose restart ardoise-backend` (the entrypoint re-seeds),
+- reset the demo data: `docker compose restart backend` (the entrypoint re-seeds),
 - start from nothing, accounts included: `docker compose down -v && docker compose up -d`. Also the way out if a migration ever breaks on existing accounts,
-- SQL shell: `docker compose exec ardoise-db psql -U ardoise`.
+- SQL shell: `docker compose exec db psql -U ardoise`.
 
 ## Sequencing
 
