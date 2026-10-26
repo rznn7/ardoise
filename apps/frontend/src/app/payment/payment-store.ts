@@ -73,23 +73,26 @@ export class PaymentStore {
     });
   }
 
-  update(id: number, body: UpdatePaymentBody): void {
-    const previous = this.findFeed(id);
-    if (!previous) return;
-    const { groupId, payments } = previous;
-    const edited = payments.map((row) =>
-      row.id === id
-        ? {
-            ...row,
-            payerMemberId: body.payerMemberId,
-            title: body.title,
-            paidAt: body.paidAt,
-            fullAmount: body.fullAmount,
-            splitType: body.splitType,
-          }
-        : row,
-    );
-    this.setPayments(groupId, edited);
+  update(groupId: number, id: number, body: UpdatePaymentBody): void {
+    const state = this.feeds().get(groupId);
+    const previous = state?.status === 'loaded' ? state.payments : undefined;
+    if (previous) {
+      this.setPayments(
+        groupId,
+        previous.map((row) =>
+          row.id === id
+            ? {
+                ...row,
+                payerMemberId: body.payerMemberId,
+                title: body.title,
+                paidAt: body.paidAt,
+                fullAmount: body.fullAmount,
+                splitType: body.splitType,
+              }
+            : row,
+        ),
+      );
+    }
 
     this.api.update(id, body).subscribe({
       next: ({ payment }) => {
@@ -98,7 +101,7 @@ export class PaymentStore {
         );
       },
       error: () => {
-        this.setPayments(groupId, payments);
+        if (previous) this.setPayments(groupId, previous);
         this.toast.error("Couldn't update the payment");
       },
     });
@@ -119,17 +122,6 @@ export class PaymentStore {
         this.toast.error("Couldn't delete the payment");
       },
     });
-  }
-
-  private findFeed(
-    paymentId: number,
-  ): { groupId: number; payments: readonly FeedPayment[] } | undefined {
-    for (const [groupId, state] of this.feeds()) {
-      if (state.status === 'loaded' && state.payments.some((row) => row.id === paymentId)) {
-        return { groupId, payments: state.payments };
-      }
-    }
-    return undefined;
   }
 
   private changePayments(

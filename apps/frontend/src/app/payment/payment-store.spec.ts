@@ -140,7 +140,7 @@ describe(PaymentStore.name, () => {
       paidAt: '2026-10-25T10:00:00.000Z',
     };
 
-    store.update(1, updateBody);
+    store.update(7, 1, updateBody);
     const state = store.feed(7)();
     if (state.status !== 'loaded') throw new Error('expected loaded');
     expect(state.payments.map((p) => p.id)).toEqual([1, 3, 2]);
@@ -157,7 +157,7 @@ describe(PaymentStore.name, () => {
     loadFeed();
     const { groupId: _groupId, ...updateBody } = { ...body, paidAt: '2026-10-25T10:00:00.000Z' };
 
-    store.update(1, updateBody);
+    store.update(7, 1, updateBody);
     http.expectOne('/api/payments/1').flush(null, { status: 400, statusText: 'Bad Request' });
 
     const state = store.feed(7)();
@@ -165,5 +165,13 @@ describe(PaymentStore.name, () => {
     expect(state.payments.map((p) => p.id)).toEqual([3, 2, 1]);
     expect(state.payments.find((p) => p.id === 1)?.title).toBe('Payment 1');
     expect(error).toHaveBeenCalledWith("Couldn't update the payment");
+  });
+
+  it('update with no loaded feed still issues the request', () => {
+    const { groupId: _groupId, ...updateBody } = body;
+
+    store.update(7, 1, updateBody);
+
+    http.expectOne({ method: 'PUT', url: '/api/payments/1' });
   });
 });
