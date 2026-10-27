@@ -24,7 +24,7 @@ const parse = (raw: string): unknown => {
 export const decodeCursor = (raw: string): Cursor => {
   const value = parse(raw);
   if (!Array.isArray(value) || value.length !== 3) throw new InvalidCursor();
-  const [iso, rank, id]: unknown[] = value;
+  const [iso, rank, id] = value as unknown[];
   const date = typeof iso === 'string' ? new Date(iso) : new Date(NaN);
   if (Number.isNaN(date.getTime())) throw new InvalidCursor();
   if (rank !== 0 && rank !== 1) throw new InvalidCursor();

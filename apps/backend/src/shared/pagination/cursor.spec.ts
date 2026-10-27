@@ -43,10 +43,18 @@ describe('isAfter', () => {
   it.each([
     ['an older item', at('2026-10-26T12:00:00.000Z', 0, 99), true],
     ['a newer item', at('2026-10-28T12:00:00.000Z', 0, 1), false],
-    ['a repayment at the same instant', at('2026-10-27T12:00:00.000Z', 1, 99), true],
+    [
+      'a repayment at the same instant',
+      at('2026-10-27T12:00:00.000Z', 1, 99),
+      true,
+    ],
     ['a payment with a lower id', at('2026-10-27T12:00:00.000Z', 0, 9), true],
     ['the same item', at('2026-10-27T12:00:00.000Z', 0, 10), false],
-    ['a payment with a higher id', at('2026-10-27T12:00:00.000Z', 0, 11), false],
+    [
+      'a payment with a higher id',
+      at('2026-10-27T12:00:00.000Z', 0, 11),
+      false,
+    ],
   ])('after a payment cursor, %s is %s', (_, item, expected) => {
     expect(isAfter(cursor, item)).toBe(expected);
   });
@@ -54,7 +62,9 @@ describe('isAfter', () => {
   it('puts no payment after a repayment cursor at the same instant', () => {
     const repayment = at('2026-10-27T12:00:00.000Z', 1, 10);
 
-    expect(isAfter(repayment, at('2026-10-27T12:00:00.000Z', 0, 1))).toBe(false);
+    expect(isAfter(repayment, at('2026-10-27T12:00:00.000Z', 0, 1))).toBe(
+      false,
+    );
     expect(isAfter(repayment, at('2026-10-27T12:00:00.000Z', 1, 9))).toBe(true);
   });
 });
