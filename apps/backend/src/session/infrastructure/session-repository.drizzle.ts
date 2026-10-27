@@ -1,6 +1,6 @@
 import { Inject } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import { type Session } from 'src/session/domain/session';
+import { type Session, type StoredSession } from 'src/session/domain/session';
 import { SessionRepository } from 'src/session/domain/session-repository';
 import {
   type Database,
@@ -13,7 +13,15 @@ export class SessionRepositoryDrizzle implements SessionRepository {
     @Inject(DATABASE_CONNECTION) private readonly database: Database,
   ) {}
 
-  async findByToken(token: string): Promise<Session | null> {
+  async findById(id: number): Promise<StoredSession | null> {
+    const row = await this.database.query.session.findFirst({
+      where: eq(session.id, id),
+    });
+
+    return row ? this.toDomain(row) : null;
+  }
+
+  async findByToken(token: string): Promise<StoredSession | null> {
     const row = await this.database.query.session.findFirst({
       where: eq(session.token, token),
     });
@@ -24,15 +32,22 @@ export class SessionRepositoryDrizzle implements SessionRepository {
   async save(sessionToSave: Session): Promise<void> {
     await this.database
       .insert(session)
-      .values(sessionToSave)
+      .values({
+        token: sessionToSave.token,
+        userId: sessionToSave.userId,
+        issuedAt: sessionToSave.issuedAt,
+        expiresAt: sessionToSave.expiresAt,
+        revokedAt: sessionToSave.revokedAt,
+      })
       .onConflictDoUpdate({
         target: session.token,
         set: { revokedAt: sessionToSave.revokedAt },
       });
   }
 
-  private toDomain(row: typeof session.$inferSelect): Session {
+  private toDomain(row: typeof session.$inferSelect): StoredSession {
     return {
+      id: row.id,
       token: row.token,
       userId: row.userId,
       issuedAt: row.issuedAt,

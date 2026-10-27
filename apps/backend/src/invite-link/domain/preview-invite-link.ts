@@ -17,7 +17,8 @@ export const previewInviteLink = async (
 ): Promise<{ groupName: string }> => {
   const link = await deps.inviteLinks.findByToken(input.token);
   if (!link) throw new InviteLinkNotFound();
-  if (InviteLink.isExpired(link, new Date())) throw new InviteLinkExpired();
+  if (InviteLink.isRevoked(link) || InviteLink.isExpired(link, new Date()))
+    throw new InviteLinkExpired();
   if (InviteLink.isConsumed(link)) throw new InviteLinkConsumed();
 
   const group = await deps.expenseGroups.findById(link.groupId);

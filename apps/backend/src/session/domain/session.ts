@@ -6,6 +6,8 @@ export type Session = {
   readonly revokedAt: Date | null;
 };
 
+export type StoredSession = Session & { readonly id: number };
+
 export const Session = {
   issue: (
     token: string,

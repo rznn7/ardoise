@@ -115,6 +115,20 @@ describe('Authentication', () => {
         .expect(400);
     });
 
+    it('begin registration refuses a revoked link', async () => {
+      const { id: groupId } = await seedGroup(pgClient);
+      await seedInviteLink(pgClient, {
+        groupId,
+        token: 'revoked-registration-token',
+        revoked: true,
+      });
+
+      await request(app.getHttpServer())
+        .post('/auth/register/begin')
+        .send({ inviteToken: 'revoked-registration-token' })
+        .expect(400);
+    });
+
     it('rejects an unknown stateId on complete', async () => {
       await request(app.getHttpServer())
         .post('/auth/register/complete')
@@ -330,6 +344,20 @@ describe('Authentication', () => {
           assertion: { id: 'unknown-credential-id' },
         })
         .expect(401);
+    });
+
+    it('begin registration refuses a revoked link', async () => {
+      const { id: groupId } = await seedGroup(pgClient);
+      await seedInviteLink(pgClient, {
+        groupId,
+        token: 'revoked-registration-token',
+        revoked: true,
+      });
+
+      await request(app.getHttpServer())
+        .post('/auth/register/begin')
+        .send({ inviteToken: 'revoked-registration-token' })
+        .expect(400);
     });
 
     it('rejects an unknown stateId on complete', async () => {
