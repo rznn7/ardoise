@@ -1,13 +1,17 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import {
+  afterNextRender,
   Component,
   computed,
+  DestroyRef,
   effect,
   inject,
+  Injector,
   input,
   numberAttribute,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { type ExpenseGroupSummary, type GroupMember, type MeResponse } from '@ardoise/shared';
@@ -39,10 +43,12 @@ import { BalanceIndicator } from 'src/app/shared/ui/balance-indicator/balance-in
 import { GroupHero } from 'src/app/shared/ui/group-hero/group-hero';
 import { ListRowImports } from 'src/app/shared/ui/list-row/list-row';
 import { LoadMore } from 'src/app/shared/ui/load-more/load-more';
-import { MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
+import { MobileShell, MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
 import { MoneyAmount } from 'src/app/shared/ui/money-amount/money-amount';
 import { PageStateImports } from 'src/app/shared/ui/page-state/page-state';
 import { AppTextImports } from 'src/app/shared/ui/text/text';
+
+import { GroupVisitMemory, isReturnFromChild } from './group-visit';
 
 type GroupState =
   | { status: 'loading' }
@@ -102,6 +108,9 @@ export class GroupPage {
   private readonly balanceStore = inject(BalanceStore);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly visits = inject(GroupVisitMemory);
+  private readonly injector = inject(Injector);
+  private readonly shell = viewChild(MobileShell);
 
   readonly goBack = injectGoBack();
 
@@ -216,6 +225,10 @@ export class GroupPage {
   };
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => {
+      this.rememberVisit();
+    });
+
     effect(() => {
       const groupId = this.groupId();
       untracked(() => {
@@ -285,10 +298,47 @@ export class GroupPage {
 
   private open(groupId: number): void {
     this.lastGroup.skipLaunchRedirect();
+    if (this.resume(groupId)) return;
     this.feedStore.loadFirst(groupId);
     this.doneStore.loadFirst(groupId);
     this.balanceStore.load(groupId);
     this.loadGroup(groupId);
+  }
+
+  private resume(groupId: number): boolean {
+    const navigation = this.router.currentNavigation() ?? this.router.lastSuccessfulNavigation();
+    const previous = navigation?.previousNavigation?.finalUrl;
+    const visit = this.visits.recall(groupId);
+    if (
+      !visit ||
+      !isReturnFromChild(previous && this.router.serializeUrl(previous), groupId) ||
+      !this.feedStore.hasPages(groupId) ||
+      !this.doneStore.hasPages(groupId)
+    ) {
+      return false;
+    }
+    this.groupState.set({
+      status: 'loaded',
+      group: visit.group,
+      members: visit.members,
+      me: visit.me,
+    });
+    if (untracked(this.settledOfGroup)() !== visit.settledVersion) this.balanceStore.load(groupId);
+    afterNextRender(() => this.shell()?.scrollTo(visit.scrollTop), { injector: this.injector });
+    return true;
+  }
+
+  private rememberVisit(): void {
+    const state = this.groupState();
+    const shell = this.shell();
+    if (state.status !== 'loaded' || !shell) return;
+    this.visits.remember(this.groupId(), {
+      group: state.group,
+      members: state.members,
+      me: state.me,
+      scrollTop: shell.scrollTop(),
+      settledVersion: untracked(this.settledOfGroup)(),
+    });
   }
 
   private loadGroup(groupId: number): void {

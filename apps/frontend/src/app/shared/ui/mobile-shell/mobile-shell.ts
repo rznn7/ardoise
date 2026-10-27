@@ -1,4 +1,12 @@
-import { booleanAttribute, Component, contentChild, Directive, input } from '@angular/core';
+import {
+  booleanAttribute,
+  Component,
+  contentChild,
+  Directive,
+  type ElementRef,
+  input,
+  viewChild,
+} from '@angular/core';
 
 @Directive({ selector: '[appShellHeader]' })
 export class ShellHeader {}
@@ -23,6 +31,15 @@ export class MobileShell {
 
   protected readonly header = contentChild(ShellHeader);
   protected readonly fab = contentChild(ShellFab);
+  private readonly main = viewChild.required<ElementRef<HTMLElement>>('main');
+
+  scrollTop(): number {
+    return this.main().nativeElement.scrollTop;
+  }
+
+  scrollTo(top: number): void {
+    this.main().nativeElement.scrollTop = top;
+  }
 }
 
 export const MobileShellImports = [MobileShell, ShellHeader, ShellFab] as const;

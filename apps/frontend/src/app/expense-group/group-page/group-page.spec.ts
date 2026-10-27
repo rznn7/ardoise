@@ -31,6 +31,7 @@ import { withHistoryPageIds } from 'src/app/shared/navigation/back';
 import { openFirstPage } from 'src/app/shared/navigation/first-page.testing';
 import { ShareService } from 'src/app/shared/share.service';
 import { LoadMore } from 'src/app/shared/ui/load-more/load-more';
+import { MobileShell } from 'src/app/shared/ui/mobile-shell/mobile-shell';
 
 import { GroupPage } from './group-page';
 
@@ -199,6 +200,7 @@ async function setup({
         useValue: {
           feed: () => feed,
           loadFirst: load,
+          hasPages: () => true,
           loadMore: loadMoreFeed,
           retryMore: vi.fn(),
           settledVersion: () => settled,
@@ -211,6 +213,7 @@ async function setup({
         provide: DoneStore,
         useValue: {
           done: () => signal(doneState),
+          hasPages: () => true,
           loadFirst: vi.fn(),
           loadMore: loadMoreDone,
           retryMore: vi.fn(),
@@ -281,6 +284,46 @@ describe('GroupPage', () => {
 
     expect(remember).toHaveBeenCalledWith(7);
     expect(load).toHaveBeenCalledWith(7);
+  });
+
+  describe('keeping your place', () => {
+    it('going back from a payment shows the kept rows at the same scroll, with no request', async () => {
+      vi.spyOn(MobileShell.prototype, 'scrollTop').mockReturnValue(240);
+      const scrollTo = vi.spyOn(MobileShell.prototype, 'scrollTo');
+      const { harness, load, findOne, listBalances } = await setup({ feedState: WITH_PAYMENT });
+
+      await harness.navigateByUrl('/group/7/payments/1');
+      await harness.navigateByUrl('/group/7');
+      await harness.fixture.whenStable();
+
+      expect(screen.getByText('Dinner')).toBeTruthy();
+      expect(load).toHaveBeenCalledTimes(1);
+      expect(findOne).toHaveBeenCalledTimes(1);
+      expect(listBalances).toHaveBeenCalledTimes(1);
+      expect(scrollTo).toHaveBeenLastCalledWith(240);
+    });
+
+    it('opening the group from home loads it from the first page', async () => {
+      const { harness, load, findOne } = await setup({ feedState: WITH_PAYMENT });
+
+      await harness.navigateByUrl('/home');
+      await harness.navigateByUrl('/group/7');
+      await harness.fixture.whenStable();
+
+      expect(load).toHaveBeenCalledTimes(2);
+      expect(findOne).toHaveBeenCalledTimes(2);
+    });
+
+    it('reloads balances on the way back when a payment changed meanwhile', async () => {
+      const { harness, settled, listBalances } = await setup({ feedState: WITH_PAYMENT });
+
+      await harness.navigateByUrl('/group/7/payments/1');
+      settled.set(1);
+      await harness.navigateByUrl('/group/7');
+      await harness.fixture.whenStable();
+
+      expect(listBalances).toHaveBeenCalledTimes(2);
+    });
   });
 
   it('asks the feed for the next page at the bottom of the list', async () => {
