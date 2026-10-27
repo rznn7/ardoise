@@ -76,12 +76,17 @@ describe('CreatePayment', () => {
 
     // THEN the response carries the payment and both resolved shares
     const body = response.body as CreatePaymentResponse;
-    expect(body.payment).toMatchObject({
+    expect(body.payment).toEqual({
+      id: expect.any(Number) as number,
       groupId: group.id,
       payerMemberId: aliceMember.id,
       title: 'dinner',
+      paidAt: '2026-08-16T19:00:00.000Z',
       fullAmount: 4200,
       splitType: 'equal',
+      createdAt: expect.stringMatching(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      ) as string,
     });
     expect(body.shares).toHaveLength(2);
     expect(body.shares.map((s) => s.amount)).toEqual([2100, 2100]);
@@ -146,9 +151,22 @@ describe('CreatePayment', () => {
       })
       .expect(201);
 
-    // THEN the shares are 2.00 and 6.00
+    // THEN the shares are 2.00 and 6.00, each with the weight it was given
     const body = response.body as CreatePaymentResponse;
-    expect(body.shares.map((s) => s.amount)).toEqual([200, 600]);
+    expect(body.shares).toEqual([
+      {
+        paymentId: body.payment.id,
+        memberId: aliceMember.id,
+        inputValue: 1,
+        amount: 200,
+      },
+      {
+        paymentId: body.payment.id,
+        memberId: bobMember.id,
+        inputValue: 3,
+        amount: 600,
+      },
+    ]);
   });
 
   it('creates an exact split', async () => {
