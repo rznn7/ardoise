@@ -11,7 +11,7 @@ apps/backend    NestJS, hexagonal, one folder per bounded context
 apps/frontend   Angular standalone components, spartan.ng helm UI in libs/ui, Tailwind 4
 apps/e2e        Playwright: full-stack scenarios (e2e/) and the screenshot matrix (screenshots/)
 libs/shared     Zod contracts (@ardoise/shared), consumed from src by tsc/vitest/Angular, from dist by the backend build
-docs/           design.md (design system, UX, workflow), domain.md (entities, rules), testing.md (test strategy, use cases), roadmap.md (feature slices), superpowers/specs + plans
+docs/           design.md (design system, UX, workflow), domain.md (entities, rules), testing.md (test strategy, coverage), roadmap.md (feature slices), superpowers/specs + plans
 ```
 
 ## Commands
@@ -73,12 +73,12 @@ Read `docs/design.md` before building any screen. In feature templates (`src/app
 
 ## Testing
 
-Strategy, coverage and the use case table are in `docs/testing.md`. Breadth goes in the fast layers; Playwright stays thin. Coverage is not a target: a test earns its place only by catching a bug no other layer catches.
+Strategy and coverage are in `docs/testing.md`. Breadth goes in the fast layers; Playwright stays thin. Coverage is not a target: a test earns its place only by catching a bug no other layer catches.
 
 - Pure rules (backend domain, frontend formatting) are pure functions with unit specs covering their edge cases.
 - Backend coverage goes into e2e specs in `test/`, with a real Postgres from testcontainers and supertest. Helpers are in `test/helpers/` (`setupTestApp` with provider overrides, `fakePasskeyVerifier`, `seed*` functions). Authorization is tested by the refusal and by checking nothing changed.
 - Frontend specs sit next to their component and cover what Playwright reaches badly: loading, errors, empty states, optimistic rollback, validation. They do not replay a main path a scenario already covers.
-- Playwright scenarios in `apps/e2e/e2e/` are named as use cases and run against the real backend, a throwaway Postgres and a Chrome virtual authenticator. One per use case for the main path, plus failures that cross layers; the text a user reads is asserted there. A slice adds about two to five. Every scenario has a row in the `docs/testing.md` table (`pnpm --filter @ardoise/e2e lint` checks it).
+- Playwright scenarios in `apps/e2e/e2e/` are named as use cases and run against the real backend, a throwaway Postgres and a Chrome virtual authenticator. One per use case for the main path, plus failures that cross layers; the text a user reads is asserted there. A slice adds about two to five.
 - Assert through roles and text, never CSS classes.
 
 ## Workflow

@@ -5,7 +5,7 @@
   "scripts": {
     "screenshots": "playwright test -c playwright.screenshots.config.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . && node scripts/check-use-cases.mts",
+    "lint": "eslint .",
     "format": "prettier --write \"**/*.ts\"",
     "test:e2e": "playwright test"
   },
