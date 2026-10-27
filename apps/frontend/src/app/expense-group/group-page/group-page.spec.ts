@@ -116,7 +116,7 @@ const balancesOf = (mine: number): GroupBalancesResponse => ({
         : [{ fromMemberId: 12, toMemberId: 11, amount: mine }],
 });
 
-const WITH_PAYMENT: FeedState = { status: 'loaded', rows: [payment({})] };
+const WITH_PAYMENT: FeedState = { status: 'loaded', more: 'end', rows: [payment({})] };
 
 interface Setup {
   feed: WritableSignal<FeedState>;
@@ -132,7 +132,7 @@ interface Setup {
 
 async function setup({
   members = MEMBERS,
-  feedState = { status: 'loaded', rows: [] },
+  feedState = { status: 'loaded', more: 'end', rows: [] },
   findOne = vi.fn<() => Observable<ExpenseGroupSummary>>().mockReturnValue(of(GROUP)),
   balances = balancesOf(0),
   url = '/group/7',
@@ -175,7 +175,7 @@ async function setup({
         provide: FeedStore,
         useValue: {
           feed: () => feed,
-          load,
+          loadFirst: load,
           settledVersion: () => settled,
           pendingSettlements: () => signal([]),
           recordSettlement,
@@ -242,6 +242,7 @@ describe('GroupPage', () => {
     await setup({
       feedState: {
         status: 'loaded',
+        more: 'end',
         rows: [
           payment({ id: 1, title: 'Dinner', paidAt: daysAgo(0), payerMemberId: 11 }),
           payment({
@@ -275,7 +276,7 @@ describe('GroupPage', () => {
   });
 
   it('opens the payment details when a row is tapped', async () => {
-    await setup({ feedState: { status: 'loaded', rows: [payment({ id: 5 })] } });
+    await setup({ feedState: { status: 'loaded', more: 'end', rows: [payment({ id: 5 })] } });
 
     await userEvent.click(screen.getByRole('link', { name: /dinner/i }));
 
@@ -288,6 +289,7 @@ describe('GroupPage', () => {
     await setup({
       feedState: {
         status: 'loaded',
+        more: 'end',
         rows: [payment({ id: -1, title: 'Groceries', pending: true })],
       },
     });
@@ -448,7 +450,7 @@ describe('GroupPage', () => {
   });
 
   it('lists a repayment in the feed with its marker', async () => {
-    await setup({ feedState: { status: 'loaded', rows: [settlement({})] } });
+    await setup({ feedState: { status: 'loaded', more: 'end', rows: [settlement({})] } });
 
     const row = screen.getByRole('link', { name: /tom paid you back/i });
     expect(within(row).getByText('Repayment')).toBeTruthy();
@@ -461,7 +463,9 @@ describe('GroupPage', () => {
   });
 
   it('does not link a repayment that is still saving', async () => {
-    await setup({ feedState: { status: 'loaded', rows: [settlement({ id: -2, pending: true })] } });
+    await setup({
+      feedState: { status: 'loaded', more: 'end', rows: [settlement({ id: -2, pending: true })] },
+    });
 
     expect(screen.getByText('Tom paid you back')).toBeTruthy();
     expect(screen.getByText('Saving…')).toBeTruthy();
@@ -507,7 +511,7 @@ describe('GroupPage', () => {
 
     it('shows the balance when only repayments are left', async () => {
       await setup({
-        feedState: { status: 'loaded', rows: [settlement({})] },
+        feedState: { status: 'loaded', more: 'end', rows: [settlement({})] },
         balances: balancesOf(-1200),
       });
 
@@ -597,7 +601,7 @@ describe('GroupPage', () => {
 
     it('undoes a repayment from the Done section', async () => {
       const { undoSettlement } = await setup({
-        feedState: { status: 'loaded', rows: [payment({}), settlement({ id: 9 })] },
+        feedState: { status: 'loaded', more: 'end', rows: [payment({}), settlement({ id: 9 })] },
         balances: balancesOf(0),
         url: '/group/7?tab=balances',
       });
@@ -647,7 +651,7 @@ describe('GroupPage', () => {
 
     it('does not count a payment that is still saving', async () => {
       await setup({
-        feedState: { status: 'loaded', rows: [payment({ id: -1, pending: true })] },
+        feedState: { status: 'loaded', more: 'end', rows: [payment({ id: -1, pending: true })] },
         balances: balancesOf(0),
         url: '/group/7?tab=balances',
       });

@@ -245,7 +245,7 @@ export class GroupPage {
   }
 
   retryBalances(): void {
-    if (this.feed().status === 'error') this.feedStore.load(this.groupId());
+    if (this.feed().status === 'error') this.feedStore.loadFirst(this.groupId());
     this.balanceStore.load(this.groupId());
   }
 
@@ -254,12 +254,12 @@ export class GroupPage {
   }
 
   retryFeed(): void {
-    this.feedStore.load(this.groupId());
+    this.feedStore.loadFirst(this.groupId());
   }
 
   private open(groupId: number): void {
     this.lastGroup.skipLaunchRedirect();
-    this.feedStore.load(groupId);
+    this.feedStore.loadFirst(groupId);
     this.balanceStore.load(groupId);
     this.loadGroup(groupId);
   }

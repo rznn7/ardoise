@@ -34,7 +34,9 @@ export type ApiClient<T extends Record<string, Endpoint>> = {
   [K in keyof T]: ClientMethod<T[K]>;
 };
 
-const toQuery = (query: Record<string, unknown>): Record<string, string> =>
+const toQuery = (
+  query: Record<string, string | number | boolean | undefined>,
+): Record<string, string> =>
   Object.fromEntries(
     Object.entries(query).flatMap(([key, value]) =>
       value === undefined ? [] : [[key, String(value)]],
@@ -58,7 +60,7 @@ export const createApiClient = <T extends Record<string, Endpoint>>(
     client[name] = (req?: {
       params?: Record<string, string | number>;
       body?: unknown;
-      query?: Record<string, unknown>;
+      query?: Record<string, string | number | boolean | undefined>;
     }): Observable<unknown> => {
       const response = config.http.request(
         endpoint.method,

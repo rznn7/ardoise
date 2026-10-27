@@ -11,6 +11,8 @@ export class SettlementApiService {
     baseUrl: inject(API_BASE_URL),
   });
 
+  listByGroup = (groupId: number, cursor?: string) =>
+    this.settlements.listByGroup({ params: { groupId }, query: { cursor } });
   findOne = (id: number) => this.settlements.findOne({ params: { id } });
   create = (body: CreateSettlementBody) => this.settlements.create({ body });
   delete = (id: number) => this.settlements.delete({ params: { id } });
