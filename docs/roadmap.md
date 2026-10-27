@@ -99,6 +99,10 @@ A settlement overlays the balance calculation; it never mutates payments.
 - [x] **Drizzle migrations** — migration setup and baseline.
 - [x] **preview deploy** — every main push publishes images; deployed by hand on the homelab at ardoise.rznn.dev, demo data reset, accounts kept.
 - [ ] **production deploy** — Docker compose + Hetzner.
+  - rate limiting on the unauthenticated endpoints (`/auth/*/begin`, invite preview), in Nest or at
+    the edge (#18).
+- [ ] **route-change focus** — after each navigation, move focus to the page heading so screen
+  readers and keyboard users land on the new screen (#19).
 - [x] **PWA** — manifest, app icon, standalone mode under a translucent status bar, reload onto a new
   deploy. iOS keyboard handling landed with payments.
 - [ ] **multi-device passkey** — lift the v1 single-passkey non-goal.
