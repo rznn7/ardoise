@@ -1,3 +1,5 @@
+import { type Cursor } from 'src/shared/pagination/cursor';
+
 export type Settlement = {
   readonly id: number;
   readonly groupId: number;
@@ -37,3 +39,9 @@ export const assertInvolved = (
   )
     throw new NotInvolvedInSettlement();
 };
+
+export const settlementCursorOf = (settlement: Settlement): Cursor => ({
+  date: settlement.settledAt,
+  rank: 1,
+  id: settlement.id,
+});
