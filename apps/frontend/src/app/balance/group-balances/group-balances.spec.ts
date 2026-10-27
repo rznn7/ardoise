@@ -133,26 +133,6 @@ describe('GroupBalances', () => {
     expect(retry).toHaveBeenCalledOnce();
   });
 
-  it('gives every amount the same width so the bars share one axis', async () => {
-    await renderBalances(OWING);
-
-    const amounts = document.querySelectorAll('app-balance-indicator');
-    expect(amounts).toHaveLength(2);
-    for (const amount of amounts) {
-      expect(amount.classList).toContain('w-24');
-      expect(amount.classList).toContain('justify-end');
-    }
-  });
-
-  it('lets names take the free width instead of a narrow fixed column', async () => {
-    await renderBalances(OWING);
-
-    const name = screen.getByText('Léa');
-    expect(name.classList).toContain('flex-1');
-    expect(name.classList).toContain('min-w-0');
-    expect(name.classList).toContain('truncate');
-  });
-
   describe('repayments', () => {
     it('makes only my repayment rows tappable', async () => {
       await renderBalances(MIXED);

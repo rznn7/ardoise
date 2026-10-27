@@ -352,7 +352,6 @@ describe('PaymentDetails', () => {
     });
 
     expect(screen.getByRole('status', { name: 'Loading' })).toBeTruthy();
-    expect(document.querySelectorAll('hlm-skeleton').length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
   });
 

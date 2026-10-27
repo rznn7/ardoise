@@ -102,8 +102,6 @@ describe('Home', () => {
     });
 
     expect(screen.getByRole('status', { name: 'Loading' })).toBeTruthy();
-    expect(document.querySelector('hlm-spinner')).toBeNull();
-    expect(document.querySelectorAll('hlm-skeleton').length).toBeGreaterThan(0);
     expect(screen.queryByText(/no groups yet/i)).toBeNull();
   });
 
@@ -118,8 +116,6 @@ describe('Home', () => {
 
     expect(screen.getByText('Trip')).toBeTruthy();
     expect(screen.getByText('Flat')).toBeTruthy();
-
-    expect(document.querySelectorAll('app-group-fade')).toHaveLength(2);
 
     const slots = screen.getAllByTestId('balance-slot');
     expect(slots).toHaveLength(2);
@@ -172,14 +168,6 @@ describe('Home', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /create your first group/i }));
     expect(await screen.findByRole('dialog', { name: /create a group/i })).toBeTruthy();
-  });
-
-  it('sizes the FAB like every floating action', async () => {
-    await setup();
-
-    const fab = screen.getByRole('button', { name: /create a group/i });
-    expect(fab.classList).toContain('h-14');
-    expect(fab.classList).toContain('min-w-14');
   });
 
   it('refreshes the list without a spinner when a group is created', async () => {

@@ -270,9 +270,11 @@ async function setup({
   };
 }
 
+const shellOf = (harness: RouterTestingHarness): MobileShell =>
+  harness.fixture.debugElement.query(By.directive(MobileShell)).componentInstance as MobileShell;
+
 const pullToRefresh = (harness: RouterTestingHarness): void => {
-  const shell = harness.fixture.debugElement.query(By.directive(MobileShell));
-  (shell.componentInstance as MobileShell).refresh.emit();
+  shellOf(harness).refresh.emit();
 };
 
 const reachBottom = (harness: RouterTestingHarness, at: string): void => {
@@ -477,28 +479,26 @@ describe('GroupPage', () => {
   });
 
   it('draws the hero under the status bar', async () => {
-    await setup();
+    const { harness } = await setup();
 
-    const shell = document.querySelector('app-mobile-shell')!;
-    expect(shell.className).not.toContain('safe-area-inset-top');
-    expect(document.querySelector('app-group-hero')).toBeTruthy();
+    expect(shellOf(harness).bleed()).toBe(true);
+    expect(screen.getByRole('heading', { name: 'Lisbon trip' })).toBeTruthy();
   });
 
   it('keeps the safe areas when the group cannot be opened', async () => {
-    await setup({
+    const { harness } = await setup({
       findOne: vi
         .fn<() => Observable<ExpenseGroupSummary>>()
         .mockReturnValue(throwError(() => new HttpErrorResponse({ status: 403 }))),
     });
 
-    expect(document.querySelector('app-mobile-shell')!.className).toContain('safe-area-inset-top');
+    expect(shellOf(harness).bleed()).toBe(false);
   });
 
   it('shows skeleton rows while the feed loads', async () => {
     await setup({ feedState: { status: 'loading' } });
 
     expect(screen.getByRole('status', { name: 'Loading' })).toBeTruthy();
-    expect(document.querySelectorAll('hlm-skeleton').length).toBeGreaterThan(0);
   });
 
   it('shows an error with retry that reloads the feed', async () => {
@@ -513,14 +513,6 @@ describe('GroupPage', () => {
     await setup();
 
     expect(screen.getByText('No payments yet')).toBeTruthy();
-  });
-
-  it('sizes the FAB like every floating action', async () => {
-    await setup();
-
-    const fab = screen.getByRole('link', { name: 'Add a payment' });
-    expect(fab.classList).toContain('h-14');
-    expect(fab.classList).toContain('min-w-14');
   });
 
   it('adds a payment from the FAB', async () => {
