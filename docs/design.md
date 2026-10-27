@@ -133,3 +133,5 @@ With the frontend running (`pnpm dev:front`), `pnpm --filter @ardoise/e2e screen
 | 2026-10-27 | Confirm a repayment | Tap my repayment row → sheet with the amount large and one button (B) | See the figure before confirming; 2 taps |
 | 2026-10-27 | Recorded repayments | Done section under Repayments, thin green circle check, tap mine → undo sheet ("Undo repayment" / "Keep it") | Undo without going through the feed; outline check over a filled pastille |
 | 2026-10-27 | Repayment wording | "Repayment" on screen (code says settlement); feed row "You paid Léa back" with a "Repayment" meta line | Reads as a transfer, not an expense |
+| 2026-10-27 | Home title | "ardoise" instead of "Groups" | The first screen names the app |
+| 2026-10-27 | Admin user meta | "Joined 19 Sep" only, no sign-in or passkey count | The full line read as too much |

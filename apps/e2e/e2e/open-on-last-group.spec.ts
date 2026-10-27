@@ -29,7 +29,7 @@ test('the app opens on the last group, and back returns to the list', async ({
   await groupsListed;
 
   await expect(page).toHaveURL(/\/home$/);
-  await expect(page.getByRole('heading', { name: 'Groups' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'ardoise' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Flatshare' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Lisbon trip' })).toBeVisible();
   await expect(page).toHaveURL(/\/home$/);
