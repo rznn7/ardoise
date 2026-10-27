@@ -29,9 +29,11 @@ describe('netBalances', () => {
   });
 
   it('refuses balances that do not sum to zero', () => {
-    expect(() => netBalances([{ memberId: 1, paid: 100, owed: 0, settledOut: 0, settledIn: 0 }])).toThrow(
-      UnbalancedLedger,
-    );
+    expect(() =>
+      netBalances([
+        { memberId: 1, paid: 100, owed: 0, settledOut: 0, settledIn: 0 },
+      ]),
+    ).toThrow(UnbalancedLedger);
   });
 
   it('a settlement cancels the debt it repays', () => {
