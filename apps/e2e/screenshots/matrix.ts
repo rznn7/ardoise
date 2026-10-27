@@ -2,6 +2,12 @@ import { expect, type Page } from '@playwright/test';
 
 import {
   abort,
+  ADMIN_GROUP,
+  ADMIN_LONER,
+  ADMIN_ME,
+  ADMIN_OVERVIEW,
+  ADMIN_SELF,
+  ADMIN_USER,
   type ApiMocks,
   balancesWhereIAmAt,
   GROUP,
@@ -27,6 +33,14 @@ export interface ScreenshotCell {
 }
 
 const loggedIn: ApiMocks = { 'POST /auth/me': json(ME) };
+const adminMocks: ApiMocks = {
+  'POST /auth/me': json(ADMIN_ME),
+  'GET /admin/overview': json(ADMIN_OVERVIEW),
+  'GET /admin/users/2': json(ADMIN_USER),
+  'GET /admin/users/1': json(ADMIN_SELF),
+  'GET /admin/users/6': json(ADMIN_LONER),
+  'GET /admin/groups/1': json(ADMIN_GROUP),
+};
 const loggedOut: ApiMocks = { 'POST /auth/me': status(401) };
 const PREVIEW = 'GET /invite-link/[^/]+/preview';
 const GROUPS_LIST = 'GET /expense-groups';
@@ -346,6 +360,102 @@ export const CELLS: ScreenshotCell[] = [
     path: BALANCES_TAB,
     mocks: { ...groupMocks, [GROUP_BALANCES_PATH]: status(500) },
     ready: visible("Couldn't load balances"),
+  },
+  {
+    route: 'home',
+    state: 'admin',
+    path: '/home',
+    mocks: {
+      ...adminMocks,
+      [GROUPS_LIST]: json(GROUPS),
+      [MY_BALANCES_PATH]: json(MY_BALANCES),
+    },
+    ready: async (page) => {
+      await expect(page.getByRole('link', { name: 'Admin' })).toBeVisible();
+    },
+  },
+  {
+    route: 'admin',
+    state: 'users',
+    path: '/admin',
+    mocks: adminMocks,
+    ready: visible('Gabriel'),
+  },
+  {
+    route: 'admin',
+    state: 'groups',
+    path: '/admin?tab=groups',
+    mocks: adminMocks,
+    ready: visible('Ski 2027'),
+  },
+  {
+    route: 'admin',
+    state: 'loading',
+    path: '/admin',
+    mocks: { ...adminMocks, 'GET /admin/overview': pending },
+    ready: loadingStatus,
+  },
+  {
+    route: 'admin',
+    state: 'error',
+    path: '/admin',
+    mocks: { ...adminMocks, 'GET /admin/overview': status(500) },
+    ready: visible("Couldn't load the overview"),
+  },
+  {
+    route: 'admin-user',
+    state: 'groups',
+    path: '/admin/users/2',
+    mocks: adminMocks,
+    ready: visible('Sessions'),
+  },
+  {
+    route: 'admin-user',
+    state: 'this-device',
+    path: '/admin/users/1',
+    mocks: adminMocks,
+    ready: visible('This device'),
+  },
+  {
+    route: 'admin-user',
+    state: 'no-group',
+    path: '/admin/users/6',
+    mocks: adminMocks,
+    ready: visible('No active session'),
+  },
+  {
+    route: 'admin-user',
+    state: 'revoke-sheet',
+    path: '/admin/users/2',
+    mocks: adminMocks,
+    ready: async (page) => {
+      await page.getByRole('button', { name: 'Revoke' }).first().click();
+      await expect(page.getByText('Sign this session out?')).toBeVisible();
+    },
+  },
+  {
+    route: 'admin-user',
+    state: 'not-found',
+    path: '/admin/users/99',
+    mocks: { ...adminMocks, 'GET /admin/users/99': status(404) },
+    ready: visible('This user no longer exists'),
+  },
+  {
+    route: 'admin-group',
+    state: 'links',
+    path: '/admin/groups/1',
+    mocks: adminMocks,
+    ready: visible('Invite links'),
+  },
+  {
+    route: 'admin-group',
+    state: 'revoke-sheet',
+    path: '/admin/groups/1',
+    mocks: adminMocks,
+    ready: async (page) => {
+      await page.getByRole('button', { name: 'Revoke' }).click();
+      await expect(page.getByText('Revoke this link?')).toBeVisible();
+    },
   },
   {
     route: 'payment-amount',
