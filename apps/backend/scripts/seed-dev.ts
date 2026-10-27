@@ -28,7 +28,9 @@ async function main() {
     console.log(
       `  Flatshare (EUR), ${you} plain member, no ⋯ menu, owes money`,
     );
-    console.log('    Payments: Electricity, Internet');
+    console.log(
+      '    Payments: Electricity, Internet, then 128 older chores over eight months (several feed pages)',
+    );
     console.log(
       `  Ski 2027 (CHF), ${you} moderator, no payments (empty state)`,
     );
