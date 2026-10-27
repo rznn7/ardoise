@@ -170,3 +170,31 @@ export async function seedPasskey(
   );
   return { id: rows[0]!.id };
 }
+
+export async function seedSettlement(
+  client: Client,
+  opts: {
+    groupId: number;
+    fromMemberId: number;
+    toMemberId: number;
+    amount: number;
+    createdByMemberId?: number;
+    settledAt?: Date;
+  },
+): Promise<{ id: number }> {
+  const {
+    groupId,
+    fromMemberId,
+    toMemberId,
+    amount,
+    createdByMemberId = fromMemberId,
+    settledAt = new Date(),
+  } = opts;
+
+  const { rows } = await client.query<{ id: number }>(
+    `INSERT INTO settlement (group_id, from_member_id, to_member_id, created_by_member_id, amount, settled_at)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+    [groupId, fromMemberId, toMemberId, createdByMemberId, amount, settledAt],
+  );
+  return { id: rows[0]!.id };
+}
