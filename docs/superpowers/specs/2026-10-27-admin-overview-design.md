@@ -70,7 +70,7 @@ Canvas 393×852, tap targets ≥ 44px. Mockups in `.superpowers/brainstorm/admin
 
 ### User detail, `/admin/users/:userId`
 
-- Back ‹. Title: the name (with the "Admin" marker if admin). Meta: "Joined 12 Oct · signed in 2 days ago · 1 passkey".
+- Back ‹. Title: the name (with the "Admin" marker if admin). Meta: "Joined 12 Oct" (the owner trimmed the sign-in and passkey parts: too much).
 - **Groups** section: one row per membership, sorted by group name. Title: group name. Meta: "Moderator · 2 members" or "Member · 5 members". Trailing: the user's balance in that group with the `balance-indicator` (dot + signed amount, `€0.00` with no dot). Tap opens the admin group detail.
 - **Sessions** section: active sessions (not revoked, not expired), newest first, "Signed in 27 Oct · expires in 26 days". "No active session" when none.
   - Each session except the one the admin is using has a trailing **Revoke** text button (destructive text). The admin's own current session shows "This device" instead.

@@ -18,7 +18,7 @@ import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
 import { AdminApiService } from 'src/app/admin/admin-api.service';
-import { expiresIn, shortDate, signedInLabel } from 'src/app/admin/admin-dates';
+import { expiresIn, shortDate } from 'src/app/admin/admin-dates';
 import { injectGoBack } from 'src/app/shared/navigation/back';
 import { ToastService } from 'src/app/shared/toast.service';
 import { BalanceIndicator } from 'src/app/shared/ui/balance-indicator/balance-indicator';
@@ -65,14 +65,7 @@ export class AdminUserPage {
 
   protected readonly meta = computed(() => {
     const state = this.state();
-    if (state.status !== 'loaded') return '';
-    const { user } = state.detail;
-    const passkeys =
-      user.passkeyCount === 1 ? '1 passkey' : `${String(user.passkeyCount)} passkeys`;
-    const signIn = user.lastSignInAt
-      ? ` · ${signedInLabel(user.lastSignInAt, user.createdAt, new Date())}`
-      : '';
-    return `Joined ${shortDate(user.createdAt)}${signIn} · ${passkeys}`;
+    return state.status === 'loaded' ? `Joined ${shortDate(state.detail.user.createdAt)}` : '';
   });
 
   protected readonly sessions = computed(() => {

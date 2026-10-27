@@ -82,7 +82,8 @@ describe('AdminUserPage', () => {
     await setup();
 
     expect(screen.getByRole('heading', { name: 'Léa' })).toBeTruthy();
-    expect(screen.getByText(/signed in today · 1 passkey/)).toBeTruthy();
+    expect(screen.getByText(/^Joined \d{1,2} \w{3}$/)).toBeTruthy();
+    expect(screen.queryByText(/passkey/)).toBeNull();
     const flat = screen.getByRole('link', { name: /flatshare/i });
     expect(within(flat).getByText('Moderator · 2 members')).toBeTruthy();
     expect(within(flat).getByText('−€18.30')).toBeTruthy();
