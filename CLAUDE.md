@@ -77,9 +77,9 @@ Strategy and coverage are in `docs/testing.md`. Breadth goes in the fast layers;
 
 - Pure rules (backend domain, frontend formatting) are pure functions with unit specs covering their edge cases.
 - Backend coverage goes into e2e specs in `test/`, with a real Postgres from testcontainers and supertest. Helpers are in `test/helpers/` (`setupTestApp` with provider overrides, `fakePasskeyVerifier`, `seed*` functions). Authorization is tested by the refusal and by checking nothing changed.
-- Frontend specs sit next to their component and cover what Playwright reaches badly: loading, errors, empty states, optimistic rollback, validation. They do not replay a main path a scenario already covers.
+- Frontend specs sit next to their component and cover what Playwright reaches badly: loading, errors, empty states, optimistic rollback, validation. Overlap with a scenario is fine; the same detail asserted in both is not. A page spec may fake a store that has its own spec.
 - Playwright scenarios in `apps/e2e/e2e/` are named as use cases and run against the real backend, a throwaway Postgres and a Chrome virtual authenticator. One per use case for the main path, plus failures that cross layers; the text a user reads is asserted there. A slice adds about two to five.
-- Assert through roles and text, never CSS classes.
+- Assert through roles and text, never CSS classes. Only `shared/ui` building blocks may assert the classes they promise.
 
 ## Workflow
 

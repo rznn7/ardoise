@@ -9,7 +9,7 @@ thin so the full-stack suite never becomes the hour-long run nobody waits for.
 |---|---|---|---|---|
 | Domain unit | `apps/backend/src/**/*.spec.ts`, `libs/shared` | everything | nothing | Pure rules: split rounding, link status, net balances, debt simplification |
 | Backend HTTP e2e | `apps/backend/test/*.e2e-spec.ts` | HTTP, Nest, Zod validation, SQL, Postgres constraints, exception filters | the passkey verifier | The HTTP contract: status, body, rights, effect in the database |
-| Frontend components | `apps/frontend/src/**/*.spec.ts` | Angular, router, DOM, signals | the API services | Screen states: loading, error, empty, optimistic update and rollback, form validation |
+| Frontend components | `apps/frontend/src/**/*.spec.ts` | Angular, router, DOM, signals | the API services, or a store that has its own spec | Screen states: loading, error, empty, optimistic update and rollback, form validation |
 | Full-stack scenarios | `apps/e2e/e2e/*.spec.ts` | everything, WebAuthn through a virtual authenticator | nothing | A use case works end to end, with the text the browser really renders |
 | Screenshot matrix | `apps/e2e/screenshots/` | the frontend | the API | Nothing automatically: review material for PRs, not a regression test |
 
@@ -28,11 +28,17 @@ the frontend typecheck.
 - **A use case** → one Playwright scenario for the main path, plus the failures that cross layers
   (a revoked link refused at join, a signed-out session). The text a user reads is asserted here,
   in the real browser and locale.
-- **Not**: a component spec that replays a main path a scenario already covers, or a scenario
-  for an edge case a faster layer can prove.
+- **Overlap is fine** between a scenario and a component spec: they guard different things, the
+  use case end to end and a screen state. What to avoid is the same detail asserted in both (an
+  exact formatted text, a computed amount), and a scenario for an edge case a faster layer proves.
+- **A faked store**: a page spec may fake a store that has its own spec. Assert what the page shows
+  after the action rather than the call itself, when the fake allows it; the scenarios cover the
+  real wiring.
 
 Assertions go through roles and visible text, never CSS classes, in every layer that touches the
-DOM.
+DOM. One exception: a building block in `shared/ui` may assert the classes it promises, since they
+are its visual contract. A feature spec never does; a layout bug in a feature is caught by the
+screenshot matrix.
 
 ## Playwright budget
 
@@ -67,7 +73,7 @@ from being isolated unless it has edge cases worth enumerating.
 
 Signs of over-testing, to prune rather than add to:
 
-- the same behavior asserted in two or three layers;
+- the same detail asserted in several layers;
 - a test that breaks on a refactor with no bug behind it (asserting a method was called rather
   than what the user sees);
 - a test of framework wiring, a getter, or what the types already guarantee.
