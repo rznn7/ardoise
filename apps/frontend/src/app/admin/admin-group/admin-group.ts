@@ -97,6 +97,10 @@ export class AdminGroupPage {
     });
   }
 
+  protected isActive(link: AdminInviteLink): boolean {
+    return link.status === 'active';
+  }
+
   protected linkTitle(link: AdminInviteLink): string {
     return link.singleUse ? 'Single use' : 'Multi use';
   }

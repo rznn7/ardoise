@@ -70,7 +70,7 @@
           } @else {
             <ul class="flex flex-col divide-y divide-border border-y border-border">
               @for (link of links(); track link.id) {
-                <li [class.text-muted-foreground]="link.status !== 'active'">
+                <li [class.text-muted-foreground]="!isActive(link)">
                   <app-list-row>
                     <span appListRowTitle>{{ linkTitle(link) }}</span>
                     <span appListRowMeta>{{ linkMeta(link) }}</span>
