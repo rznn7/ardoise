@@ -19,9 +19,11 @@ import {
 } from 'src/app/balance/balance-rows';
 import { type BalancesState } from 'src/app/balance/balance-store';
 import { dayLabel } from 'src/app/payment/day-label';
+import { type More } from 'src/app/shared/paged-list';
 import { BalanceBar } from 'src/app/shared/ui/balance-bar/balance-bar';
 import { BalanceIndicator } from 'src/app/shared/ui/balance-indicator/balance-indicator';
 import { ListRowImports } from 'src/app/shared/ui/list-row/list-row';
+import { LoadMore } from 'src/app/shared/ui/load-more/load-more';
 import { MoneyAmount } from 'src/app/shared/ui/money-amount/money-amount';
 import { PageStateImports } from 'src/app/shared/ui/page-state/page-state';
 import { AppTextImports } from 'src/app/shared/ui/text/text';
@@ -39,6 +41,7 @@ type Selection =
 @Component({
   selector: 'app-group-balances',
   imports: [
+    LoadMore,
     BalanceBar,
     BalanceIndicator,
     ListRowImports,
@@ -63,6 +66,9 @@ export class GroupBalances {
   readonly settlements = input<readonly SettlementResponse[]>([]);
   readonly pendingSettlements = input<readonly CreateSettlementBody[]>([]);
   readonly refreshing = input(false);
+  readonly doneMore = input<More>('end');
+  readonly loadMoreDone = output();
+  readonly retryDone = output();
 
   readonly retry = output();
   readonly record = output<RepaymentToRecord>();

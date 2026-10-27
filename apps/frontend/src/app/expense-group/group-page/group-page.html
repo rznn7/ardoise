@@ -115,11 +115,14 @@
               [currency]="group.group.currencyCode"
               [hasActivity]="hasActivity()"
               [settlements]="settlements()"
+              [doneMore]="doneMore()"
               [pendingSettlements]="pendingSettlements()"
               [refreshing]="balancesRefreshing()"
               (retry)="retryBalances()"
               (record)="recordSettlement($event)"
               (undo)="undoSettlement($event)"
+              (loadMoreDone)="loadMoreDone()"
+              (retryDone)="retryMoreDone()"
             />
           } @else {
             @let currentFeed = feed();
@@ -209,6 +212,11 @@
                         </ul>
                       </section>
                     }
+                    <app-load-more
+                      [state]="currentFeed.more"
+                      (reached)="loadMoreFeed()"
+                      (retry)="retryMoreFeed()"
+                    />
                   </div>
                 }
               }

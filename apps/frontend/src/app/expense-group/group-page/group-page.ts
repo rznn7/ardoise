@@ -32,11 +32,13 @@ import { type FeedRow, FeedStore } from 'src/app/feed/feed-store';
 import { InviteLinkPanel } from 'src/app/invite-link/invite-link-panel/invite-link-panel';
 import { MemberApiService } from 'src/app/member/member-api.service';
 import { dayLabel } from 'src/app/payment/day-label';
+import { DoneStore } from 'src/app/settlement/done-store';
 import { settlementLabel } from 'src/app/settlement/settlement-label';
 import { injectGoBack } from 'src/app/shared/navigation/back';
 import { BalanceIndicator } from 'src/app/shared/ui/balance-indicator/balance-indicator';
 import { GroupHero } from 'src/app/shared/ui/group-hero/group-hero';
 import { ListRowImports } from 'src/app/shared/ui/list-row/list-row';
+import { LoadMore } from 'src/app/shared/ui/load-more/load-more';
 import { MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
 import { MoneyAmount } from 'src/app/shared/ui/money-amount/money-amount';
 import { PageStateImports } from 'src/app/shared/ui/page-state/page-state';
@@ -85,6 +87,7 @@ const isNotAccessible = (error: unknown): boolean =>
     HlmToggleGroupImports,
     BalanceIndicator,
     GroupBalances,
+    LoadMore,
   ],
   providers: [provideIcons({ lucideChevronLeft, lucideEllipsis, lucidePlus, lucideUserPlus })],
   templateUrl: './group-page.html',
@@ -94,6 +97,7 @@ export class GroupPage {
   private readonly memberApi = inject(MemberApiService);
   private readonly auth = inject(AuthService);
   private readonly feedStore = inject(FeedStore);
+  private readonly doneStore = inject(DoneStore);
   private readonly lastGroup = inject(LastGroupService);
   private readonly balanceStore = inject(BalanceStore);
   private readonly router = inject(Router);
@@ -123,12 +127,17 @@ export class GroupPage {
   );
   readonly pendingSettlements = computed(() => this.pendingSettlementsOfGroup()());
 
+  private readonly doneOfGroup = computed(() => this.doneStore.done(this.groupId()));
+  private readonly done = computed(() => this.doneOfGroup()());
+
   readonly settlements = computed(() => {
-    const feed = this.feed();
-    if (feed.status !== 'loaded') return [];
-    return feed.rows.flatMap((row) =>
-      row.kind === 'settlement' && !row.pending ? [row.settlement] : [],
-    );
+    const done = this.done();
+    return done.status === 'loaded' ? done.settlements : [];
+  });
+
+  readonly doneMore = computed(() => {
+    const done = this.done();
+    return done.status === 'loaded' ? done.more : 'end';
   });
 
   readonly hasActivity = computed(() => {
@@ -244,8 +253,25 @@ export class GroupPage {
     this.feedStore.undoSettlement(this.groupId(), id);
   }
 
+  loadMoreFeed(): void {
+    this.feedStore.loadMore();
+  }
+
+  retryMoreFeed(): void {
+    this.feedStore.retryMore();
+  }
+
+  loadMoreDone(): void {
+    this.doneStore.loadMore();
+  }
+
+  retryMoreDone(): void {
+    this.doneStore.retryMore();
+  }
+
   retryBalances(): void {
     if (this.feed().status === 'error') this.feedStore.loadFirst(this.groupId());
+    if (this.done().status === 'error') this.doneStore.loadFirst(this.groupId());
     this.balanceStore.load(this.groupId());
   }
 
@@ -260,6 +286,7 @@ export class GroupPage {
   private open(groupId: number): void {
     this.lastGroup.skipLaunchRedirect();
     this.feedStore.loadFirst(groupId);
+    this.doneStore.loadFirst(groupId);
     this.balanceStore.load(groupId);
     this.loadGroup(groupId);
   }

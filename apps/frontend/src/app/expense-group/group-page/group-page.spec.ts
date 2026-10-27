@@ -2,6 +2,7 @@ import { Location } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, signal, type WritableSignal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter, Router, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import {
@@ -24,10 +25,12 @@ import { LastGroupService } from 'src/app/expense-group/last-group.service';
 import { type FeedRow, type FeedState, FeedStore } from 'src/app/feed/feed-store';
 import { InviteLinkApiService } from 'src/app/invite-link/invite-link-api.service';
 import { MemberApiService } from 'src/app/member/member-api.service';
+import { type DoneState, DoneStore } from 'src/app/settlement/done-store';
 import { ClipboardService } from 'src/app/shared/clipboard.service';
 import { withHistoryPageIds } from 'src/app/shared/navigation/back';
 import { openFirstPage } from 'src/app/shared/navigation/first-page.testing';
 import { ShareService } from 'src/app/shared/share.service';
+import { LoadMore } from 'src/app/shared/ui/load-more/load-more';
 
 import { GroupPage } from './group-page';
 
@@ -128,7 +131,23 @@ interface Setup {
   findOne: ReturnType<typeof vi.fn<() => Observable<ExpenseGroupSummary>>>;
   recordSettlement: ReturnType<typeof vi.fn<(body: CreateSettlementBody) => void>>;
   undoSettlement: ReturnType<typeof vi.fn<(groupId: number, id: number) => void>>;
+  loadMoreFeed: ReturnType<typeof vi.fn<() => void>>;
+  loadMoreDone: ReturnType<typeof vi.fn<() => void>>;
+  harness: RouterTestingHarness;
 }
+
+const settlementsOf = (row: FeedRow) => (row.kind === 'settlement' ? [row.settlement] : []);
+
+const doneOf = (feed: FeedState): DoneState =>
+  feed.status === 'loaded'
+    ? {
+        status: 'loaded',
+        more: 'end',
+        settlements: feed.rows.flatMap((row) =>
+          row.kind === 'settlement' && !row.pending ? [row.settlement] : [],
+        ),
+      }
+    : feed;
 
 async function setup({
   members = MEMBERS,
@@ -137,9 +156,11 @@ async function setup({
   balances = balancesOf(0),
   url = '/group/7',
   from,
+  doneState = doneOf(feedState),
 }: {
   members?: GroupMember[];
   feedState?: FeedState;
+  doneState?: DoneState;
   findOne?: Setup['findOne'];
   balances?: GroupBalancesResponse | Observable<GroupBalancesResponse>;
   url?: string;
@@ -155,6 +176,8 @@ async function setup({
   const skipLaunchRedirect = vi.fn<() => void>();
   const recordSettlement = vi.fn<(body: CreateSettlementBody) => void>();
   const undoSettlement = vi.fn<(groupId: number, id: number) => void>();
+  const loadMoreFeed = vi.fn<() => void>();
+  const loadMoreDone = vi.fn<() => void>();
   TestBed.configureTestingModule({
     providers: [
       provideRouter(
@@ -176,10 +199,21 @@ async function setup({
         useValue: {
           feed: () => feed,
           loadFirst: load,
+          loadMore: loadMoreFeed,
+          retryMore: vi.fn(),
           settledVersion: () => settled,
           pendingSettlements: () => signal([]),
           recordSettlement,
           undoSettlement,
+        },
+      },
+      {
+        provide: DoneStore,
+        useValue: {
+          done: () => signal(doneState),
+          loadFirst: vi.fn(),
+          loadMore: loadMoreDone,
+          retryMore: vi.fn(),
         },
       },
       { provide: BalanceApiService, useValue: { listByGroup: listBalances } },
@@ -214,8 +248,19 @@ async function setup({
     findOne,
     recordSettlement,
     undoSettlement,
+    loadMoreFeed,
+    loadMoreDone,
+    harness,
   };
 }
+
+const reachBottom = (harness: RouterTestingHarness, at: string): void => {
+  const [loadMore] = harness.fixture.debugElement
+    .queryAll(By.directive(LoadMore))
+    .filter((el) => (el.nativeElement as HTMLElement).closest(at) !== null);
+  if (!loadMore) throw new Error(`no load-more in ${at}`);
+  (loadMore.componentInstance as LoadMore).reached.emit();
+};
 
 describe('GroupPage', () => {
   it('shows the group name and members, with You for the current user', async () => {
@@ -236,6 +281,16 @@ describe('GroupPage', () => {
 
     expect(remember).toHaveBeenCalledWith(7);
     expect(load).toHaveBeenCalledWith(7);
+  });
+
+  it('asks the feed for the next page at the bottom of the list', async () => {
+    const { harness, loadMoreFeed } = await setup({
+      feedState: { ...WITH_PAYMENT, more: 'idle' },
+    });
+
+    reachBottom(harness, 'app-group-page');
+
+    expect(loadMoreFeed).toHaveBeenCalledTimes(1);
   });
 
   it('groups payments under day headers with payer and amount', async () => {
@@ -597,6 +652,37 @@ describe('GroupPage', () => {
 
       expect(screen.queryByRole('button', { name: /you pay léa/i })).toBeNull();
       expect(screen.getByText('You pay Léa')).toBeTruthy();
+    });
+
+    it('lists Done from the Done store, not from the loaded feed', async () => {
+      await setup({
+        feedState: WITH_PAYMENT,
+        doneState: {
+          status: 'loaded',
+          more: 'idle',
+          settlements: settlementsOf(settlement({ id: 9 })),
+        },
+        url: '/group/7?tab=balances',
+      });
+
+      expect(await screen.findByRole('button', { name: /tom paid you back/i })).toBeTruthy();
+    });
+
+    it('asks the Done store for more at the bottom of Done', async () => {
+      const { harness, loadMoreDone } = await setup({
+        feedState: WITH_PAYMENT,
+        doneState: {
+          status: 'loaded',
+          more: 'idle',
+          settlements: settlementsOf(settlement({ id: 9 })),
+        },
+        url: '/group/7?tab=balances',
+      });
+      await screen.findByRole('button', { name: /tom paid you back/i });
+
+      reachBottom(harness, 'app-group-balances');
+
+      expect(loadMoreDone).toHaveBeenCalledTimes(1);
     });
 
     it('undoes a repayment from the Done section', async () => {

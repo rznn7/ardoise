@@ -138,6 +138,11 @@
                   </li>
                 }
               </ul>
+              <app-load-more
+                [state]="doneMore()"
+                (reached)="loadMoreDone.emit()"
+                (retry)="retryDone.emit()"
+              />
             </section>
           }
         </div>
