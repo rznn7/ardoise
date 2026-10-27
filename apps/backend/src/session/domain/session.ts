@@ -39,3 +39,4 @@ export const SESSION_COOKIE_NAME = 'session_token';
 export class SessionNotFound extends Error {}
 export class SessionExpired extends Error {}
 export class UserHandleMismatch extends Error {}
+export class CannotRevokeCurrentSession extends Error {}
