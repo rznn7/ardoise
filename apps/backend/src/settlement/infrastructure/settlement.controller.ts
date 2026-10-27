@@ -1,6 +1,8 @@
 import {
   type CreateSettlementRequest,
+  type PageQuery,
   settlementApi,
+  type SettlementPage,
   type SettlementResponse,
 } from '@ardoise/shared';
 import {
@@ -8,10 +10,12 @@ import {
   Controller,
   Param,
   ParseIntPipe,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { SessionGuard } from 'src/session/infrastructure/session.guard';
 import { GetSettlementUseCase } from 'src/settlement/application/get-settlement.use-case';
+import { ListGroupSettlementsUseCase } from 'src/settlement/application/list-group-settlements.use-case';
 import { RecordSettlementUseCase } from 'src/settlement/application/record-settlement.use-case';
 import { UndoSettlementUseCase } from 'src/settlement/application/undo-settlement.use-case';
 import { toSettlementResponse } from 'src/settlement/infrastructure/settlement.mapper';
@@ -25,9 +29,28 @@ import { ZodValidationPipe } from 'src/shared/http/zod-validation.pipe';
 export class SettlementController {
   constructor(
     private readonly getSettlement: GetSettlementUseCase,
+    private readonly listGroupSettlements: ListGroupSettlementsUseCase,
     private readonly recordSettlement: RecordSettlementUseCase,
     private readonly undoSettlement: UndoSettlementUseCase,
   ) {}
+
+  @Route(settlementApi.listByGroup)
+  async listByGroup(
+    @Param('groupId', ParseIntPipe) groupId: number,
+    @Query(new ZodValidationPipe(settlementApi.listByGroup.query))
+    query: PageQuery,
+    @CurrentUser() user: SessionUser,
+  ): Promise<SettlementPage> {
+    const page = await this.listGroupSettlements.execute({
+      userId: user.id,
+      groupId,
+      cursor: query.cursor,
+    });
+    return {
+      items: page.items.map(toSettlementResponse),
+      nextCursor: page.nextCursor,
+    };
+  }
 
   @Route(settlementApi.findOne)
   async findOne(

@@ -6,6 +6,7 @@ export * from './contracts/feed.js';
 export * from './contracts/http.js';
 export * from './contracts/invite-link.js';
 export * from './contracts/member.js';
+export * from './contracts/page.js';
 export * from './contracts/payment.js';
 export * from './contracts/payment-share.js';
 export * from './contracts/settlement.js';

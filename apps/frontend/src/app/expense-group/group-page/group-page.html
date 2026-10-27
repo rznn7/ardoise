@@ -1,6 +1,11 @@
 @let group = groupState();
 <hlm-sheet #sheet="hlmSheet">
-  <app-mobile-shell [bleed]="group.status === 'loading' || group.status === 'loaded'">
+  <app-mobile-shell
+    #shell
+    [bleed]="group.status === 'loading' || group.status === 'loaded'"
+    [refreshable]="group.status === 'loaded'"
+    (refresh)="refresh()"
+  >
     @switch (group.status) {
       @case ('forbidden') {
         <app-page-state
@@ -107,6 +112,7 @@
               <button class="h-11 flex-1" hlmToggleGroupItem value="balances">Balances</button>
             </div>
           </div>
+          <app-refresh-indicator [distance]="shell.pullDistance()" [refreshing]="refreshing()" />
           @if (tab() === 'balances') {
             <app-group-balances
               [state]="balancesTab()"
@@ -115,11 +121,14 @@
               [currency]="group.group.currencyCode"
               [hasActivity]="hasActivity()"
               [settlements]="settlements()"
+              [doneMore]="doneMore()"
               [pendingSettlements]="pendingSettlements()"
               [refreshing]="balancesRefreshing()"
               (retry)="retryBalances()"
               (record)="recordSettlement($event)"
               (undo)="undoSettlement($event)"
+              (loadMoreDone)="loadMoreDone()"
+              (retryDone)="retryMoreDone()"
             />
           } @else {
             @let currentFeed = feed();
@@ -209,6 +218,11 @@
                         </ul>
                       </section>
                     }
+                    <app-load-more
+                      [state]="currentFeed.more"
+                      (reached)="loadMoreFeed()"
+                      (retry)="retryMoreFeed()"
+                    />
                   </div>
                 }
               }

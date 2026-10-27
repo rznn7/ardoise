@@ -1,4 +1,4 @@
-import { type FeedItem } from '@ardoise/shared';
+import { type FeedItem, type FeedPage } from '@ardoise/shared';
 import { type INestApplication } from '@nestjs/common';
 import { type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { type Client } from 'pg';
@@ -53,10 +53,55 @@ describe('ListGroupFeed', () => {
     return { group, mAlice, mBob, token };
   };
 
-  const getFeed = (groupId: number, token: string) =>
+  const getFeed = (groupId: number, token: string, cursor?: string) =>
     request(app.getHttpServer())
       .get(`/expense-groups/${String(groupId)}/feed`)
+      .query(cursor === undefined ? {} : { cursor })
       .set('Cookie', `session_token=${token}`);
+
+  const seedPayments = (
+    groupId: number,
+    payerMemberId: number,
+    count: number,
+    newest: string,
+  ) =>
+    pgClient.query(
+      `INSERT INTO payment (group_id, payer_member_id, title, full_amount, split_type, paid_at)
+       SELECT $1, $2, 'p' || i, 1000, 'equal', $3::timestamptz - (i || ' hours')::interval
+       FROM generate_series(1, $4) AS i`,
+      [groupId, payerMemberId, newest, count],
+    );
+
+  const walk = async (groupId: number, token: string) => {
+    const seen: string[] = [];
+    let cursor: string | undefined;
+    for (let pages = 0; pages < 20; pages++) {
+      const page = (await getFeed(groupId, token, cursor).expect(200))
+        .body as FeedPage;
+      expect(page.items.length).toBeLessThanOrEqual(50);
+      seen.push(...page.items.map(keyOf));
+      if (page.nextCursor === null) return seen;
+      cursor = page.nextCursor;
+    }
+    throw new Error('the feed never ended');
+  };
+
+  const keyOf = (item: FeedItem): string =>
+    item.kind === 'payment'
+      ? `payment:${String(item.payment.id)}`
+      : `settlement:${String(item.settlement.id)}`;
+
+  const expectedOrder = async (groupId: number): Promise<string[]> => {
+    const { rows } = await pgClient.query<{ key: string }>(
+      `SELECT key FROM (
+         SELECT 'payment:' || id AS key, date_trunc('milliseconds', paid_at) AS d, 0 AS rank, id FROM payment WHERE group_id = $1
+         UNION ALL
+         SELECT 'settlement:' || id, date_trunc('milliseconds', settled_at), 1, id FROM settlement WHERE group_id = $1
+       ) feed ORDER BY d DESC, rank ASC, id DESC`,
+      [groupId],
+    );
+    return rows.map((row) => row.key);
+  };
 
   const describeItem = (item: FeedItem): string =>
     item.kind === 'payment'
@@ -84,7 +129,7 @@ describe('ListGroupFeed', () => {
 
     const response = await getFeed(group.id, token).expect(200);
 
-    expect(response.body).toEqual([]);
+    expect(response.body).toEqual({ items: [], nextCursor: null });
   });
 
   it('mixes payments and settlements, newest first', async () => {
@@ -111,7 +156,7 @@ describe('ListGroupFeed', () => {
 
     const response = await getFeed(group.id, token).expect(200);
 
-    expect((response.body as FeedItem[]).map(describeItem)).toEqual([
+    expect((response.body as FeedPage).items.map(describeItem)).toEqual([
       'payment:tomorrow',
       'settlement:500',
       'payment:yesterday',
@@ -136,7 +181,7 @@ describe('ListGroupFeed', () => {
 
     const response = await getFeed(group.id, token).expect(200);
 
-    expect((response.body as FeedItem[]).map(describeItem)).toEqual([
+    expect((response.body as FeedPage).items.map(describeItem)).toEqual([
       'payment:second',
       'payment:first',
     ]);
@@ -153,7 +198,7 @@ describe('ListGroupFeed', () => {
 
     const response = await getFeed(group.id, token).expect(200);
 
-    expect(response.body).toEqual([
+    expect((response.body as FeedPage).items).toEqual([
       {
         kind: 'settlement',
         settlement: expect.objectContaining({
@@ -182,6 +227,70 @@ describe('ListGroupFeed', () => {
 
     const response = await getFeed(group.id, token).expect(200);
 
-    expect(response.body).toEqual([]);
+    expect(response.body).toEqual({ items: [], nextCursor: null });
+  });
+
+  it('returns the first 50 and a cursor', async () => {
+    const { group, mAlice, token } = await seedPair();
+    await seedPayments(group.id, mAlice.id, 51, '2026-10-20T12:00:00.000Z');
+
+    const page = (await getFeed(group.id, token).expect(200)).body as FeedPage;
+
+    expect(page.items).toHaveLength(50);
+    expect(page.nextCursor).toEqual(expect.any(String));
+  });
+
+  it('has a null cursor on the last page', async () => {
+    const { group, mAlice, token } = await seedPair();
+    await seedPayments(group.id, mAlice.id, 50, '2026-10-20T12:00:00.000Z');
+
+    const page = (await getFeed(group.id, token).expect(200)).body as FeedPage;
+
+    expect(page.items).toHaveLength(50);
+    expect(page.nextCursor).toBeNull();
+  });
+
+  it('walks every page once, ties included', async () => {
+    const { group, mAlice, mBob, token } = await seedPair();
+    await seedPayments(group.id, mAlice.id, 90, '2026-10-20T12:00:00.000Z');
+    await pgClient.query(
+      `INSERT INTO payment (group_id, payer_member_id, title, full_amount, split_type, paid_at)
+       SELECT $1, $2, 'tie' || i, 1000, 'equal', '2026-10-18T09:00:00.000Z' FROM generate_series(1, 30) AS i`,
+      [group.id, mBob.id],
+    );
+    await pgClient.query(
+      `INSERT INTO settlement (group_id, from_member_id, to_member_id, created_by_member_id, amount, settled_at)
+       SELECT $1, $2, $3, $2, 100 * i, CASE WHEN i <= 5 THEN '2026-10-18T09:00:00.000Z'::timestamptz ELSE '2026-10-15T12:00:00.000Z'::timestamptz - (i || ' hours')::interval END
+       FROM generate_series(1, 15) AS i`,
+      [group.id, mBob.id, mAlice.id],
+    );
+
+    const seen = await walk(group.id, token);
+
+    expect(seen).toHaveLength(135);
+    expect(seen).toEqual(await expectedOrder(group.id));
+  });
+
+  it('neither skips nor repeats sub-millisecond timestamps at a page boundary', async () => {
+    const { group, mAlice, mBob, token } = await seedPair();
+    await seedPayments(group.id, mAlice.id, 49, '2026-10-25T12:00:00.000Z');
+    await pgClient.query(
+      `INSERT INTO settlement (group_id, from_member_id, to_member_id, created_by_member_id, amount, settled_at)
+       VALUES ($1, $2, $3, $2, 100, '2026-10-20T12:00:00.123100Z'), ($1, $2, $3, $2, 200, '2026-10-20T12:00:00.123400Z')`,
+      [group.id, mBob.id, mAlice.id],
+    );
+
+    const seen = await walk(group.id, token);
+
+    expect(seen).toHaveLength(51);
+    expect(new Set(seen).size).toBe(51);
+  });
+
+  it('rejects an invalid cursor', async () => {
+    const { group, token } = await seedPair();
+
+    const response = await getFeed(group.id, token, 'nope').expect(400);
+
+    expect(response.body).toEqual({ error: 'INVALID_CURSOR' });
   });
 });

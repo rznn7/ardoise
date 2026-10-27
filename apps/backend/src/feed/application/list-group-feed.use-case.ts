@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { type FeedItem } from 'src/feed/domain/feed';
+import { cursorOf, type FeedItem } from 'src/feed/domain/feed';
 import {
   FEED_REPOSITORY,
   type FeedRepository,
@@ -9,6 +9,8 @@ import {
   MEMBER_REPOSITORY,
   type MemberRepository,
 } from 'src/member/domain/member-repository';
+import { decodeCursor, PAGE_SIZE } from 'src/shared/pagination/cursor';
+import { type Page, toPage } from 'src/shared/pagination/page';
 
 @Injectable()
 export class ListGroupFeedUseCase {
@@ -20,13 +22,17 @@ export class ListGroupFeedUseCase {
   async execute({
     userId,
     groupId,
+    cursor,
   }: {
     userId: number;
     groupId: number;
-  }): Promise<FeedItem[]> {
+    cursor: string | undefined;
+  }): Promise<Page<FeedItem>> {
     const membership = await this.members.findByUserAndGroup(userId, groupId);
     if (!membership) throw new NotAMember();
 
-    return this.feed.findByGroupId(groupId);
+    const after = cursor === undefined ? null : decodeCursor(cursor);
+    const fetched = await this.feed.findPage(groupId, after, PAGE_SIZE + 1);
+    return toPage(fetched, PAGE_SIZE, cursorOf);
   }
 }

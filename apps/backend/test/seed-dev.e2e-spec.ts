@@ -89,7 +89,7 @@ describe('Dev seed', () => {
     expect(report.sessionToken).not.toBeNull();
     expect(await count('passkey')).toBe(0);
     expect(await count('expense_group')).toBe(4);
-    expect(await count('payment')).toBe(9);
+    expect(await count('payment')).toBe(137);
     expect(await membership(aliceId!, 'Trip to Lisbon')).toMatchObject({
       is_moderator: true,
     });
@@ -169,6 +169,29 @@ describe('Dev seed', () => {
     ]);
   });
 
+  it('gives Flatshare a history long enough to load several pages', async () => {
+    await seedDemo(pgClient, { origin: LOCAL });
+
+    const { rows } = await pgClient.query<{
+      payments: string;
+      settlements: string;
+      oldest: Date;
+    }>(
+      `SELECT
+         (SELECT COUNT(*) FROM payment p JOIN expense_group g ON g.id = p.group_id WHERE g.name = 'Flatshare') AS payments,
+         (SELECT COUNT(*) FROM settlement s JOIN expense_group g ON g.id = s.group_id WHERE g.name = 'Flatshare') AS settlements,
+         (SELECT MIN(paid_at) FROM payment p JOIN expense_group g ON g.id = p.group_id WHERE g.name = 'Flatshare') AS oldest`,
+    );
+    const [history] = rows;
+    expect(
+      Number(history?.payments) + Number(history?.settlements),
+    ).toBeGreaterThan(100);
+    expect(Number(history?.settlements)).toBeGreaterThan(50);
+    expect(
+      Date.now() - (history?.oldest.getTime() ?? Date.now()),
+    ).toBeGreaterThan(200 * 24 * 60 * 60 * 1000);
+  });
+
   it('shows repayments in every state', async () => {
     await seedDemo(pgClient, { origin: LOCAL });
 
@@ -176,7 +199,7 @@ describe('Dev seed', () => {
       `SELECT g.name, COUNT(*) AS count FROM settlement s JOIN expense_group g ON g.id = s.group_id GROUP BY g.name ORDER BY g.name`,
     );
     expect(rows.map((r) => [r.name, Number(r.count)])).toEqual([
-      ['Flatshare', 1],
+      ['Flatshare', 61],
       ['Friday dinners', 1],
       ['Trip to Lisbon', 1],
     ]);
@@ -279,7 +302,7 @@ describe('Dev seed', () => {
       shares: await count('payment_share'),
     }).toEqual(first);
     expect(first.groups).toBe(4);
-    expect(first.payments).toBe(9);
+    expect(first.payments).toBe(137);
     const { rows } = await pgClient.query<{ name: string; n: string }>(
       `SELECT name, count(*) AS n FROM users WHERE name IN ('Bob', 'Carol', 'David') GROUP BY name`,
     );

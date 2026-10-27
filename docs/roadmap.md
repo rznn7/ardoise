@@ -69,9 +69,10 @@ A settlement overlays the balance calculation; it never mutates payments.
 - [x] **undo + unified feed** — undo from the Done section or the repayment details; one
   `/expense-groups/:groupId/feed` endpoint lists payments and settlements together.
 
-## Feed pagination
-- [ ] **feed pagination** — cursor on `(date, id)` in the feed endpoint, "load more" in the
-  group feed. The feed sort already lives in `feed/domain`.
+## Feed pagination (done)
+- [x] **feed pagination** — feed and Done repayments in pages of 50 on a `(date, kind, id)`
+  cursor, loaded automatically at the bottom; going back from details keeps your place; pull to
+  refresh on the group page (`superpowers/specs/2026-10-27-feed-pagination-design.md`).
 
 ## Real-time SSE
 - [ ] **SSE stream infra (backend)** — per-group `@Sse` endpoint, connection management,
@@ -98,6 +99,10 @@ A settlement overlays the balance calculation; it never mutates payments.
 - [x] **Drizzle migrations** — migration setup and baseline.
 - [x] **preview deploy** — every main push publishes images; deployed by hand on the homelab at ardoise.rznn.dev, demo data reset, accounts kept.
 - [ ] **production deploy** — Docker compose + Hetzner.
+  - rate limiting on the unauthenticated endpoints (`/auth/*/begin`, invite preview), in Nest or at
+    the edge (#18).
+- [ ] **route-change focus** — after each navigation, move focus to the page heading so screen
+  readers and keyboard users land on the new screen (#19).
 - [x] **PWA** — manifest, app icon, standalone mode under a translucent status bar, reload onto a new
   deploy. iOS keyboard handling landed with payments.
 - [ ] **multi-device passkey** — lift the v1 single-passkey non-goal.

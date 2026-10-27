@@ -79,3 +79,24 @@ export async function makeNewestUserModerator(): Promise<void> {
     ),
   );
 }
+
+export async function seedPayments(
+  groupId: number,
+  count: number,
+  oldestTitle: string,
+): Promise<void> {
+  await withClient(async (client) => {
+    const { rows } = await client.query<{ id: number; payer: number }>(
+      `INSERT INTO payment (group_id, payer_member_id, title, full_amount, split_type, paid_at)
+       SELECT $1, m.id, CASE WHEN i = $2 THEN $3 ELSE 'Payment ' || i END, 1000, 'equal', NOW() - (i || ' days')::interval
+       FROM generate_series(1, $2) AS i, (SELECT MAX(id) AS id FROM member WHERE group_id = $1) AS m
+       RETURNING id, payer_member_id AS payer`,
+      [groupId, count, oldestTitle],
+    );
+    await client.query(
+      `INSERT INTO payment_share (payment_id, member_id, input_value, amount)
+       SELECT unnest($1::int[]), unnest($2::int[]), 0, 1000`,
+      [rows.map((row) => row.id), rows.map((row) => row.payer)],
+    );
+  });
+}

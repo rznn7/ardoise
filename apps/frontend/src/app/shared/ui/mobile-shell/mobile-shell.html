@@ -4,7 +4,13 @@
       <ng-content select="[appShellHeader]" />
     </header>
   }
-  <main class="flex flex-1 flex-col overflow-y-auto overscroll-contain">
+  <main
+    #main
+    class="flex flex-1 flex-col overflow-y-auto overscroll-contain"
+    [appPullToRefresh]="refreshable()"
+    (pulled)="refresh.emit()"
+    (scroll)="scrolled()"
+  >
     <ng-content />
   </main>
   @if (fab()) {

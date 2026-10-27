@@ -137,6 +137,14 @@ export const feedOf = (
 
 export const FEED = feedOf(PAYMENTS, SETTLEMENTS);
 
+export const pageOf = <T>(
+  items: readonly T[],
+  nextCursor: string | null = null,
+) => ({
+  items,
+  nextCursor,
+});
+
 export const GROUP_BALANCES: GroupBalancesResponse = {
   balances: [
     { memberId: 11, amount: -4250 },
@@ -225,11 +233,15 @@ async function reply(route: Route, apiReply: ApiReply): Promise<void> {
 export async function mockApi(page: Page, mocks: ApiMocks): Promise<void> {
   await page.route('**/api/**', async (route) => {
     const request = route.request();
-    const path = new URL(request.url()).pathname.replace(/^\/api/, '');
+    const url = new URL(request.url());
+    const path = url.pathname.replace(/^\/api/, '');
     const key = `${request.method()} ${path}`;
-    const match = Object.entries(mocks).find(([pattern]) =>
-      new RegExp(`^${pattern}$`).test(key),
-    );
+    const matches = (candidate: string) =>
+      Object.entries(mocks).find(([pattern]) =>
+        new RegExp(`^${pattern}$`).test(candidate),
+      );
+    const match =
+      (url.search ? matches(`${key}${url.search}`) : undefined) ?? matches(key);
     await reply(route, match ? match[1] : status(404));
   });
 }

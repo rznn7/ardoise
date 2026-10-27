@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { and, desc, eq, lt, or, sql } from 'drizzle-orm';
 import { type Settlement } from 'src/settlement/domain/settlement';
 import { SettlementRepository } from 'src/settlement/domain/settlement-repository';
 import {
@@ -7,6 +7,9 @@ import {
   DATABASE_CONNECTION,
 } from 'src/shared/database/database.module';
 import { settlement } from 'src/shared/database/schema';
+import { type Cursor } from 'src/shared/pagination/cursor';
+
+const settledAt = sql`date_trunc('milliseconds', ${settlement.settledAt})`;
 
 @Injectable()
 export class SettlementRepositoryDrizzle implements SettlementRepository {
@@ -21,6 +24,31 @@ export class SettlementRepositoryDrizzle implements SettlementRepository {
       .where(eq(settlement.id, id));
 
     return row ? toSettlement(row) : null;
+  }
+
+  async findPageByGroup(
+    groupId: number,
+    after: Cursor | null,
+    size: number,
+  ): Promise<Settlement[]> {
+    const rows = await this.database
+      .select()
+      .from(settlement)
+      .where(
+        and(
+          eq(settlement.groupId, groupId),
+          after
+            ? or(
+                lt(settledAt, after.date),
+                and(eq(settledAt, after.date), lt(settlement.id, after.id)),
+              )
+            : undefined,
+        ),
+      )
+      .orderBy(desc(settledAt), desc(settlement.id))
+      .limit(size);
+
+    return rows.map(toSettlement);
   }
 
   async create(
