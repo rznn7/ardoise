@@ -60,12 +60,18 @@ Pure domain, no DB — high value, isolated, easy win.
 - [x] **balance endpoint (backend)** — use-case wiring + contract.
 - [x] **balance view (frontend)** — who-owes-whom display, hosted on the group page.
 
-## Settlement
+## Settlement (done)
 A settlement overlays the balance calculation; it never mutates payments.
-- [ ] **settlement schema + domain (backend)** — table, entity, repository.
-- [ ] **create-settlement use-case + balance overlay (backend)** — endpoint, contract, and
+- [x] **settlement schema + domain (backend)** — table, entity, repository.
+- [x] **create-settlement use-case + balance overlay (backend)** — endpoint, contract, and
   integration into the balance calc.
-- [ ] **mark-settled UI (frontend)** — record a repayment from the balance view.
+- [x] **mark-settled UI (frontend)** — record a repayment from the balance view.
+- [x] **undo + unified feed** — undo from the Done section or the repayment details; one
+  `/expense-groups/:groupId/feed` endpoint lists payments and settlements together.
+
+## Feed pagination
+- [ ] **feed pagination** — cursor on `(date, id)` in the feed endpoint, "load more" in the
+  group feed. The feed sort already lives in `feed/domain`.
 
 ## Real-time SSE
 - [ ] **SSE stream infra (backend)** — per-group `@Sse` endpoint, connection management,

@@ -66,10 +66,13 @@ primaryKey(paymentId, memberId)
   - exact → cents
 - `amount` = computed final cents, frozen at save. Sum across shares == `Payment.fullAmount`.
 
-### Settlement *(debt repayment — planned)*
+### Settlement *(debt repayment)*
 ```
-id, groupId, fromMemberId, toMemberId, amount (cents), settledAt
+id, groupId, fromMemberId, toMemberId, amount (cents), settledAt, createdByMemberId
 ```
+
+- `from` paid `to` back. `amount > 0`, `from ≠ to`, both members of the group.
+- `settledAt` is the server time of recording. Undo is a hard delete; a settlement is never edited.
 
 ---
 
@@ -83,7 +86,8 @@ id, groupId, fromMemberId, toMemberId, amount (cents), settledAt
   cent. `exact` never rounds. Implemented in `libs/shared/src/split/apportion.ts`.
 - On payment edit: recompute `PaymentShare.amount` from `splitType` + `inputValue` against new total
 - The payer is excluded from their own debt calculation
-- A `Settlement` does not modify payments — it overlays the balance calculation
+- A `Settlement` does not modify payments — it overlays the balance calculation. Editing or deleting payments afterwards is never blocked; a balance may flip direction.
+- Only `fromMemberId` or `toMemberId` may record or undo a settlement. Any member of the group can see it.
 - Only a moderator (`Member.isModerator = true`) can configure the group (currency, invite duration, removing members)
 - The group creator automatically becomes a moderator
 - Any member can add a payment
@@ -95,7 +99,7 @@ id, groupId, fromMemberId, toMemberId, amount (cents), settledAt
 
 Rather than displaying all raw debts (A→B, B→C, A→C...), we minimize the number of transactions:
 
-1. Compute each member's net balance `(amount paid - amount owed)`
+1. Compute each member's net balance `(amount paid - amount owed + settled out - settled in)`
 2. Split into creditors `(balance > 0)` and debtors `(balance < 0)`
 3. Greedy match: the largest debtor repays the largest creditor, until zero
 4. Ties go to the lowest member id, so the result is deterministic
