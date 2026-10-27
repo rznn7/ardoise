@@ -22,7 +22,7 @@ Run from the root. Toolchain pinned in `mise.toml` (Node 24, pnpm 11).
 pnpm dev                 shared watch + frontend (4200, /api proxied) + backend (3000, starts Postgres via docker compose)
 pnpm verify              lint, typecheck, test, test:e2e, build: the CI gate
 pnpm typecheck           tsc --noEmit everywhere
-pnpm --filter @ardoise/backend test       pure domain/mapper specs in src/**/*.spec.ts
+pnpm --filter @ardoise/backend test       pure domain specs in src/**/*.spec.ts
 pnpm --filter @ardoise/backend test:cov | test:e2e:cov   same with coverage (frontend: test:cov)
 pnpm --filter @ardoise/backend test:e2e   HTTP e2e in test/, needs Docker (testcontainers)
 pnpm --filter @ardoise/frontend test      Angular unit tests (vitest)

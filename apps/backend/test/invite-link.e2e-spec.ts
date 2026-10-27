@@ -144,6 +144,12 @@ describe('InviteLink', () => {
         })
         .expect(403);
       expect(response.body).toEqual({ error: 'NOT_A_MEMBER' });
+      const inviteRows = (
+        await pgClient.query(`SELECT * FROM invite_link WHERE group_id = $1`, [
+          groupId,
+        ])
+      ).rows;
+      expect(inviteRows).toHaveLength(0);
     });
 
     it('forbids minting a link for a non-existent group (enumeration leaks nothing)', async () => {
