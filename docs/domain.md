@@ -18,8 +18,9 @@ id, userId, credentialId (unique), publicKey, counter, lastUsedAt, createdAt
 
 ### Session
 ```
-token (PK), userId, issuedAt, expiresAt, revokedAt (nullable)
+token (PK), id (unique), userId, issuedAt, expiresAt, revokedAt (nullable)
 ```
+- `id` lets the admin API reference a session; the token never leaves the server.
 - Issued on registration or login, sent as the `httpOnly` session cookie. Logout revokes it.
 
 ### RegistrationState / LoginState *(WebAuthn ceremony state)*
@@ -42,8 +43,10 @@ unique(userId, groupId)
 
 ### InviteLink
 ```
-id, groupId, token (unique), singleUse, burnedByUserId (nullable), burnedAt (nullable), expiresAt, createdAt
+id, groupId, token (unique), singleUse, burnedByUserId (nullable), burnedAt (nullable), revokedAt (nullable), expiresAt, createdAt
 ```
+- Status, in this order: `revoked` if `revokedAt` is set, `used` if single use and burned, `expired` past `expiresAt`, else `active`.
+- A revoked link is refused like an expired one (preview, consume, registration).
 - A link grants the right to **either** register a new User (passkey + first membership) **or** join the group as an already-existing User.
 - `singleUse = true`: burned on first successful join/registration.
 - `singleUse = false`: admits any number of users until `expiresAt`. Joining a group you already belong to is idempotent.
@@ -88,6 +91,7 @@ id, groupId, fromMemberId, toMemberId, amount (cents), settledAt
 - The group creator automatically becomes a moderator
 - Any member can add a payment
 - Any member can edit or delete a payment
+- Only an app admin (`User.role = 'admin'`) can read the admin overview, revoke an invite link or revoke a session through it. An admin can't revoke their own current session.
 
 ---
 
