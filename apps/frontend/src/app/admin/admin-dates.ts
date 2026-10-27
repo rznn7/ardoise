@@ -1,3 +1,5 @@
+import { type AdminGroup } from '@ardoise/shared';
+
 const olderDay = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' });
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -35,4 +37,14 @@ export function expiresIn(iso: string, now: Date): string {
 export function groupsLabel(count: number): string {
   if (count === 0) return 'No group';
   return count === 1 ? '1 group' : `${String(count)} groups`;
+}
+
+export function groupMeta(group: AdminGroup['group']): string {
+  const spent = new Intl.NumberFormat('en', {
+    style: 'currency',
+    currency: group.currencyCode,
+  }).format(group.totalSpent / 100);
+  const payments =
+    group.paymentCount === 1 ? '1 payment' : `${String(group.paymentCount)} payments`;
+  return `${group.currencyCode} · created ${shortDate(group.createdAt)} · ${payments} · ${spent} spent`;
 }

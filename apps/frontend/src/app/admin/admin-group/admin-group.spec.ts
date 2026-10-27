@@ -8,6 +8,7 @@ import { screen, waitFor, within } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { type Observable, of, throwError } from 'rxjs';
 import { AdminApiService } from 'src/app/admin/admin-api.service';
+import { groupMeta } from 'src/app/admin/admin-dates';
 import { withHistoryPageIds } from 'src/app/shared/navigation/back';
 import { openFirstPage } from 'src/app/shared/navigation/first-page.testing';
 import { ToastService } from 'src/app/shared/toast.service';
@@ -106,7 +107,7 @@ describe('AdminGroupPage', () => {
     await setup();
 
     expect(screen.getByRole('heading', { name: 'Lisbon trip' })).toBeTruthy();
-    expect(screen.getByText('EUR · created 1 Oct · 31 payments · €1,240.00 spent')).toBeTruthy();
+    expect(screen.getByText(groupMeta(LISBON.group))).toBeTruthy();
     const ada = screen.getByRole('link', { name: /ada/i });
     expect(within(ada).getByText('Moderator')).toBeTruthy();
 

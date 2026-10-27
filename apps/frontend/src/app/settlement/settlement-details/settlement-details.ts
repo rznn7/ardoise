@@ -28,6 +28,7 @@ import { AuthService } from 'src/app/auth/auth.service';
 import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.service';
 import { FeedStore } from 'src/app/feed/feed-store';
 import { MemberApiService } from 'src/app/member/member-api.service';
+import { shortDay } from 'src/app/payment/day-label';
 import { SettlementApiService } from 'src/app/settlement/settlement-api.service';
 import { involvesMe, settlementLabel } from 'src/app/settlement/settlement-label';
 import { injectGoBack } from 'src/app/shared/navigation/back';
@@ -48,12 +49,6 @@ type DetailsState =
       readonly group: ExpenseGroupSummary;
       readonly me: MeResponse;
     };
-
-const settledOn = new Intl.DateTimeFormat('en-GB', {
-  weekday: 'short',
-  day: 'numeric',
-  month: 'short',
-});
 
 const isNotAccessible = (error: unknown): boolean =>
   error instanceof HttpErrorResponse && (error.status === 403 || error.status === 404);
@@ -105,7 +100,7 @@ export class SettlementDetails {
 
   protected readonly date = computed(() => {
     const state = this.state();
-    return state.status === 'loaded' ? settledOn.format(new Date(state.settlement.settledAt)) : '';
+    return state.status === 'loaded' ? shortDay(state.settlement.settledAt) : '';
   });
 
   constructor() {

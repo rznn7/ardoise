@@ -18,7 +18,7 @@ import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
 import { AdminApiService } from 'src/app/admin/admin-api.service';
-import { expiresIn, shortDate } from 'src/app/admin/admin-dates';
+import { expiresIn, groupMeta, shortDate } from 'src/app/admin/admin-dates';
 import { injectGoBack } from 'src/app/shared/navigation/back';
 import { ToastService } from 'src/app/shared/toast.service';
 import { BalanceIndicator } from 'src/app/shared/ui/balance-indicator/balance-indicator';
@@ -68,14 +68,7 @@ export class AdminGroupPage {
   protected readonly meta = computed(() => {
     const state = this.state();
     if (state.status !== 'loaded') return '';
-    const { group } = state.detail;
-    const spent = new Intl.NumberFormat('en', {
-      style: 'currency',
-      currency: group.currencyCode,
-    }).format(group.totalSpent / 100);
-    const payments =
-      group.paymentCount === 1 ? '1 payment' : `${String(group.paymentCount)} payments`;
-    return `${group.currencyCode} · created ${shortDate(group.createdAt)} · ${payments} · ${spent} spent`;
+    return groupMeta(state.detail.group);
   });
 
   protected readonly links = computed((): AdminInviteLink[] => {

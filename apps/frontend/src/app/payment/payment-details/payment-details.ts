@@ -17,7 +17,6 @@ import {
   InvalidSplit,
   type MeResponse,
   type PaymentResponse,
-  type SplitType,
   type UpdatePaymentBody,
 } from '@ardoise/shared';
 import { provideIcons } from '@ng-icons/core';
@@ -34,6 +33,7 @@ import { FeedStore } from 'src/app/feed/feed-store';
 import { MemberApiService } from 'src/app/member/member-api.service';
 import { PaymentApiService } from 'src/app/payment/payment-api.service';
 import { PaymentDraft } from 'src/app/payment/payment-draft';
+import { paymentMeta } from 'src/app/payment/payment-meta';
 import { injectGoBack } from 'src/app/shared/navigation/back';
 import { GroupChip } from 'src/app/shared/ui/group-chip/group-chip';
 import { ListRowImports } from 'src/app/shared/ui/list-row/list-row';
@@ -66,19 +66,6 @@ interface ShareRow {
   readonly name: string;
   readonly amount: number | null;
 }
-
-const SPLIT_LABELS: Readonly<Record<SplitType, string>> = {
-  equal: 'Equally',
-  shares: 'By shares',
-  percent: 'By percentage',
-  exact: 'Exact amounts',
-};
-
-const paidOn = new Intl.DateTimeFormat('en-GB', {
-  weekday: 'short',
-  day: 'numeric',
-  month: 'short',
-});
 
 const sharesOf = (body: UpdatePaymentBody): readonly MemberAmount[] | null => {
   try {
@@ -165,14 +152,7 @@ export class PaymentDetails {
   protected readonly meta = computed(() => {
     const state = this.state();
     if (state.status !== 'loaded') return '';
-    const { payment } = state;
-    const payer = state.members.find((member) => member.id === payment.payerMemberId);
-    const payerName = payer?.userId === state.me.id ? 'you' : (payer?.name ?? 'someone');
-    return [
-      `Paid by ${payerName}`,
-      paidOn.format(new Date(payment.paidAt)),
-      SPLIT_LABELS[payment.splitType],
-    ].join(' · ');
+    return paymentMeta(state.payment, state.members, state.me.id);
   });
 
   protected readonly shareRows = computed((): readonly ShareRow[] => {
