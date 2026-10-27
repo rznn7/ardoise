@@ -99,6 +99,8 @@ describe('UndoSettlement', () => {
     const outsider = await seedPerson(otherGroup.id, 'outsider');
 
     await undo(outsider.token, settlement.id).expect(403);
+
+    expect(await remaining()).toBe(1);
   });
 
   it('returns 404 once already undone', async () => {

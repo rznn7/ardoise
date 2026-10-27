@@ -99,6 +99,13 @@ describe('RecordSettlement', () => {
     );
   });
 
+  const recorded = async (): Promise<number> => {
+    const { rows } = await pgClient.query<{ count: string }>(
+      'SELECT COUNT(*) AS count FROM settlement',
+    );
+    return Number(rows[0]?.count);
+  };
+
   it('refuses a member who is neither side', async () => {
     const { group, tom, lea, max } = await seedTrio();
 
@@ -110,6 +117,7 @@ describe('RecordSettlement', () => {
     }).expect(403);
 
     expect(response.body).toEqual({ error: 'NOT_INVOLVED_IN_SETTLEMENT' });
+    expect(await recorded()).toBe(0);
   });
 
   it('refuses a caller outside the group', async () => {
@@ -123,6 +131,8 @@ describe('RecordSettlement', () => {
       toMemberId: lea.member.id,
       amount: 3000,
     }).expect(403);
+
+    expect(await recorded()).toBe(0);
   });
 
   it('refuses a member repaying themselves', async () => {
@@ -162,5 +172,6 @@ describe('RecordSettlement', () => {
     }).expect(400);
 
     expect(response.body).toEqual({ error: 'SETTLEMENT_MEMBER_NOT_IN_GROUP' });
+    expect(await recorded()).toBe(0);
   });
 });

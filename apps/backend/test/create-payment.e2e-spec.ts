@@ -231,6 +231,8 @@ describe('CreatePayment', () => {
       .expect(403);
 
     expect(response.body).toEqual({ error: 'NOT_A_MEMBER' });
+    const payments = await pgClient.query(`SELECT id FROM payment`);
+    expect(payments.rows).toHaveLength(0);
   });
 
   it('returns 403 when the groupId does not exist', async () => {
@@ -253,6 +255,8 @@ describe('CreatePayment', () => {
       .expect(403);
 
     expect(response.body).toEqual({ error: 'NOT_A_MEMBER' });
+    const payments = await pgClient.query(`SELECT id FROM payment`);
+    expect(payments.rows).toHaveLength(0);
   });
 
   it('returns 400 when the payer belongs to another group', async () => {
