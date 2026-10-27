@@ -36,6 +36,12 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
+    path: 'group/:groupId/settlements/:settlementId',
+    loadComponent: () =>
+      import('./settlement/settlement-details/settlement-details').then((m) => m.SettlementDetails),
+    canActivate: [authGuard],
+  },
+  {
     path: 'group/:groupId/payments',
     canActivate: [authGuard],
     loadChildren: () =>

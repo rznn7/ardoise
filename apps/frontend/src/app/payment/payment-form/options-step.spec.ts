@@ -11,8 +11,8 @@ import {
 } from '@ardoise/shared';
 import { screen, waitFor, within } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
+import { FeedStore } from 'src/app/feed/feed-store';
 import { NOW, PaymentDraft } from 'src/app/payment/payment-draft';
-import { PaymentStore } from 'src/app/payment/payment-store';
 import { withHistoryPageIds } from 'src/app/shared/navigation/back';
 import { openFirstPage } from 'src/app/shared/navigation/first-page.testing';
 
@@ -79,7 +79,7 @@ async function setup(mode: 'new' | 'edit' = 'new'): Promise<Setup> {
         withHistoryPageIds(),
       ),
       { provide: NOW, useValue: () => new Date(2026, 9, 26, 15, 30) },
-      { provide: PaymentStore, useValue: store },
+      { provide: FeedStore, useValue: store },
     ],
   });
   const draft = TestBed.inject(PaymentDraft);

@@ -29,7 +29,7 @@ describe('Dev seed', () => {
 
   afterEach(async () => {
     await pgClient.query(
-      `TRUNCATE payment_share, payment, member, invite_link, session, passkey, login_state, registration_state, expense_group, users RESTART IDENTITY CASCADE`,
+      `TRUNCATE settlement, payment_share, payment, member, invite_link, session, passkey, login_state, registration_state, expense_group, users RESTART IDENTITY CASCADE`,
     );
   });
 
@@ -127,6 +127,19 @@ describe('Dev seed', () => {
       `SELECT p.id FROM payment p JOIN expense_group g ON g.id = p.group_id WHERE g.name = 'Friday dinners'`,
     );
     expect(rows).toHaveLength(2);
+  });
+
+  it('shows repayments in every state', async () => {
+    await seedDemo(pgClient, { origin: LOCAL });
+
+    const { rows } = await pgClient.query<{ name: string; count: string }>(
+      `SELECT g.name, COUNT(*) AS count FROM settlement s JOIN expense_group g ON g.id = s.group_id GROUP BY g.name ORDER BY g.name`,
+    );
+    expect(rows.map((r) => [r.name, Number(r.count)])).toEqual([
+      ['Flatshare', 1],
+      ['Friday dinners', 1],
+      ['Trip to Lisbon', 1],
+    ]);
   });
 
   it('never prints a session token off localhost', async () => {

@@ -4,6 +4,8 @@ import {
   abort,
   type ApiMocks,
   balancesWhereIAmAt,
+  FEED,
+  feedOf,
   GROUP,
   GROUP_BALANCES,
   GROUPS,
@@ -14,6 +16,7 @@ import {
   NEW_GROUP,
   PAYMENTS,
   pending,
+  SETTLEMENTS,
   SHARES,
   status,
 } from './fixtures';
@@ -31,7 +34,7 @@ const loggedOut: ApiMocks = { 'POST /auth/me': status(401) };
 const PREVIEW = 'GET /invite-link/[^/]+/preview';
 const GROUPS_LIST = 'GET /expense-groups';
 const GROUP_PATH = `/group/${String(GROUP.id)}`;
-const GROUP_FEED = `GET /expense-groups/${String(GROUP.id)}/payments`;
+const GROUP_FEED = `GET /expense-groups/${String(GROUP.id)}/feed`;
 const GROUP_BALANCES_PATH = `GET /expense-groups/${String(GROUP.id)}/balances`;
 const MY_BALANCES_PATH = 'GET /balances/mine';
 const BALANCES_TAB = `${GROUP_PATH}?tab=balances`;
@@ -39,12 +42,19 @@ const INVITE_TOKEN = 'aGVsbG8td29ybGQtdGhpcy1pcy1hLWRlbW8tdG9rZW4';
 const [DETAILED_PAYMENT] = PAYMENTS;
 if (DETAILED_PAYMENT === undefined) throw new Error('PAYMENTS is empty');
 const DETAILS_PATH = `${GROUP_PATH}/payments/${String(DETAILED_PAYMENT.id)}`;
+const [MY_REPAYMENT, OTHERS_REPAYMENT] = SETTLEMENTS;
+if (MY_REPAYMENT === undefined || OTHERS_REPAYMENT === undefined)
+  throw new Error('SETTLEMENTS needs two entries');
+const repaymentPath = (id: number) => `${GROUP_PATH}/settlements/${String(id)}`;
+const findRepayment = (id: number) => `GET /settlements/${String(id)}`;
 
 const groupMocks: ApiMocks = {
   ...loggedIn,
   [`GET /expense-groups/${String(GROUP.id)}`]: json(GROUP),
   [`GET /expense-groups/${String(GROUP.id)}/members`]: json(MEMBERS),
-  [GROUP_FEED]: json(PAYMENTS),
+  [GROUP_FEED]: json(FEED),
+  [findRepayment(MY_REPAYMENT.id)]: json(MY_REPAYMENT),
+  [findRepayment(OTHERS_REPAYMENT.id)]: json(OTHERS_REPAYMENT),
   [GROUP_BALANCES_PATH]: json(GROUP_BALANCES),
   [`GET /payments/${String(DETAILED_PAYMENT.id)}`]: json(DETAILED_PAYMENT),
   [`GET /payment-shares/by-payment/${String(DETAILED_PAYMENT.id)}`]:
@@ -346,6 +356,113 @@ export const CELLS: ScreenshotCell[] = [
     path: BALANCES_TAB,
     mocks: { ...groupMocks, [GROUP_BALANCES_PATH]: status(500) },
     ready: visible("Couldn't load balances"),
+  },
+  {
+    route: 'group-balances',
+    state: 'confirm-i-pay',
+    path: BALANCES_TAB,
+    mocks: groupMocks,
+    ready: async (page) => {
+      await page.getByRole('button', { name: /You pay Max/ }).click();
+      await expect(
+        page.getByRole('button', { name: 'I paid Max back' }),
+      ).toBeVisible();
+    },
+  },
+  {
+    route: 'group-balances',
+    state: 'confirm-paid-me',
+    path: BALANCES_TAB,
+    mocks: {
+      ...groupMocks,
+      [GROUP_BALANCES_PATH]: json(balancesWhereIAmAt(1830)),
+    },
+    ready: async (page) => {
+      await page.getByRole('button', { name: /Léa pays you/ }).click();
+      await expect(
+        page.getByRole('button', { name: 'Léa paid me back' }),
+      ).toBeVisible();
+    },
+  },
+  {
+    route: 'group-balances',
+    state: 'repayment-saving',
+    path: BALANCES_TAB,
+    mocks: { ...groupMocks, 'POST /settlements': pending },
+    ready: async (page) => {
+      await page.getByRole('button', { name: /You pay Max/ }).click();
+      await page.getByRole('button', { name: 'I paid Max back' }).click();
+      await expect(page.getByText('Saving…')).toBeVisible();
+    },
+  },
+  {
+    route: 'group-balances',
+    state: 'undo-sheet',
+    path: BALANCES_TAB,
+    mocks: groupMocks,
+    ready: async (page) => {
+      await page.getByRole('button', { name: /You paid Léa back/ }).click();
+      await expect(
+        page.getByRole('button', { name: 'Undo repayment' }),
+      ).toBeVisible();
+    },
+  },
+  {
+    route: 'group',
+    state: 'repayment-saving',
+    path: BALANCES_TAB,
+    mocks: { ...groupMocks, 'POST /settlements': pending },
+    ready: async (page) => {
+      await page.getByRole('button', { name: /You pay Max/ }).click();
+      await page.getByRole('button', { name: 'I paid Max back' }).click();
+      await page.getByRole('button', { name: 'Payments' }).click();
+      await expect(page.getByText('Saving…')).toBeVisible();
+    },
+  },
+  {
+    route: 'group',
+    state: 'only-repayments',
+    path: GROUP_PATH,
+    mocks: { ...groupMocks, [GROUP_FEED]: json(feedOf([], SETTLEMENTS)) },
+    ready: visible('Tom paid Léa back'),
+  },
+  {
+    route: 'settlement-details',
+    state: 'involved',
+    path: repaymentPath(MY_REPAYMENT.id),
+    mocks: groupMocks,
+    ready: visible('Undo repayment'),
+  },
+  {
+    route: 'settlement-details',
+    state: 'not-involved',
+    path: repaymentPath(OTHERS_REPAYMENT.id),
+    mocks: groupMocks,
+    ready: visible('Tom paid Léa back'),
+  },
+  {
+    route: 'settlement-details',
+    state: 'loading',
+    path: repaymentPath(MY_REPAYMENT.id),
+    mocks: { ...groupMocks, [findRepayment(MY_REPAYMENT.id)]: pending },
+    ready: loadingStatus,
+  },
+  {
+    route: 'settlement-details',
+    state: 'not-found',
+    path: repaymentPath(MY_REPAYMENT.id),
+    mocks: { ...groupMocks, [findRepayment(MY_REPAYMENT.id)]: status(404) },
+    ready: visible('This repayment was undone'),
+  },
+  {
+    route: 'settlement-details',
+    state: 'undo-confirm',
+    path: repaymentPath(MY_REPAYMENT.id),
+    mocks: groupMocks,
+    ready: async (page) => {
+      await page.getByRole('button', { name: 'Undo repayment' }).click();
+      await expect(page.getByText('Undo this repayment?')).toBeVisible();
+    },
   },
   {
     route: 'payment-amount',

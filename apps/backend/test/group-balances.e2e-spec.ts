@@ -11,6 +11,7 @@ import {
   seedPayment,
   seedPaymentShare,
   seedSession,
+  seedSettlement,
   seedUser,
 } from './helpers/seed';
 import { setupTestApp } from './helpers/test-app';
@@ -26,7 +27,7 @@ describe('GroupBalances', () => {
 
   afterEach(async () => {
     await pgClient.query(
-      `TRUNCATE session, users, expense_group, invite_link, passkey, member, payment, payment_share RESTART IDENTITY CASCADE`,
+      `TRUNCATE session, users, expense_group, invite_link, passkey, member, payment, payment_share, settlement RESTART IDENTITY CASCADE`,
     );
   });
 
@@ -114,6 +115,68 @@ describe('GroupBalances', () => {
       ],
       transfers: [
         { fromMemberId: mBob.id, toMemberId: mAlice.id, amount: 1500 },
+      ],
+    });
+  });
+
+  const seedSplitDinner = async () => {
+    const seeded = await seedAliceAndBob();
+    const { id: paymentId } = await seedPayment(pgClient, {
+      groupId: seeded.group.id,
+      payerMemberId: seeded.mAlice.id,
+      fullAmount: 3000,
+    });
+    await seedPaymentShare(pgClient, {
+      paymentId,
+      memberId: seeded.mAlice.id,
+      amount: 1500,
+    });
+    await seedPaymentShare(pgClient, {
+      paymentId,
+      memberId: seeded.mBob.id,
+      amount: 1500,
+    });
+    return seeded;
+  };
+
+  it('settles both members once the debt is repaid', async () => {
+    const { group, mAlice, mBob, token } = await seedSplitDinner();
+    await seedSettlement(pgClient, {
+      groupId: group.id,
+      fromMemberId: mBob.id,
+      toMemberId: mAlice.id,
+      amount: 1500,
+    });
+
+    const response = await getBalances(group.id, token).expect(200);
+
+    expect(response.body).toEqual({
+      balances: [
+        { memberId: mAlice.id, amount: 0 },
+        { memberId: mBob.id, amount: 0 },
+      ],
+      transfers: [],
+    });
+  });
+
+  it('leaves the remainder of a partly repaid debt as one transfer', async () => {
+    const { group, mAlice, mBob, token } = await seedSplitDinner();
+    await seedSettlement(pgClient, {
+      groupId: group.id,
+      fromMemberId: mBob.id,
+      toMemberId: mAlice.id,
+      amount: 1000,
+    });
+
+    const response = await getBalances(group.id, token).expect(200);
+
+    expect(response.body).toEqual({
+      balances: [
+        { memberId: mAlice.id, amount: 500 },
+        { memberId: mBob.id, amount: -500 },
+      ],
+      transfers: [
+        { fromMemberId: mBob.id, toMemberId: mAlice.id, amount: 500 },
       ],
     });
   });

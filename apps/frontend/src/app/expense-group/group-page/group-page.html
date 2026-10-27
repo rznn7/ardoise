@@ -59,7 +59,7 @@
             <div class="flex flex-col gap-1">
               <h1 appFigure>{{ group.group.name }}</h1>
               <p appBody>{{ memberNames() }}</p>
-              @if (hasPayments()) {
+              @if (hasActivity()) {
                 @let mine = myBalance();
                 @if (mine !== null) {
                   <button
@@ -113,8 +113,13 @@
               [members]="group.members"
               [meUserId]="group.me.id"
               [currency]="group.group.currencyCode"
-              [hasPayments]="hasPayments()"
+              [hasActivity]="hasActivity()"
+              [settlements]="settlements()"
+              [pendingSettlements]="pendingSettlements()"
+              [refreshing]="balancesRefreshing()"
               (retry)="retryBalances()"
+              (record)="recordSettlement($event)"
+              (undo)="undoSettlement($event)"
             />
           } @else {
             @let currentFeed = feed();
@@ -131,7 +136,7 @@
                 />
               }
               @case ('loaded') {
-                @if (currentFeed.payments.length === 0) {
+                @if (currentFeed.rows.length === 0) {
                   <app-page-state
                     state="empty"
                     heading="No payments yet"
@@ -147,30 +152,58 @@
                       <section class="flex flex-col">
                         <h2 appMeta class="px-4 pt-6 pb-2">{{ day.label }}</h2>
                         <ul class="flex flex-col divide-y divide-border border-y border-border">
-                          @for (payment of day.payments; track payment.id) {
+                          @for (
+                            row of day.rows;
+                            track row.kind +
+                              (row.kind === 'payment' ? row.payment.id : row.settlement.id)
+                          ) {
                             <li>
-                              <a
-                                class="block"
-                                [routerLink]="payment.pending ? null : ['payments', payment.id]"
-                              >
-                                <app-list-row>
-                                  <span appListRowTitle>{{ payment.title }}</span>
-                                  @if (payment.pending) {
-                                    <span appListRowMeta>Saving…</span>
-                                  } @else {
-                                    <span appListRowMeta>
-                                      Paid by
-                                      {{ payerNames().get(payment.payerMemberId) ?? 'someone' }}
-                                    </span>
-                                  }
-                                  <app-money-amount
-                                    appListRowTrailing
-                                    class="text-foreground"
-                                    [cents]="payment.fullAmount"
-                                    [currency]="group.group.currencyCode"
-                                  />
-                                </app-list-row>
-                              </a>
+                              @if (row.kind === 'payment') {
+                                <a
+                                  class="block"
+                                  [routerLink]="row.pending ? null : ['payments', row.payment.id]"
+                                >
+                                  <app-list-row>
+                                    <span appListRowTitle>{{ row.payment.title }}</span>
+                                    @if (row.pending) {
+                                      <span appListRowMeta>Saving…</span>
+                                    } @else {
+                                      <span appListRowMeta>
+                                        Paid by
+                                        {{
+                                          payerNames().get(row.payment.payerMemberId) ?? 'someone'
+                                        }}
+                                      </span>
+                                    }
+                                    <app-money-amount
+                                      appListRowTrailing
+                                      class="text-foreground"
+                                      [cents]="row.payment.fullAmount"
+                                      [currency]="group.group.currencyCode"
+                                    />
+                                  </app-list-row>
+                                </a>
+                              } @else {
+                                <a
+                                  class="block"
+                                  [routerLink]="
+                                    row.pending ? null : ['settlements', row.settlement.id]
+                                  "
+                                >
+                                  <app-list-row>
+                                    <span appListRowTitle>{{ repaymentLabel(row) }}</span>
+                                    <span appListRowMeta>{{
+                                      row.pending ? 'Saving…' : 'Repayment'
+                                    }}</span>
+                                    <app-money-amount
+                                      appListRowTrailing
+                                      class="text-foreground"
+                                      [cents]="row.settlement.amount"
+                                      [currency]="group.group.currencyCode"
+                                    />
+                                  </app-list-row>
+                                </a>
+                              }
                             </li>
                           }
                         </ul>

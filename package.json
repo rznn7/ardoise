@@ -13,7 +13,7 @@
     "format": "pnpm -r --if-present format",
     "test": "pnpm -r --if-present test",
     "test:cov": "pnpm -r --if-present test:cov",
-    "test:e2e": "pnpm -r --if-present test:e2e",
+    "test:e2e": "pnpm -r --workspace-concurrency=1 --if-present test:e2e",
     "test:watch:front": "pnpm --filter @ardoise/frontend test:watch",
     "test:watch:back": "pnpm --filter @ardoise/backend test:watch",
     "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e && pnpm build"
