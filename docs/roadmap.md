@@ -69,9 +69,10 @@ A settlement overlays the balance calculation; it never mutates payments.
 - [x] **undo + unified feed** — undo from the Done section or the repayment details; one
   `/expense-groups/:groupId/feed` endpoint lists payments and settlements together.
 
-## Feed pagination
-- [ ] **feed pagination** — cursor on `(date, id)` in the feed endpoint, "load more" in the
-  group feed. The feed sort already lives in `feed/domain`.
+## Feed pagination (done)
+- [x] **feed pagination** — feed and Done repayments in pages of 50 on a `(date, kind, id)`
+  cursor, loaded automatically at the bottom; going back from details keeps your place; pull to
+  refresh on the group page (`superpowers/specs/2026-10-27-feed-pagination-design.md`).
 
 ## Real-time SSE
 - [ ] **SSE stream infra (backend)** — per-group `@Sse` endpoint, connection management,
