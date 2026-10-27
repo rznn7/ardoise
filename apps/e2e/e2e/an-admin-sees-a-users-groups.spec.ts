@@ -18,6 +18,8 @@ test("an admin sees a user's groups", async ({
     .filter({ hasNotText: 'Admin' })
     .click();
 
+  await expect(admin.getByText(/^Joined \d{1,2} \S+$/)).toBeVisible();
+  await expect(admin.getByText(/passkey/)).toHaveCount(0);
   await expect(admin.getByRole('link', { name: /Lisbon trip/ })).toContainText(
     'Member · 2 members',
   );

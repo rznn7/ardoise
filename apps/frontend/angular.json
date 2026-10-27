@@ -76,6 +76,8 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
+            "coverageReporters": ["text-summary", "json-summary"],
+            "coverageExclude": ["libs/**"],
             "setupFiles": ["src/test-setup.ts"]
           }
         },

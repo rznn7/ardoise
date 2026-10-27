@@ -11,7 +11,7 @@ apps/backend    NestJS, hexagonal, one folder per bounded context
 apps/frontend   Angular standalone components, spartan.ng helm UI in libs/ui, Tailwind 4
 apps/e2e        Playwright: full-stack scenarios (e2e/) and the screenshot matrix (screenshots/)
 libs/shared     Zod contracts (@ardoise/shared), consumed from src by tsc/vitest/Angular, from dist by the backend build
-docs/           design.md (design system, UX, workflow), domain.md (entities, rules), roadmap.md (feature slices), superpowers/specs + plans
+docs/           design.md (design system, UX, workflow), domain.md (entities, rules), testing.md (test strategy, coverage), roadmap.md (feature slices), superpowers/specs + plans
 ```
 
 ## Commands
@@ -23,6 +23,7 @@ pnpm dev                 shared watch + frontend (4200, /api proxied) + backend 
 pnpm verify              lint, typecheck, test, test:e2e, build: the CI gate
 pnpm typecheck           tsc --noEmit everywhere
 pnpm --filter @ardoise/backend test       pure domain/mapper specs in src/**/*.spec.ts
+pnpm --filter @ardoise/backend test:cov | test:e2e:cov   same with coverage (frontend: test:cov)
 pnpm --filter @ardoise/backend test:e2e   HTTP e2e in test/, needs Docker (testcontainers)
 pnpm --filter @ardoise/frontend test      Angular unit tests (vitest)
 pnpm --filter @ardoise/frontend backdrops regenerate backdrop images (commit the output)
@@ -72,9 +73,13 @@ Read `docs/design.md` before building any screen. In feature templates (`src/app
 
 ## Testing
 
-- Backend coverage goes into e2e specs in `test/`, with a real Postgres from testcontainers and supertest. Helpers are in `test/helpers/` (`setupTestApp` with provider overrides, `fakePasskeyVerifier`, `seed*` functions). Write unit specs only for pure domain logic.
-- Frontend specs sit next to their component.
-- User-facing flows are covered by Playwright scenarios in `apps/e2e/e2e/`, named as use cases, against the real backend, a throwaway Postgres and a Chrome virtual authenticator. Assert through roles and text, never CSS classes. Every feature slice adds or extends scenarios for its use cases.
+Strategy and coverage are in `docs/testing.md`. Breadth goes in the fast layers; Playwright stays thin. Coverage is not a target: a test earns its place only by catching a bug no other layer catches.
+
+- Pure rules (backend domain, frontend formatting) are pure functions with unit specs covering their edge cases.
+- Backend coverage goes into e2e specs in `test/`, with a real Postgres from testcontainers and supertest. Helpers are in `test/helpers/` (`setupTestApp` with provider overrides, `fakePasskeyVerifier`, `seed*` functions). Authorization is tested by the refusal and by checking nothing changed.
+- Frontend specs sit next to their component and cover what Playwright reaches badly: loading, errors, empty states, optimistic rollback, validation. Overlap with a scenario is fine; the same detail asserted in both is not. A page spec may fake a store that has its own spec.
+- Playwright scenarios in `apps/e2e/e2e/` are named as use cases and run against the real backend, a throwaway Postgres and a Chrome virtual authenticator. One per use case for the main path, plus failures that cross layers; the text a user reads is asserted there. A slice adds about two to five.
+- Assert through roles and text, never CSS classes. Only `shared/ui` building blocks may assert the classes they promise.
 
 ## Workflow
 
