@@ -10,6 +10,7 @@
     class="flex flex-1 flex-col overflow-y-auto overscroll-contain"
     [appPullToRefresh]="refreshable()"
     (pulled)="refresh.emit()"
+    (scroll)="scrolled()"
   >
     @if (refreshable() && (refreshing() || pull.distance() > 0)) {
       <div

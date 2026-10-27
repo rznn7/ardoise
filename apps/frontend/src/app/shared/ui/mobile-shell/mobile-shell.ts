@@ -39,12 +39,19 @@ export class MobileShell {
   protected readonly fab = contentChild(ShellFab);
   private readonly main = viewChild.required<ElementRef<HTMLElement>>('main');
 
+  private lastScrollTop = 0;
+
   scrollTop(): number {
-    return this.main().nativeElement.scrollTop;
+    return this.lastScrollTop;
   }
 
   scrollTo(top: number): void {
     this.main().nativeElement.scrollTop = top;
+    this.lastScrollTop = this.main().nativeElement.scrollTop;
+  }
+
+  protected scrolled(): void {
+    this.lastScrollTop = this.main().nativeElement.scrollTop;
   }
 }
 

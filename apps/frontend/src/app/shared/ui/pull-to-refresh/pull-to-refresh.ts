@@ -62,6 +62,7 @@ export class PullToRefresh {
   private move(y: number): void {
     if (this.startY === null) return;
     const pulled = Math.max(0, y - this.startY) * RESISTANCE;
+    if (pulled > 0) this.element.ownerDocument.getSelection()?.removeAllRanges();
     this.distance.set(Math.min(pulled, PULL_MAX));
   }
 }
