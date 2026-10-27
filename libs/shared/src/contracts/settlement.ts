@@ -24,8 +24,12 @@ export const createSettlementRequestSchema = z
     amount: z.number().int().positive().max(INT4_MAX),
   })
   .strict();
-export type CreateSettlementRequest = z.infer<typeof createSettlementRequestSchema>;
-export type CreateSettlementBody = z.input<typeof createSettlementRequestSchema>;
+export type CreateSettlementRequest = z.infer<
+  typeof createSettlementRequestSchema
+>;
+export type CreateSettlementBody = z.input<
+  typeof createSettlementRequestSchema
+>;
 
 export const settlementErrorSchema = z.object({
   error: z.enum([

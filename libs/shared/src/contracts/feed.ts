@@ -6,7 +6,10 @@ import { settlementResponseSchema } from './settlement.js';
 
 export const feedItemSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('payment'), payment: paymentResponseSchema }),
-  z.object({ kind: z.literal('settlement'), settlement: settlementResponseSchema }),
+  z.object({
+    kind: z.literal('settlement'),
+    settlement: settlementResponseSchema,
+  }),
 ]);
 export type FeedItem = z.infer<typeof feedItemSchema>;
 
