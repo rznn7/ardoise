@@ -4,7 +4,7 @@
 
 **Goal:** The group feed and the Done repayments arrive in pages of 50 that load on their own at the bottom; going back from a details screen keeps your place; pulling down at the top refreshes the group.
 
-**Architecture:** A pure cursor rule in a backend shared kernel (`src/shared/pagination/`), used by the read-only `feed/` context and by a new list query in `settlement/`. Contracts gain an optional `query` schema and a `pageSchema(item)` envelope. On the frontend, `FeedStore` keeps pages and a cursor per group, a new `DoneStore` holds the Done repayments, a `LoadMore` sentinel and a `PullToRefresh` gesture join `shared/ui`, and the group page remembers its state for the way back.
+**Architecture:** A pure cursor rule in a backend shared kernel (`src/shared/pagination/`), used by the read-only `feed/` context and by a new list query in `settlement/`. Contracts gain an optional `query` schema and a `pageSchema(item)` envelope. On the frontend, `FeedStore` keeps the active group's pages in an `rxResource` driven by a cursor signal, a new `DoneStore` holds the Done repayments, a `LoadMore` sentinel and a `PullToRefresh` gesture join `shared/ui`, and the group page remembers its state for the way back.
 
 **Tech Stack:** NestJS 12, Drizzle + PostgreSQL, Zod (`@ardoise/shared`), Angular 22 signals, spartan helm (spinner), vitest, testcontainers, Playwright.
 
@@ -28,7 +28,7 @@
 - Postgres keeps microseconds, a JS `Date` cursor keeps milliseconds: a row at `…123456µs` must not be skipped or repeated. → Task 2: compare on `date_trunc('milliseconds', col)`; e2e `sub-millisecond timestamps` seeds two settlements 300µs apart in the same ms.
 - A payment created or edited with a date older than everything loaded must not show at the end of the loaded list and then again when its page arrives. → Task 4 spec `hides rows past the boundary` and `dedupes an appended page`.
 - Reaching the bottom while a page request is in flight, or after the end: no second request. → Task 5 spec.
-- A refresh or fresh visit racing an in-flight next page: the stale page must not append to the fresh list. → Task 4 spec `drops a stale page`.
+- A refresh or fresh visit racing an in-flight next page: the stale page must not append to the fresh list. → Task 4 spec `a refresh during loadMore keeps only the fresh first page`.
 
 ---
 
@@ -110,14 +110,17 @@ The cursor is a pure ordering rule shared by two contexts. Neither `feed` nor `s
 - Produces:
   - `FeedApiService.listByGroup(groupId: number, cursor?: string): Observable<FeedPage>`; `SettlementApiService.listByGroup(groupId: number, cursor?: string): Observable<SettlementPage>`.
   - `FeedState` loaded variant gains `more: 'idle' | 'loading' | 'error' | 'end'`.
-  - `FeedStore.loadFirst(groupId)` (replaces `load`: fetches page 1 and replaces kept pages; keeps showing kept rows while it loads, as `load` does today), `FeedStore.loadMore(groupId)` (no-op unless `more === 'idle'` or `'error'`), `FeedStore.hasPages(groupId): boolean`. The two internal reload paths (raced mutation, undo error) call `loadFirst`.
-  - `DoneState = { status: 'loading' } | { status: 'error' } | { status: 'loaded'; settlements: readonly SettlementResponse[]; more: FeedState['more'] }`; `DoneStore.done(groupId): Signal<DoneState>`, `loadFirst(groupId)`, `loadMore(groupId)`, `hasPages(groupId)`, and the hooks FeedStore calls: `added(groupId, settlement)`, `hide(id)`, `unhide(id)`, `removed(groupId, id)`. `FeedStore` injects `DoneStore`, never the other way round.
-- Rules, both stores:
-  - Appending a page dedupes by kind and id.
+  - One active group per store (the owner's pick: `rxResource`, which holds one set of params). `FeedStore.feed(groupId)` returns `loading` for any group that is not the active one.
+  - `FeedStore.loadFirst(groupId)` (replaces `load`: makes `groupId` active and fetches page 1, replacing kept pages; if `groupId` is already active with only page 1, `reload()`), `FeedStore.loadMore()` (sets the cursor to `nextCursor`; no-op unless `more` is `idle`), `FeedStore.retryMore()` (`reload()` of the failed page), `FeedStore.hasPages(groupId): boolean`. The two internal reload paths (raced mutation, undo error) call `loadFirst`.
+  - `DoneState = { status: 'loading' } | { status: 'error' } | { status: 'loaded'; settlements: readonly SettlementResponse[]; more: FeedState['more'] }`; `DoneStore.done(groupId)`, `loadFirst(groupId)`, `loadMore()`, `retryMore()`, `hasPages(groupId)`, and the hooks FeedStore calls: `added(groupId, settlement)`, `hide(id)`, `unhide(id)`, `removed(groupId, id)`. `FeedStore` injects `DoneStore`, never the other way round.
+- Mechanics, both stores:
+  - `active = signal<number | null>(null)`, `cursor = signal<string | undefined>(undefined)`; `page = rxResource({ params: () => active() === null ? undefined : { groupId, cursor }, stream: ({ params }) => api.listByGroup(params.groupId, params.cursor) })`. A params change unsubscribes the previous stream, so a stale page never lands: no generation counter.
+  - Pages accumulate in a `linkedSignal` whose source reads `page.hasValue() ? page.value() : undefined` (`value()` throws in error): a page without cursor replaces, a page with cursor appends, deduped by kind and id. On error the accumulated list stays.
+  - `more` comes from `page.isLoading()` (with a cursor set), `page.error()`, and the last page's `nextCursor === null`.
+  - Server-confirmed mutations (upsert, removal) patch the accumulated list with `.update()`; optimistic overlays (`creating`, `updating`, `deleting`, `undoing`, `recording`) stay separate signals applied on top, as today.
   - While `more !== 'end'`, rows older than the last server item loaded (by the global order) are hidden: this covers a create or an edit moving a row past the boundary.
-  - Each request carries a generation number per group; `loadFirst` bumps it, and a page answering for an older generation is dropped.
 
-- [ ] **Step 1: Specs.** FeedStore: `loadFirst shows the first page and more idle`; `loadMore appends the next page`; `loadMore is ignored while loading and at the end`; `a failed loadMore keeps rows and sets more error, retry works`; `dedupes an appended page`; `hides rows past the boundary` (create a payment dated before the last loaded row: not in rows until the page holding the boundary arrives with `nextCursor: null`); `drops a stale page` (loadMore in flight, loadFirst, old page answers: ignored); `kept pages survive between calls to feed()`; existing optimistic specs adapted to pages. DoneStore: same paging specs; `added puts a saved repayment on top`; `hide/unhide/removed` for optimistic undo.
+- [ ] **Step 1: Specs.** FeedStore: `loadFirst shows the first page and more idle`; `loadMore appends the next page`; `loadMore is ignored while loading and at the end`; `a failed loadMore keeps rows and sets more error, retryMore works`; `dedupes an appended page`; `hides rows past the boundary` (create a payment dated before the last loaded row: not in rows until the page holding the boundary arrives with `nextCursor: null`); `a refresh during loadMore keeps only the fresh first page`; `kept pages survive between calls to feed()`; existing optimistic specs adapted to pages. DoneStore: same paging specs; `added puts a saved repayment on top`; `hide/unhide/removed` for optimistic undo.
 - [ ] **Step 2: Run** `pnpm --filter @ardoise/frontend exec ng test --watch=false --include 'src/app/feed/*.spec.ts' --include 'src/app/settlement/done-store.spec.ts'` — Expected: FAIL.
 - [ ] **Step 3: Implement.** `recordSettlement` success → `done.added`; `undoSettlement` → `done.hide` at start, `done.removed` on success, `done.unhide` on error.
 - [ ] **Step 4: Run** — Expected: PASS.
