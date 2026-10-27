@@ -1,0 +1,2 @@
+CREATE INDEX "payment_group_paid_at_idx" ON "payment" USING btree ("group_id","paid_at","id");--> statement-breakpoint
+CREATE INDEX "settlement_group_settled_at_idx" ON "settlement" USING btree ("group_id","settled_at","id");

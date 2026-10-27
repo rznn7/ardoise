@@ -3,6 +3,7 @@ import {
   boolean,
   check,
   customType,
+  index,
   integer,
   pgEnum,
   pgTable,
@@ -124,20 +125,30 @@ export const splitTypeEnum = pgEnum('split_type', [
   'exact',
 ]);
 
-export const payment = pgTable('payment', {
-  id,
-  payerMemberId: integer()
-    .references(() => member.id)
-    .notNull(),
-  groupId: integer()
-    .references(() => expenseGroup.id)
-    .notNull(),
-  title: varchar({ length: 255 }).notNull(),
-  paidAt: timestamp({ withTimezone: true }).notNull(),
-  fullAmount: integer().notNull(),
-  splitType: splitTypeEnum().notNull(),
-  ...timestamps,
-});
+export const payment = pgTable(
+  'payment',
+  {
+    id,
+    payerMemberId: integer()
+      .references(() => member.id)
+      .notNull(),
+    groupId: integer()
+      .references(() => expenseGroup.id)
+      .notNull(),
+    title: varchar({ length: 255 }).notNull(),
+    paidAt: timestamp({ withTimezone: true }).notNull(),
+    fullAmount: integer().notNull(),
+    splitType: splitTypeEnum().notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    index('payment_group_paid_at_idx').on(
+      table.groupId,
+      table.paidAt,
+      table.id,
+    ),
+  ],
+);
 
 export const paymentShare = pgTable(
   'payment_share',
@@ -179,6 +190,11 @@ export const settlement = pgTable(
     check(
       'settlement_distinct_members',
       sql`${table.fromMemberId} <> ${table.toMemberId}`,
+    ),
+    index('settlement_group_settled_at_idx').on(
+      table.groupId,
+      table.settledAt,
+      table.id,
     ),
   ],
 );
