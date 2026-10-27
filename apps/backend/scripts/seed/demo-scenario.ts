@@ -12,6 +12,7 @@ import {
   seedPayment,
   seedPaymentShare,
   seedSession,
+  seedSettlement,
   seedUser,
 } from '../../test/helpers/seed';
 
@@ -23,6 +24,7 @@ export type DemoSeedReport = {
 };
 
 const SCENARIO_TABLES = [
+  'settlement',
   'payment_share',
   'payment',
   'member',
@@ -186,6 +188,14 @@ export async function seedDemo(
     participants: equally(everyone),
   });
 
+  await seedSettlement(client, {
+    groupId: lisbon.id,
+    fromMemberId: mCarol.id,
+    toMemberId: mBob.id,
+    amount: 1500,
+    settledAt: daysAgoAt(2, 19),
+  });
+
   const flat = await seedGroup(client, {
     name: 'Flatshare',
     currencyCode: 'EUR',
@@ -218,6 +228,14 @@ export async function seedDemo(
     splitType: 'equal',
     paidAt: daysAgoAt(9, 12),
     participants: equally(flatmates),
+  });
+
+  await seedSettlement(client, {
+    groupId: flat.id,
+    fromMemberId: fPrimary.id,
+    toMemberId: fCarol.id,
+    amount: 1000,
+    settledAt: daysAgoAt(1, 18),
   });
 
   const ski = await seedGroup(client, {
@@ -258,10 +276,17 @@ export async function seedDemo(
     groupId: dinners.id,
     payerMemberId: dBob.id,
     title: 'Tapas',
-    fullAmount: 4000,
+    fullAmount: 2000,
     splitType: 'equal',
     paidAt: daysAgoAt(14, 20),
     participants: equally(diners),
+  });
+  await seedSettlement(client, {
+    groupId: dinners.id,
+    fromMemberId: dBob.id,
+    toMemberId: dPrimary.id,
+    amount: 1000,
+    settledAt: daysAgoAt(5, 21),
   });
 
   for (const userId of otherRealIds) {

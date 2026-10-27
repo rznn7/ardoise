@@ -46,3 +46,24 @@ export function feedRow(page: Page, title: string) {
 export function heroBalance(page: Page, label: RegExp) {
   return page.getByRole('button', { name: label });
 }
+
+export function balancesRow(page: Page, text: RegExp) {
+  return page.getByRole('listitem').filter({ hasText: text });
+}
+
+export async function confirmRepayment(
+  page: Page,
+  row: RegExp,
+  confirm: RegExp,
+): Promise<void> {
+  await page.getByRole('button', { name: 'Balances' }).click();
+  await page.getByRole('button', { name: row }).click();
+  const sheet = page.getByRole('dialog');
+  const recorded = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().endsWith('/settlements'),
+  );
+  await sheet.getByRole('button', { name: confirm }).click();
+  expect((await recorded).ok()).toBe(true);
+}

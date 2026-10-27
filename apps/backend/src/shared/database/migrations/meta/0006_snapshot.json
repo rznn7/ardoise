@@ -1,5 +1,5 @@
 {
-  "id": "c6765d7f-4ab5-4c74-b525-2c77b9981086",
+  "id": "331f2816-3b4b-43c1-b58a-ba37f6941e57",
   "prevId": "64cb2cd2-0fd7-4849-a062-3a499cbbdaa3",
   "version": "7",
   "dialect": "postgresql",
@@ -116,12 +116,6 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true
-        },
-        "revoked_at": {
-          "name": "revoked_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -713,23 +707,6 @@
       "name": "session",
       "schema": "",
       "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "identity": {
-            "type": "always",
-            "name": "session_id_seq",
-            "schema": "public",
-            "increment": "1",
-            "startWith": "1",
-            "minValue": "1",
-            "maxValue": "2147483647",
-            "cache": "1",
-            "cycle": false
-          }
-        },
         "token": {
           "name": "token",
           "type": "varchar(64)",
@@ -778,17 +755,150 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "session_id_unique": {
-          "name": "session_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "id"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.settlement": {
+      "name": "settlement",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "settlement_id_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "2147483647",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "group_id": {
+          "name": "group_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "from_member_id": {
+          "name": "from_member_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "to_member_id": {
+          "name": "to_member_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by_member_id": {
+          "name": "created_by_member_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount": {
+          "name": "amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "settled_at": {
+          "name": "settled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "settlement_group_id_expense_group_id_fk": {
+          "name": "settlement_group_id_expense_group_id_fk",
+          "tableFrom": "settlement",
+          "tableTo": "expense_group",
+          "columnsFrom": [
+            "group_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "settlement_from_member_id_member_id_fk": {
+          "name": "settlement_from_member_id_member_id_fk",
+          "tableFrom": "settlement",
+          "tableTo": "member",
+          "columnsFrom": [
+            "from_member_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "settlement_to_member_id_member_id_fk": {
+          "name": "settlement_to_member_id_member_id_fk",
+          "tableFrom": "settlement",
+          "tableTo": "member",
+          "columnsFrom": [
+            "to_member_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "settlement_created_by_member_id_member_id_fk": {
+          "name": "settlement_created_by_member_id_member_id_fk",
+          "tableFrom": "settlement",
+          "tableTo": "member",
+          "columnsFrom": [
+            "created_by_member_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "settlement_amount_positive": {
+          "name": "settlement_amount_positive",
+          "value": "\"settlement\".\"amount\" > 0"
+        },
+        "settlement_distinct_members": {
+          "name": "settlement_distinct_members",
+          "value": "\"settlement\".\"from_member_id\" <> \"settlement\".\"to_member_id\""
+        }
+      },
       "isRLSEnabled": false
     },
     "public.users": {

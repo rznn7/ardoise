@@ -6,10 +6,13 @@ import { provideRouter, Router, withComponentInputBinding } from '@angular/route
 import { RouterTestingHarness } from '@angular/router/testing';
 import {
   type CreateInviteLinkResponse,
+  type CreateSettlementBody,
   type ExpenseGroupSummary,
   type GroupBalancesResponse,
   type GroupMember,
   type MeResponse,
+  type PaymentResponse,
+  type SettlementResponse,
 } from '@ardoise/shared';
 import { screen, waitFor, within } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
@@ -18,9 +21,9 @@ import { AuthApiService } from 'src/app/auth/auth-api.service';
 import { BalanceApiService } from 'src/app/balance/balance-api.service';
 import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.service';
 import { LastGroupService } from 'src/app/expense-group/last-group.service';
+import { type FeedRow, type FeedState, FeedStore } from 'src/app/feed/feed-store';
 import { InviteLinkApiService } from 'src/app/invite-link/invite-link-api.service';
 import { MemberApiService } from 'src/app/member/member-api.service';
-import { type FeedPayment, type FeedState, PaymentStore } from 'src/app/payment/payment-store';
 import { ClipboardService } from 'src/app/shared/clipboard.service';
 import { withHistoryPageIds } from 'src/app/shared/navigation/back';
 import { openFirstPage } from 'src/app/shared/navigation/first-page.testing';
@@ -61,17 +64,42 @@ const daysAgo = (days: number): string => {
   return date.toISOString();
 };
 
-const payment = (overrides: Partial<FeedPayment>): FeedPayment => ({
-  id: 1,
-  groupId: 7,
-  payerMemberId: 11,
-  title: 'Dinner',
-  paidAt: daysAgo(0),
-  fullAmount: 4250,
-  splitType: 'equal',
-  createdAt: '2026-01-01T00:00:00.000Z',
-  pending: false,
-  ...overrides,
+const payment = ({
+  pending = false,
+  ...overrides
+}: Partial<PaymentResponse> & { pending?: boolean }): FeedRow => ({
+  kind: 'payment',
+  pending,
+  payment: {
+    id: 1,
+    groupId: 7,
+    payerMemberId: 11,
+    title: 'Dinner',
+    paidAt: daysAgo(0),
+    fullAmount: 4250,
+    splitType: 'equal',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    ...overrides,
+  },
+});
+
+const settlement = ({
+  pending = false,
+  ...overrides
+}: Partial<SettlementResponse> & { pending?: boolean }): FeedRow => ({
+  kind: 'settlement',
+  pending,
+  settlement: {
+    id: 9,
+    groupId: 7,
+    fromMemberId: 13,
+    toMemberId: 11,
+    amount: 1200,
+    settledAt: daysAgo(0),
+    createdByMemberId: 13,
+    createdAt: daysAgo(0),
+    ...overrides,
+  },
 });
 
 const balancesOf = (mine: number): GroupBalancesResponse => ({
@@ -88,7 +116,7 @@ const balancesOf = (mine: number): GroupBalancesResponse => ({
         : [{ fromMemberId: 12, toMemberId: 11, amount: mine }],
 });
 
-const WITH_PAYMENT: FeedState = { status: 'loaded', payments: [payment({})] };
+const WITH_PAYMENT: FeedState = { status: 'loaded', rows: [payment({})] };
 
 interface Setup {
   feed: WritableSignal<FeedState>;
@@ -98,11 +126,13 @@ interface Setup {
   remember: ReturnType<typeof vi.fn<(groupId: number) => void>>;
   skipLaunchRedirect: ReturnType<typeof vi.fn<() => void>>;
   findOne: ReturnType<typeof vi.fn<() => Observable<ExpenseGroupSummary>>>;
+  recordSettlement: ReturnType<typeof vi.fn<(body: CreateSettlementBody) => void>>;
+  undoSettlement: ReturnType<typeof vi.fn<(groupId: number, id: number) => void>>;
 }
 
 async function setup({
   members = MEMBERS,
-  feedState = { status: 'loaded', payments: [] },
+  feedState = { status: 'loaded', rows: [] },
   findOne = vi.fn<() => Observable<ExpenseGroupSummary>>().mockReturnValue(of(GROUP)),
   balances = balancesOf(0),
   url = '/group/7',
@@ -123,6 +153,8 @@ async function setup({
   const load = vi.fn<(groupId: number) => void>();
   const remember = vi.fn<(groupId: number) => void>();
   const skipLaunchRedirect = vi.fn<() => void>();
+  const recordSettlement = vi.fn<(body: CreateSettlementBody) => void>();
+  const undoSettlement = vi.fn<(groupId: number, id: number) => void>();
   TestBed.configureTestingModule({
     providers: [
       provideRouter(
@@ -131,6 +163,7 @@ async function setup({
           { path: 'group/:groupId', component: GroupPage },
           { path: 'group/:groupId/payments/new/amount', component: Blank },
           { path: 'group/:groupId/payments/:paymentId', component: Blank },
+          { path: 'group/:groupId/settlements/:settlementId', component: Blank },
         ],
         withComponentInputBinding(),
         withHistoryPageIds(),
@@ -139,8 +172,15 @@ async function setup({
       { provide: MemberApiService, useValue: { listByGroup: () => of(members) } },
       { provide: AuthApiService, useValue: { me: () => of(ME) } },
       {
-        provide: PaymentStore,
-        useValue: { feed: () => feed, load, settledVersion: () => settled },
+        provide: FeedStore,
+        useValue: {
+          feed: () => feed,
+          load,
+          settledVersion: () => settled,
+          pendingSettlements: () => signal([]),
+          recordSettlement,
+          undoSettlement,
+        },
       },
       { provide: BalanceApiService, useValue: { listByGroup: listBalances } },
       { provide: LastGroupService, useValue: { remember, skipLaunchRedirect } },
@@ -164,7 +204,17 @@ async function setup({
     await openFirstPage(harness, url);
   }
   harness.detectChanges();
-  return { feed, settled, listBalances, load, remember, skipLaunchRedirect, findOne };
+  return {
+    feed,
+    settled,
+    listBalances,
+    load,
+    remember,
+    skipLaunchRedirect,
+    findOne,
+    recordSettlement,
+    undoSettlement,
+  };
 }
 
 describe('GroupPage', () => {
@@ -192,7 +242,7 @@ describe('GroupPage', () => {
     await setup({
       feedState: {
         status: 'loaded',
-        payments: [
+        rows: [
           payment({ id: 1, title: 'Dinner', paidAt: daysAgo(0), payerMemberId: 11 }),
           payment({
             id: 2,
@@ -225,7 +275,7 @@ describe('GroupPage', () => {
   });
 
   it('opens the payment details when a row is tapped', async () => {
-    await setup({ feedState: { status: 'loaded', payments: [payment({ id: 5 })] } });
+    await setup({ feedState: { status: 'loaded', rows: [payment({ id: 5 })] } });
 
     await userEvent.click(screen.getByRole('link', { name: /dinner/i }));
 
@@ -238,7 +288,7 @@ describe('GroupPage', () => {
     await setup({
       feedState: {
         status: 'loaded',
-        payments: [payment({ id: -1, title: 'Groceries', pending: true })],
+        rows: [payment({ id: -1, title: 'Groceries', pending: true })],
       },
     });
 
@@ -397,6 +447,27 @@ describe('GroupPage', () => {
     expect(navigateByUrl).toHaveBeenCalledWith('/home', { replaceUrl: true });
   });
 
+  it('lists a repayment in the feed with its marker', async () => {
+    await setup({ feedState: { status: 'loaded', rows: [settlement({})] } });
+
+    const row = screen.getByRole('link', { name: /tom paid you back/i });
+    expect(within(row).getByText('Repayment')).toBeTruthy();
+    expect(within(row).getByText('€12.00')).toBeTruthy();
+
+    await userEvent.click(row);
+    await waitFor(() => {
+      expect(TestBed.inject(Router).url).toBe('/group/7/settlements/9');
+    });
+  });
+
+  it('does not link a repayment that is still saving', async () => {
+    await setup({ feedState: { status: 'loaded', rows: [settlement({ id: -2, pending: true })] } });
+
+    expect(screen.getByText('Tom paid you back')).toBeTruthy();
+    expect(screen.getByText('Saving…')).toBeTruthy();
+    expect(screen.queryByRole('link', { name: /tom paid you back/i })).toBeNull();
+  });
+
   it('keeps the hero loading until the group arrives', async () => {
     await setup({
       findOne: vi.fn<() => Observable<ExpenseGroupSummary>>().mockReturnValue(new Subject()),
@@ -432,6 +503,16 @@ describe('GroupPage', () => {
       await setup({ balances: balancesOf(0) });
 
       expect(screen.queryByRole('button', { name: /settled up/i })).toBeNull();
+    });
+
+    it('shows the balance when only repayments are left', async () => {
+      await setup({
+        feedState: { status: 'loaded', rows: [settlement({})] },
+        balances: balancesOf(-1200),
+      });
+
+      const balance = await screen.findByRole('button', { name: /you owe/i });
+      expect(within(balance).getByText('€12.00')).toBeTruthy();
     });
 
     it('hides the balance when it cannot load', async () => {
@@ -480,6 +561,53 @@ describe('GroupPage', () => {
       expect(go).not.toHaveBeenCalled();
     });
 
+    it('records a repayment confirmed from the balances tab', async () => {
+      const { recordSettlement } = await setup({
+        feedState: WITH_PAYMENT,
+        balances: balancesOf(-1500),
+        url: '/group/7?tab=balances',
+      });
+
+      await userEvent.click(await screen.findByRole('button', { name: /you pay léa/i }));
+      await userEvent.click(await screen.findByRole('button', { name: 'I paid Léa back' }));
+
+      expect(recordSettlement).toHaveBeenCalledWith({
+        groupId: 7,
+        fromMemberId: 11,
+        toMemberId: 12,
+        amount: 1500,
+      });
+    });
+
+    it('keeps a confirmed repayment locked until balances come back', async () => {
+      const { listBalances, settled } = await setup({
+        feedState: WITH_PAYMENT,
+        balances: balancesOf(-1500),
+        url: '/group/7?tab=balances',
+      });
+      expect(await screen.findByRole('button', { name: /you pay léa/i })).toBeTruthy();
+      listBalances.mockReturnValue(new Subject());
+
+      settled.set(1);
+      TestBed.tick();
+
+      expect(screen.queryByRole('button', { name: /you pay léa/i })).toBeNull();
+      expect(screen.getByText('You pay Léa')).toBeTruthy();
+    });
+
+    it('undoes a repayment from the Done section', async () => {
+      const { undoSettlement } = await setup({
+        feedState: { status: 'loaded', rows: [payment({}), settlement({ id: 9 })] },
+        balances: balancesOf(0),
+        url: '/group/7?tab=balances',
+      });
+
+      await userEvent.click(await screen.findByRole('button', { name: /tom paid you back/i }));
+      await userEvent.click(await screen.findByRole('button', { name: 'Undo repayment' }));
+
+      expect(undoSettlement).toHaveBeenCalledWith(7, 9);
+    });
+
     it('reloads balances when a payment change settles', async () => {
       const { settled, listBalances } = await setup({ feedState: WITH_PAYMENT });
       expect(listBalances).toHaveBeenCalledTimes(1);
@@ -519,7 +647,7 @@ describe('GroupPage', () => {
 
     it('does not count a payment that is still saving', async () => {
       await setup({
-        feedState: { status: 'loaded', payments: [payment({ id: -1, pending: true })] },
+        feedState: { status: 'loaded', rows: [payment({ id: -1, pending: true })] },
         balances: balancesOf(0),
         url: '/group/7?tab=balances',
       });

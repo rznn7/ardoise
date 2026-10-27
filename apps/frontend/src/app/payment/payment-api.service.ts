@@ -15,7 +15,6 @@ export class PaymentApiService {
   private readonly payments = createApiClient(paymentApi, this.config);
   private readonly shares = createApiClient(paymentShareApi, this.config);
 
-  listByGroup = (groupId: number) => this.payments.listByGroup({ params: { groupId } });
   findOne = (id: number) => this.payments.findOne({ params: { id } });
   sharesOf = (paymentId: number) => this.shares.findByPayment({ params: { paymentId } });
   create = (body: CreatePaymentBody) => this.payments.create({ body });

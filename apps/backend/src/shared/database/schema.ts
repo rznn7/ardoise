@@ -1,5 +1,7 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
   customType,
   integer,
   pgEnum,
@@ -150,4 +152,33 @@ export const paymentShare = pgTable(
     amount: integer().notNull(),
   },
   (table) => [primaryKey({ columns: [table.paymentId, table.memberId] })],
+);
+
+export const settlement = pgTable(
+  'settlement',
+  {
+    id,
+    groupId: integer()
+      .references(() => expenseGroup.id)
+      .notNull(),
+    fromMemberId: integer()
+      .references(() => member.id)
+      .notNull(),
+    toMemberId: integer()
+      .references(() => member.id)
+      .notNull(),
+    createdByMemberId: integer()
+      .references(() => member.id)
+      .notNull(),
+    amount: integer().notNull(),
+    settledAt: timestamp({ withTimezone: true }).notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    check('settlement_amount_positive', sql`${table.amount} > 0`),
+    check(
+      'settlement_distinct_members',
+      sql`${table.fromMemberId} <> ${table.toMemberId}`,
+    ),
+  ],
 );

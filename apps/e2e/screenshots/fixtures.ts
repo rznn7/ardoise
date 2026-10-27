@@ -4,12 +4,14 @@ import {
   type AdminUser,
   computePaymentShares,
   type ExpenseGroupSummary,
+  type FeedItem,
   type GroupBalancesResponse,
   type GroupMember,
   type MyBalance,
   type MeResponse,
   type PaymentResponse,
   type PaymentShareResponse,
+  type SettlementResponse,
 } from '@ardoise/shared';
 import { type Page, type Route } from '@playwright/test';
 
@@ -99,6 +101,41 @@ export const PAYMENTS: PaymentResponse[] = [
   ),
   payment(106, 'Pastéis de nata', 750, 15, daysAgoAt(4, 10)),
 ];
+
+const settlement = (
+  id: number,
+  fromMemberId: number,
+  toMemberId: number,
+  amount: number,
+  settledAt: string,
+): SettlementResponse => ({
+  id,
+  groupId: GROUP.id,
+  fromMemberId,
+  toMemberId,
+  amount,
+  settledAt,
+  createdByMemberId: fromMemberId,
+  createdAt: settledAt,
+});
+
+export const SETTLEMENTS: SettlementResponse[] = [
+  settlement(201, 11, 12, 2000, daysAgoAt(0, 12)),
+  settlement(202, 13, 12, 1500, daysAgoAt(2, 19)),
+];
+
+export const feedOf = (
+  payments: readonly PaymentResponse[],
+  settlements: readonly SettlementResponse[],
+): FeedItem[] => [
+  ...payments.map((payment): FeedItem => ({ kind: 'payment', payment })),
+  ...settlements.map((settlement): FeedItem => ({
+    kind: 'settlement',
+    settlement,
+  })),
+];
+
+export const FEED = feedOf(PAYMENTS, SETTLEMENTS);
 
 export const GROUP_BALANCES: GroupBalancesResponse = {
   balances: [

@@ -11,6 +11,7 @@ The living reference for every screen. Read before building UI. Origin and ratio
 - Lists are hairline-separated rows, not cards.
 - Color is rare and meaningful:
   - **Balances:** a small green/red dot next to an ink amount. The only color tied to money.
+  - **Recorded repayments:** a thin green circle check, no fill, leading each Done row on the Balances tab.
   - **One moment surface per screen, at most:** a backdrop (see Backdrops) behind the screen's hero element.
   - **Violet** speaks for Ardoise: login, accept-invite.
   - **Violet, cobalt, sunset, ember** are group identities, derived from the group id. A group's color appears on its hero, and on its home row as its backdrop fading in from the right edge behind the trailing content (amount), which is white over it. Never a dot: dots are for balances.
@@ -129,3 +130,6 @@ With the frontend running (`pnpm dev:front`), `pnpm --filter @ardoise/e2e screen
 | 2026-10-27 | Admin entry | Round shield button at the top right of home, admins only | Out of the way for everyone else |
 | 2026-10-27 | Admin overview | Title, instance host, three count tiles, Users / Groups tabs (`?tab=groups`), list rows | Overview first, actions later |
 | 2026-10-27 | Admin details | Sections (Groups + Sessions for a user, Members + Invite links for a group), destructive-text Revoke behind a confirmation sheet | Sections leave room for later settings and actions |
+| 2026-10-27 | Confirm a repayment | Tap my repayment row → sheet with the amount large and one button (B) | See the figure before confirming; 2 taps |
+| 2026-10-27 | Recorded repayments | Done section under Repayments, thin green circle check, tap mine → undo sheet ("Undo repayment" / "Keep it") | Undo without going through the feed; outline check over a filled pastille |
+| 2026-10-27 | Repayment wording | "Repayment" on screen (code says settlement); feed row "You paid Léa back" with a "Repayment" meta line | Reads as a transfer, not an expense |

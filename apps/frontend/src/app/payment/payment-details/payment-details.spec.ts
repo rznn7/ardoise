@@ -19,10 +19,10 @@ import { type Observable, of, Subject, throwError } from 'rxjs';
 import { routes } from 'src/app/app.routes';
 import { AuthApiService } from 'src/app/auth/auth-api.service';
 import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.service';
+import { FeedStore } from 'src/app/feed/feed-store';
 import { MemberApiService } from 'src/app/member/member-api.service';
 import { PaymentApiService } from 'src/app/payment/payment-api.service';
 import { PaymentDraft } from 'src/app/payment/payment-draft';
-import { PaymentStore } from 'src/app/payment/payment-store';
 import { withHistoryPageIds } from 'src/app/shared/navigation/back';
 import { openFirstPage } from 'src/app/shared/navigation/first-page.testing';
 
@@ -108,7 +108,7 @@ async function setup({
       { provide: ExpenseGroupApiService, useValue: { findOne: () => of(GROUP) } },
       { provide: AuthApiService, useValue: { me: () => of(ME) } },
       {
-        provide: PaymentStore,
+        provide: FeedStore,
         useValue: { remove, pendingUpdate: () => pending, confirmedUpdate: () => confirmed },
       },
       { provide: PaymentDraft, useValue: { clear } },

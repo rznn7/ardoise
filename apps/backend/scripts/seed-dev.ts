@@ -36,6 +36,12 @@ async function main() {
       `  Friday dinners (EUR), ${you} moderator, everything paid back (all settled)\n`,
     );
     console.log(
+      '  Repayments: Carol → Bob in Lisbon (between others), you → Carol in Flatshare (partial),',
+    );
+    console.log(
+      '              Bob → you in Friday dinners (settles the group)\n',
+    );
+    console.log(
       `  Admin: ${you} (primary account). Emma has no group; Lisbon has an invite link in each status.\n`,
     );
     console.log('  Invite link (Trip to Lisbon):');

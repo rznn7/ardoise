@@ -83,4 +83,27 @@ describe(BalanceStore.name, () => {
 
     expect(store.balances(7)()).toEqual({ status: 'loaded', balances: settled });
   });
+
+  it('is refreshing while a reload of loaded balances is in flight', () => {
+    const refreshing = store.refreshing(7);
+    store.load(7);
+    expect(refreshing()).toBe(false);
+    http.expectOne(URL).flush(owing);
+
+    store.load(7);
+    expect(refreshing()).toBe(true);
+
+    http.expectOne(URL).flush(settled);
+    expect(refreshing()).toBe(false);
+  });
+
+  it('stops refreshing when a reload fails', () => {
+    store.load(7);
+    http.expectOne(URL).flush(owing);
+
+    store.load(7);
+    http.expectOne(URL).flush(null, { status: 500, statusText: 'Server Error' });
+
+    expect(store.refreshing(7)()).toBe(false);
+  });
 });

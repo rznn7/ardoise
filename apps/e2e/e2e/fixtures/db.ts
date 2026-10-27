@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { Client } from 'pg';
 
 const TABLES = [
+  'settlement',
   'payment_share',
   'payment',
   'member',
