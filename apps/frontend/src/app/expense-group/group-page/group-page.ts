@@ -25,10 +25,11 @@ import { type BalancesState, BalanceStore } from 'src/app/balance/balance-store'
 import { GroupBalances } from 'src/app/balance/group-balances/group-balances';
 import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.service';
 import { LastGroupService } from 'src/app/expense-group/last-group.service';
+import { type FeedRow, FeedStore } from 'src/app/feed/feed-store';
 import { InviteLinkPanel } from 'src/app/invite-link/invite-link-panel/invite-link-panel';
 import { MemberApiService } from 'src/app/member/member-api.service';
 import { dayLabel } from 'src/app/payment/day-label';
-import { type FeedPayment, PaymentStore } from 'src/app/payment/payment-store';
+import { settlementLabel } from 'src/app/settlement/settlement-label';
 import { injectGoBack } from 'src/app/shared/navigation/back';
 import { BalanceIndicator } from 'src/app/shared/ui/balance-indicator/balance-indicator';
 import { GroupHero } from 'src/app/shared/ui/group-hero/group-hero';
@@ -49,9 +50,9 @@ type GroupState =
       me: MeResponse;
     };
 
-interface PaymentDay {
+interface FeedDay {
   readonly label: string;
-  readonly payments: FeedPayment[];
+  readonly rows: FeedRow[];
 }
 
 export type GroupTab = 'payments' | 'balances';
@@ -89,7 +90,7 @@ export class GroupPage {
   private readonly groupApi = inject(ExpenseGroupApiService);
   private readonly memberApi = inject(MemberApiService);
   private readonly auth = inject(AuthService);
-  private readonly paymentStore = inject(PaymentStore);
+  private readonly feedStore = inject(FeedStore);
   private readonly lastGroup = inject(LastGroupService);
   private readonly balanceStore = inject(BalanceStore);
   private readonly router = inject(Router);
@@ -103,19 +104,17 @@ export class GroupPage {
   readonly groupState = signal<GroupState>({ status: 'loading' });
   readonly inviting = signal(false);
 
-  private readonly feedOfGroup = computed(() => this.paymentStore.feed(this.groupId()));
+  private readonly feedOfGroup = computed(() => this.feedStore.feed(this.groupId()));
   readonly feed = computed(() => this.feedOfGroup()());
 
   private readonly balancesOfGroup = computed(() => this.balanceStore.balances(this.groupId()));
   readonly balances = computed(() => this.balancesOfGroup()());
 
-  private readonly settledOfGroup = computed(() =>
-    this.paymentStore.settledVersion(this.groupId()),
-  );
+  private readonly settledOfGroup = computed(() => this.feedStore.settledVersion(this.groupId()));
 
-  readonly hasPayments = computed(() => {
+  readonly hasActivity = computed(() => {
     const feed = this.feed();
-    return feed.status === 'loaded' && feed.payments.some((payment) => !payment.pending);
+    return feed.status === 'loaded' && feed.rows.some((row) => !row.pending);
   });
 
   readonly balancesTab = computed<BalancesState>(() => {
@@ -167,19 +166,26 @@ export class GroupPage {
     );
   });
 
-  readonly days = computed<readonly PaymentDay[]>(() => {
+  readonly days = computed<readonly FeedDay[]>(() => {
     const feed = this.feed();
     if (feed.status !== 'loaded') return [];
     const today = new Date();
-    const days: PaymentDay[] = [];
-    for (const payment of feed.payments) {
-      const label = dayLabel(new Date(payment.paidAt), today);
+    const days: FeedDay[] = [];
+    for (const row of feed.rows) {
+      const date = row.kind === 'payment' ? row.payment.paidAt : row.settlement.settledAt;
+      const label = dayLabel(new Date(date), today);
       const current = days.at(-1);
-      if (current?.label === label) current.payments.push(payment);
-      else days.push({ label, payments: [payment] });
+      if (current?.label === label) current.rows.push(row);
+      else days.push({ label, rows: [row] });
     }
     return days;
   });
+
+  readonly repaymentLabel = (row: FeedRow & { kind: 'settlement' }): string => {
+    const state = this.groupState();
+    if (state.status !== 'loaded') return '';
+    return settlementLabel(row.settlement, state.members, state.me.id);
+  };
 
   constructor() {
     effect(() => {
@@ -212,7 +218,7 @@ export class GroupPage {
   }
 
   retryBalances(): void {
-    if (this.feed().status === 'error') this.paymentStore.load(this.groupId());
+    if (this.feed().status === 'error') this.feedStore.load(this.groupId());
     this.balanceStore.load(this.groupId());
   }
 
@@ -221,12 +227,12 @@ export class GroupPage {
   }
 
   retryFeed(): void {
-    this.paymentStore.load(this.groupId());
+    this.feedStore.load(this.groupId());
   }
 
   private open(groupId: number): void {
     this.lastGroup.skipLaunchRedirect();
-    this.paymentStore.load(groupId);
+    this.feedStore.load(groupId);
     this.balanceStore.load(groupId);
     this.loadGroup(groupId);
   }

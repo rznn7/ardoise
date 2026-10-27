@@ -9,9 +9,9 @@ import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmInputImports } from '@spartan-ng/helm/input';
 import { HlmNativeSelectImports } from '@spartan-ng/helm/native-select';
 import { HlmToggleGroupImports } from '@spartan-ng/helm/toggle-group';
+import { FeedStore } from 'src/app/feed/feed-store';
 import { formatPercentInput } from 'src/app/payment/money-input';
 import { PaymentDraft } from 'src/app/payment/payment-draft';
-import { PaymentStore } from 'src/app/payment/payment-store';
 import { injectGoBack } from 'src/app/shared/navigation/back';
 import { GroupChip } from 'src/app/shared/ui/group-chip/group-chip';
 import { MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
@@ -57,7 +57,7 @@ const withTextOf = (
 })
 export class OptionsStep {
   protected readonly draft = inject(PaymentDraft);
-  private readonly store = inject(PaymentStore);
+  private readonly store = inject(FeedStore);
   private readonly router = inject(Router);
   private readonly location = inject(Location);
   private readonly goBack = injectGoBack();
