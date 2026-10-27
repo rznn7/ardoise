@@ -1,0 +1,121 @@
+@let current = state();
+<hlm-sheet #sheet="hlmSheet">
+  <app-mobile-shell>
+    <div appShellHeader class="flex items-center bg-background px-4 py-2">
+      <button
+        aria-label="Back"
+        class="size-11 shrink-0 rounded-full"
+        hlmBtn
+        size="icon-lg"
+        type="button"
+        variant="ghost"
+        (click)="goBack('/admin?tab=groups')"
+      >
+        <ng-icon hlm name="lucideChevronLeft" size="sm" aria-hidden="true" />
+      </button>
+    </div>
+
+    @switch (current.status) {
+      @case ('loading') {
+        <app-page-state state="loading" />
+      }
+      @case ('not-found') {
+        <app-page-state state="empty" heading="This group no longer exists">
+          <a appPageStateAction hlmBtn routerLink="/admin" size="xl">Back to admin</a>
+        </app-page-state>
+      }
+      @case ('error') {
+        <app-page-state
+          state="error"
+          heading="Couldn't load this group"
+          description="Check your connection and try again."
+          (retry)="retry()"
+        />
+      }
+      @case ('loaded') {
+        @let detail = current.detail;
+        <div class="flex flex-col gap-1 px-4 pt-2 pb-6">
+          <h1 appFigure>{{ detail.group.name }}</h1>
+          <p appMeta>{{ meta() }}</p>
+        </div>
+
+        <section class="flex flex-col">
+          <h2 appMeta class="px-4 pb-2">Members</h2>
+          <ul class="flex flex-col divide-y divide-border border-y border-border">
+            @for (member of detail.members; track member.memberId) {
+              <li>
+                <a class="block" [routerLink]="['/admin/users', member.userId]">
+                  <app-list-row>
+                    <span appListRowTitle>{{ member.name }}</span>
+                    <span appListRowMeta>{{ member.isModerator ? 'Moderator' : 'Member' }}</span>
+                    <app-balance-indicator
+                      appListRowTrailing
+                      class="text-foreground"
+                      [cents]="member.balance"
+                      [currency]="detail.group.currencyCode"
+                    />
+                  </app-list-row>
+                </a>
+              </li>
+            }
+          </ul>
+        </section>
+
+        <section class="flex flex-col pb-28">
+          <h2 appMeta class="px-4 pt-6 pb-2">Invite links</h2>
+          @if (links().length === 0) {
+            <p appBody class="border-y border-border px-4 py-3 text-muted-foreground">
+              No invite links
+            </p>
+          } @else {
+            <ul class="flex flex-col divide-y divide-border border-y border-border">
+              @for (link of links(); track link.id) {
+                <li [class.text-muted-foreground]="!isActive(link)">
+                  <app-list-row>
+                    <span appListRowTitle>{{ linkTitle(link) }}</span>
+                    <span appListRowMeta>{{ linkMeta(link) }}</span>
+                    @if (link.status === 'active') {
+                      <button
+                        appListRowTrailing
+                        class="text-destructive"
+                        hlmBtn
+                        hlmSheetTrigger
+                        side="bottom"
+                        type="button"
+                        variant="ghost"
+                        (click)="selected.set(link)"
+                      >
+                        Revoke
+                      </button>
+                    }
+                  </app-list-row>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      }
+    }
+  </app-mobile-shell>
+
+  <hlm-sheet-content *brnSheetContent>
+    <div hlmSheetHeader>
+      <h3 hlmSheetTitle>Revoke this link?</h3>
+      <p hlmSheetDescription>Nobody will be able to join with it any more.</p>
+    </div>
+    <div class="flex flex-col gap-3 p-4 pb-8">
+      <button
+        hlmBtn
+        size="xl"
+        type="button"
+        variant="destructive"
+        (click)="sheet.close(); confirmRevoke()"
+      >
+        Revoke
+      </button>
+      <button hlmBtn size="xl" type="button" variant="outline" (click)="sheet.close()">
+        Cancel
+      </button>
+    </div>
+  </hlm-sheet-content>
+</hlm-sheet>

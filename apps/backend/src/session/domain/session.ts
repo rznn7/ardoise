@@ -6,6 +6,8 @@ export type Session = {
   readonly revokedAt: Date | null;
 };
 
+export type StoredSession = Session & { readonly id: number };
+
 export const Session = {
   issue: (
     token: string,
@@ -37,3 +39,4 @@ export const SESSION_COOKIE_NAME = 'session_token';
 export class SessionNotFound extends Error {}
 export class SessionExpired extends Error {}
 export class UserHandleMismatch extends Error {}
+export class CannotRevokeCurrentSession extends Error {}

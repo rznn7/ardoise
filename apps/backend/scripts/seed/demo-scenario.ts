@@ -90,6 +90,9 @@ export async function seedDemo(
 
   const primaryId =
     primaryRealId ?? (await seedUser(client, { name: 'Alice' })).id;
+  await client.query(`UPDATE users SET role = 'admin' WHERE id = $1`, [
+    primaryId,
+  ]);
   const sessionToken =
     primaryRealId === undefined && isPlainLocalhost(opts.origin)
       ? (await seedSession(client, { userId: primaryId })).token
@@ -98,6 +101,7 @@ export async function seedDemo(
   const bob = await seedUser(client, { name: 'Bob' });
   const carol = await seedUser(client, { name: 'Carol' });
   const dave = await seedUser(client, { name: 'David' });
+  await seedUser(client, { name: 'Emma' });
 
   const lisbon = await seedGroup(client, {
     name: 'Trip to Lisbon',
@@ -294,6 +298,19 @@ export async function seedDemo(
   const invite = await seedInviteLink(client, {
     groupId: lisbon.id,
     singleUse: false,
+  });
+  await seedInviteLink(client, {
+    groupId: lisbon.id,
+    burnedByUserId: carol.id,
+  });
+  await seedInviteLink(client, {
+    groupId: lisbon.id,
+    singleUse: false,
+    expiresInDays: -3,
+  });
+  await seedInviteLink(client, {
+    groupId: lisbon.id,
+    revoked: true,
   });
 
   return {

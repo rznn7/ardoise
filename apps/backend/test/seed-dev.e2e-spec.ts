@@ -129,6 +129,46 @@ describe('Dev seed', () => {
     expect(rows).toHaveLength(2);
   });
 
+  it('makes the primary account an admin, Alice or a kept real account', async () => {
+    await seedDemo(pgClient, { origin: LOCAL });
+    const roleOf = async (name: string) => {
+      const { rows } = await pgClient.query<{ role: string }>(
+        'SELECT role FROM users WHERE name = $1',
+        [name],
+      );
+      return rows[0]?.role;
+    };
+    expect(await roleOf('Alice')).toBe('admin');
+    expect(await roleOf('Bob')).toBe('user');
+
+    await seedRealAccount('Owner', 'kept-token');
+    await seedDemo(pgClient, { origin: PREVIEW });
+    expect(await roleOf('Owner')).toBe('admin');
+  });
+
+  it('shows the admin a user with no group and invite links in every status', async () => {
+    await seedDemo(pgClient, { origin: LOCAL });
+
+    const { rows: loners } = await pgClient.query<{ name: string }>(
+      'SELECT name FROM users u WHERE NOT EXISTS (SELECT 1 FROM member m WHERE m.user_id = u.id)',
+    );
+    expect(loners.map((u) => u.name)).toEqual(['Emma']);
+    const { rows: links } = await pgClient.query<{
+      burned: boolean;
+      expired: boolean;
+      revoked: boolean;
+    }>(
+      `SELECT burned_at IS NOT NULL AS burned, expires_at < NOW() AS expired, revoked_at IS NOT NULL AS revoked
+       FROM invite_link i JOIN expense_group g ON g.id = i.group_id WHERE g.name = 'Trip to Lisbon' ORDER BY i.id`,
+    );
+    expect(links).toEqual([
+      { burned: false, expired: false, revoked: false },
+      { burned: true, expired: false, revoked: false },
+      { burned: false, expired: true, revoked: false },
+      { burned: false, expired: false, revoked: true },
+    ]);
+  });
+
   it('shows repayments in every state', async () => {
     await seedDemo(pgClient, { origin: LOCAL });
 

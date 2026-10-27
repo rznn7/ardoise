@@ -84,6 +84,16 @@ A settlement overlays the balance calculation; it never mutates payments.
   selector (system / light / dark) on top of the existing `ThemeService`.
 - [ ] **logout control (frontend)** — the auth flow supports logout; no UI exposes it yet.
 
+## Admin
+- [x] **admin overview** — read-only overview of users and groups, user and group details,
+  revoke invite links and sessions (`superpowers/specs/2026-10-27-admin-overview-design.md`).
+- [ ] **account management** — create (through invite links), edit, delete accounts.
+- [ ] **richer invite links** — number of uses, validity, links not tied to a group.
+- [ ] **instance settings** — registration mode, who creates groups, default currency, limits.
+- [ ] **admin bootstrap for prod** — today the dev seed makes the oldest real account admin.
+- [ ] **passkey management** — delete, re-create for a user, several passkeys per user, for the
+  admin and for the user (pairs with multi-device passkey below).
+
 ## Hardening & ship
 - [x] **Drizzle migrations** — migration setup and baseline.
 - [x] **preview deploy** — every main push publishes images; deployed by hand on the homelab at ardoise.rznn.dev, demo data reset, accounts kept.

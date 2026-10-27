@@ -1,4 +1,5 @@
 import { type Routes } from '@angular/router';
+import { adminGuard } from 'src/app/admin/admin.guard';
 import { authGuard, guestGuard } from 'src/app/auth/auth.guard';
 
 export const routes: Routes = [
@@ -46,6 +47,27 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadChildren: () =>
       import('./payment/payment-form/payment-form.routes').then((m) => m.paymentFormRoutes),
+  },
+  {
+    path: 'admin',
+    canActivate: [authGuard, adminGuard],
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        loadComponent: () =>
+          import('./admin/admin-overview/admin-overview').then((m) => m.AdminOverviewPage),
+      },
+      {
+        path: 'users/:userId',
+        loadComponent: () => import('./admin/admin-user/admin-user').then((m) => m.AdminUserPage),
+      },
+      {
+        path: 'groups/:groupId',
+        loadComponent: () =>
+          import('./admin/admin-group/admin-group').then((m) => m.AdminGroupPage),
+      },
+    ],
   },
   {
     path: 'join',

@@ -16,6 +16,7 @@ import { BalanceRepositoryDrizzle } from './balance-repository.drizzle';
     GetGroupBalancesUseCase,
     ListMyBalancesUseCase,
   ],
+  exports: [BALANCE_REPOSITORY],
   controllers: [BalanceController],
 })
 export class BalanceModule {}

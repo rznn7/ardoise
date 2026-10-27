@@ -63,3 +63,11 @@ export async function expireInvite(token: string): Promise<void> {
     ),
   );
 }
+
+export async function makeNewestUserAdmin(): Promise<void> {
+  await withClient((client) =>
+    client.query(
+      `UPDATE users SET role = 'admin' WHERE id = (SELECT MAX(id) FROM users)`,
+    ),
+  );
+}

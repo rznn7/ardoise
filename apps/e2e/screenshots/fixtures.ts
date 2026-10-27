@@ -1,4 +1,7 @@
 import {
+  type AdminGroup,
+  type AdminOverview,
+  type AdminUser,
   computePaymentShares,
   type ExpenseGroupSummary,
   type FeedItem,
@@ -230,3 +233,253 @@ export async function mockApi(page: Page, mocks: ApiMocks): Promise<void> {
     await reply(route, match ? match[1] : status(404));
   });
 }
+
+export const ADMIN_ME: MeResponse = { ...ME, role: 'admin' };
+
+const daysFromNow = (days: number): string => {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  date.setHours(12, 0, 0, 0);
+  return date.toISOString();
+};
+
+export const ADMIN_OVERVIEW: AdminOverview = {
+  counts: { users: 6, groups: 4, payments: 84 },
+  users: [
+    {
+      id: 6,
+      name: 'Emma',
+      role: 'user',
+      createdAt: daysFromNow(-1),
+      lastSignInAt: null,
+      groupCount: 0,
+    },
+    {
+      id: 1,
+      name: 'Gabriel',
+      role: 'admin',
+      createdAt: daysFromNow(-40),
+      lastSignInAt: daysFromNow(0),
+      groupCount: 4,
+    },
+    {
+      id: 5,
+      name: 'Inès',
+      role: 'user',
+      createdAt: daysFromNow(-30),
+      lastSignInAt: daysFromNow(-20),
+      groupCount: 1,
+    },
+    {
+      id: 2,
+      name: 'Léa',
+      role: 'user',
+      createdAt: daysFromNow(-38),
+      lastSignInAt: daysFromNow(-2),
+      groupCount: 3,
+    },
+    {
+      id: 4,
+      name: 'Max',
+      role: 'user',
+      createdAt: daysFromNow(-35),
+      lastSignInAt: daysFromNow(-9),
+      groupCount: 1,
+    },
+    {
+      id: 3,
+      name: 'Tom',
+      role: 'user',
+      createdAt: daysFromNow(-36),
+      lastSignInAt: daysFromNow(-1),
+      groupCount: 2,
+    },
+  ],
+  groups: [
+    {
+      id: 2,
+      name: 'Flatshare Rue Oberkampf, 3rd floor, left',
+      currencyCode: 'EUR',
+      createdAt: daysFromNow(-45),
+      memberCount: 2,
+      paymentCount: 14,
+    },
+    {
+      id: 4,
+      name: 'Friday dinners',
+      currencyCode: 'EUR',
+      createdAt: daysFromNow(-100),
+      memberCount: 2,
+      paymentCount: 2,
+    },
+    {
+      id: 1,
+      name: 'Lisbon trip',
+      currencyCode: 'EUR',
+      createdAt: daysFromNow(-26),
+      memberCount: 5,
+      paymentCount: 68,
+    },
+    {
+      id: 3,
+      name: 'Ski 2027',
+      currencyCode: 'CHF',
+      createdAt: daysFromNow(-60),
+      memberCount: 1,
+      paymentCount: 0,
+    },
+  ],
+};
+
+export const ADMIN_USER: AdminUser = {
+  user: {
+    id: 2,
+    name: 'Léa',
+    role: 'user',
+    createdAt: daysFromNow(-38),
+    lastSignInAt: daysFromNow(-2),
+    passkeyCount: 1,
+  },
+  groups: [
+    {
+      groupId: 2,
+      name: 'Flatshare Rue Oberkampf, 3rd floor, left',
+      currencyCode: 'EUR',
+      isModerator: true,
+      memberCount: 2,
+      balance: -1830,
+    },
+    {
+      groupId: 4,
+      name: 'Friday dinners',
+      currencyCode: 'EUR',
+      isModerator: false,
+      memberCount: 2,
+      balance: 0,
+    },
+    {
+      groupId: 1,
+      name: 'Lisbon trip',
+      currencyCode: 'EUR',
+      isModerator: false,
+      memberCount: 5,
+      balance: 8820,
+    },
+  ],
+  sessions: [
+    {
+      id: 41,
+      issuedAt: daysFromNow(-2),
+      expiresAt: daysFromNow(5),
+      current: false,
+    },
+    {
+      id: 37,
+      issuedAt: daysFromNow(-6),
+      expiresAt: daysFromNow(1),
+      current: false,
+    },
+  ],
+};
+
+export const ADMIN_SELF: AdminUser = {
+  user: {
+    id: 1,
+    name: 'Gabriel',
+    role: 'admin',
+    createdAt: daysFromNow(-40),
+    lastSignInAt: daysFromNow(0),
+    passkeyCount: 1,
+  },
+  groups: [
+    {
+      groupId: 1,
+      name: 'Lisbon trip',
+      currencyCode: 'EUR',
+      isModerator: true,
+      memberCount: 5,
+      balance: -4250,
+    },
+  ],
+  sessions: [
+    {
+      id: 50,
+      issuedAt: daysFromNow(0),
+      expiresAt: daysFromNow(7),
+      current: true,
+    },
+  ],
+};
+
+export const ADMIN_LONER: AdminUser = {
+  user: {
+    id: 6,
+    name: 'Emma',
+    role: 'user',
+    createdAt: daysFromNow(-1),
+    lastSignInAt: null,
+    passkeyCount: 1,
+  },
+  groups: [],
+  sessions: [],
+};
+
+export const ADMIN_GROUP: AdminGroup = {
+  group: {
+    id: 1,
+    name: 'Lisbon trip',
+    currencyCode: 'EUR',
+    createdAt: daysFromNow(-26),
+    paymentCount: 68,
+    totalSpent: 124000,
+  },
+  members: MEMBERS.map((member, index) => ({
+    memberId: member.id,
+    userId: member.userId,
+    name: member.name,
+    isModerator: member.isModerator,
+    balance: [-4250, 8820, -2110, 3360, -5820][index] ?? 0,
+  })),
+  inviteLinks: [
+    {
+      id: 4,
+      singleUse: false,
+      status: 'active',
+      expiresAt: daysFromNow(5),
+      burnedAt: null,
+      burnedByName: null,
+      revokedAt: null,
+      createdAt: daysFromNow(-2),
+    },
+    {
+      id: 3,
+      singleUse: true,
+      status: 'used',
+      expiresAt: daysFromNow(2),
+      burnedAt: daysFromNow(-5),
+      burnedByName: 'Tom',
+      revokedAt: null,
+      createdAt: daysFromNow(-6),
+    },
+    {
+      id: 2,
+      singleUse: false,
+      status: 'expired',
+      expiresAt: daysFromNow(-3),
+      burnedAt: null,
+      burnedByName: null,
+      revokedAt: null,
+      createdAt: daysFromNow(-10),
+    },
+    {
+      id: 1,
+      singleUse: true,
+      status: 'revoked',
+      expiresAt: daysFromNow(3),
+      burnedAt: null,
+      burnedByName: null,
+      revokedAt: daysFromNow(-1),
+      createdAt: daysFromNow(-4),
+    },
+  ],
+};

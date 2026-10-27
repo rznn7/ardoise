@@ -22,6 +22,21 @@ export class InviteLinkRepositoryDrizzle implements InviteLinkRepository {
     return row ? this.toDomain(row) : null;
   }
 
+  async findById(id: number): Promise<InviteLink | null> {
+    const row = await this.database.query.inviteLink.findFirst({
+      where: eq(inviteLink.id, id),
+    });
+
+    return row ? this.toDomain(row) : null;
+  }
+
+  async revoke(id: number, now: Date): Promise<void> {
+    await this.database
+      .update(inviteLink)
+      .set({ revokedAt: now })
+      .where(and(eq(inviteLink.id, id), isNull(inviteLink.revokedAt)));
+  }
+
   async findByToken(token: string): Promise<InviteLink | null> {
     const row = await this.database.query.inviteLink.findFirst({
       where: eq(inviteLink.token, token),
@@ -66,6 +81,7 @@ export class InviteLinkRepositoryDrizzle implements InviteLinkRepository {
       burnedByUserId: row.burnedByUserId,
       expiresAt: row.expiresAt,
       burnedAt: row.burnedAt,
+      revokedAt: row.revokedAt,
       createdAt: row.createdAt,
     };
   }
@@ -74,6 +90,7 @@ export class InviteLinkRepositoryDrizzle implements InviteLinkRepository {
     return and(
       isNull(inviteLink.burnedAt),
       isNull(inviteLink.burnedByUserId),
+      isNull(inviteLink.revokedAt),
       gt(inviteLink.expiresAt, new Date()),
     );
   }

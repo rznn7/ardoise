@@ -437,6 +437,26 @@ describe('InviteLink', () => {
       expect(response.body).toEqual({ error: 'INVITE_EXPIRED' });
     });
 
+    it('rejects a revoked link with INVITE_EXPIRED', async () => {
+      const { id: userId } = await seedUser(pgClient);
+      await seedSession(pgClient, { userId, token: 'valid-session-token' });
+      const { id: groupId } = await seedGroup(pgClient);
+      await seedInviteLink(pgClient, {
+        groupId,
+        token: 'revoked-token',
+        singleUse: false,
+        revoked: true,
+      });
+
+      const response = await request(app.getHttpServer())
+        .post('/invite-link/consume')
+        .set('Cookie', `session_token=valid-session-token`)
+        .send({ token: 'revoked-token' })
+        .expect(400);
+
+      expect(response.body).toEqual({ error: 'INVITE_EXPIRED' });
+    });
+
     it('burns a single-use link after the first consume', async () => {
       const { id: groupId } = await seedGroup(pgClient);
       const { id: userAId } = await seedUser(pgClient, { name: 'alice' });
@@ -517,6 +537,21 @@ describe('InviteLink', () => {
 
       const response = await request(app.getHttpServer())
         .get('/invite-link/expired-token/preview')
+        .expect(400);
+
+      expect(response.body).toEqual({ error: 'INVITE_EXPIRED' });
+    });
+
+    it('rejects a revoked token like an expired one', async () => {
+      const { id: groupId } = await seedGroup(pgClient);
+      await seedInviteLink(pgClient, {
+        groupId,
+        token: 'revoked-token',
+        revoked: true,
+      });
+
+      const response = await request(app.getHttpServer())
+        .get('/invite-link/revoked-token/preview')
         .expect(400);
 
       expect(response.body).toEqual({ error: 'INVITE_EXPIRED' });

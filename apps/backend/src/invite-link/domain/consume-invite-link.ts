@@ -22,7 +22,8 @@ export const consumeInviteLink = async (
   if (existing) return { groupId: link.groupId, alreadyMember: true };
 
   const now = new Date();
-  if (InviteLink.isExpired(link, now)) throw new InviteLinkExpired();
+  if (InviteLink.isRevoked(link) || InviteLink.isExpired(link, now))
+    throw new InviteLinkExpired();
   if (InviteLink.isConsumed(link)) throw new InviteLinkConsumed();
 
   const created = await deps.members.create({

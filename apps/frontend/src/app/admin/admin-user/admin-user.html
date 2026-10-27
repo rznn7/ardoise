@@ -1,0 +1,134 @@
+@let current = state();
+<hlm-sheet #sheet="hlmSheet">
+  <app-mobile-shell>
+    <div appShellHeader class="flex items-center bg-background px-4 py-2">
+      <button
+        aria-label="Back"
+        class="size-11 shrink-0 rounded-full"
+        hlmBtn
+        size="icon-lg"
+        type="button"
+        variant="ghost"
+        (click)="goBack('/admin')"
+      >
+        <ng-icon hlm name="lucideChevronLeft" size="sm" aria-hidden="true" />
+      </button>
+    </div>
+
+    @switch (current.status) {
+      @case ('loading') {
+        <app-page-state state="loading" />
+      }
+      @case ('not-found') {
+        <app-page-state state="empty" heading="This user no longer exists">
+          <a appPageStateAction hlmBtn routerLink="/admin" size="xl">Back to admin</a>
+        </app-page-state>
+      }
+      @case ('error') {
+        <app-page-state
+          state="error"
+          heading="Couldn't load this user"
+          description="Check your connection and try again."
+          (retry)="retry()"
+        />
+      }
+      @case ('loaded') {
+        @let detail = current.detail;
+        <div class="flex flex-col gap-1 px-4 pt-2 pb-6">
+          <h1 appFigure class="flex items-center gap-2">
+            {{ detail.user.name }}
+            @if (detail.user.role === 'admin') {
+              <span appMeta class="rounded-sm border border-border px-1">Admin</span>
+            }
+          </h1>
+          <p appMeta>{{ meta() }}</p>
+        </div>
+
+        <section class="flex flex-col">
+          <h2 appMeta class="px-4 pb-2">Groups</h2>
+          @if (detail.groups.length === 0) {
+            <p appBody class="border-y border-border px-4 py-3 text-muted-foreground">No group</p>
+          } @else {
+            <ul class="flex flex-col divide-y divide-border border-y border-border">
+              @for (group of detail.groups; track group.groupId) {
+                <li>
+                  <a class="block" [routerLink]="['/admin/groups', group.groupId]">
+                    <app-list-row>
+                      <span appListRowTitle>{{ group.name }}</span>
+                      <span appListRowMeta>{{ groupMeta(group) }}</span>
+                      <app-balance-indicator
+                        appListRowTrailing
+                        class="text-foreground"
+                        [cents]="group.balance"
+                        [currency]="group.currencyCode"
+                      />
+                    </app-list-row>
+                  </a>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+
+        <section class="flex flex-col pb-28">
+          <h2 appMeta class="px-4 pt-6 pb-2">Sessions</h2>
+          @if (sessions().length === 0) {
+            <p appBody class="border-y border-border px-4 py-3 text-muted-foreground">
+              No active session
+            </p>
+          } @else {
+            <ul class="flex flex-col divide-y divide-border border-y border-border">
+              @for (session of sessions(); track session.id) {
+                <li>
+                  <app-list-row>
+                    <span appListRowTitle>Active session</span>
+                    <span appListRowMeta>{{ sessionMeta(session) }}</span>
+                    @if (session.current) {
+                      <span appListRowTrailing appMeta class="text-muted-foreground"
+                        >This device</span
+                      >
+                    } @else {
+                      <button
+                        appListRowTrailing
+                        class="text-destructive"
+                        hlmBtn
+                        hlmSheetTrigger
+                        side="bottom"
+                        type="button"
+                        variant="ghost"
+                        (click)="selected.set(session)"
+                      >
+                        Revoke
+                      </button>
+                    }
+                  </app-list-row>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      }
+    }
+  </app-mobile-shell>
+
+  <hlm-sheet-content *brnSheetContent>
+    <div hlmSheetHeader>
+      <h3 hlmSheetTitle>Sign this session out?</h3>
+      <p hlmSheetDescription>This device will need the passkey to sign in again.</p>
+    </div>
+    <div class="flex flex-col gap-3 p-4 pb-8">
+      <button
+        hlmBtn
+        size="xl"
+        type="button"
+        variant="destructive"
+        (click)="sheet.close(); confirmRevoke()"
+      >
+        Revoke
+      </button>
+      <button hlmBtn size="xl" type="button" variant="outline" (click)="sheet.close()">
+        Cancel
+      </button>
+    </div>
+  </hlm-sheet-content>
+</hlm-sheet>

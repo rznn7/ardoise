@@ -1,12 +1,15 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { type ExpenseGroupSummary } from '@ardoise/shared';
 import { provideIcons } from '@ng-icons/core';
-import { lucidePlus } from '@ng-icons/lucide';
+import { lucidePlus, lucideShield } from '@ng-icons/lucide';
 import { BrnSheetImports } from '@spartan-ng/brain/sheet';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
+import { catchError, of } from 'rxjs';
+import { AuthService } from 'src/app/auth/auth.service';
 import { BalanceApiService } from 'src/app/balance/balance-api.service';
 import { CreateGroupSheet } from 'src/app/expense-group/create-group-sheet/create-group-sheet';
 import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.service';
@@ -38,7 +41,7 @@ type HomeState =
     BalanceIndicator,
   ],
   templateUrl: './home.html',
-  providers: [provideIcons({ lucidePlus })],
+  providers: [provideIcons({ lucidePlus, lucideShield })],
 })
 export class Home {
   private readonly expenseGroupApi = inject(ExpenseGroupApiService);
@@ -47,6 +50,14 @@ export class Home {
   private readonly balanceApi = inject(BalanceApiService);
 
   private readonly balances = signal<ReadonlyMap<number, number>>(new Map());
+  private readonly me = toSignal(
+    inject(AuthService)
+      .currentUser()
+      .pipe(catchError(() => of(null))),
+    { initialValue: null },
+  );
+
+  readonly isAdmin = computed(() => this.me()?.role === 'admin');
 
   readonly state = signal<HomeState>({ status: 'loading' });
 

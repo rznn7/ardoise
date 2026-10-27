@@ -1,3 +1,4 @@
+export * from './contracts/admin.js';
 export * from './contracts/auth.js';
 export * from './contracts/balance.js';
 export * from './contracts/expense-group.js';

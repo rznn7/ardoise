@@ -127,6 +127,11 @@ With the frontend running (`pnpm dev:front`), `pnpm --filter @ardoise/e2e screen
 | 2026-10-26 | Group hero balance | Under the members, right-aligned (C5): "You owe" / "Owed to you" / "Settled up" | Z reading; the figure stays small |
 | 2026-10-26 | Balances access on the group page | Payments / Balances tabs under the hero (C) | Most visible access |
 | 2026-10-26 | Balances tab | Member ink bars, then repayments (T3) | Nicest to scan, outside the quick flow |
+| 2026-10-27 | Admin entry | Round shield button at the top right of home, admins only | Out of the way for everyone else |
+| 2026-10-27 | Admin overview | Title, instance host, three count tiles, Users / Groups tabs (`?tab=groups`), list rows | Overview first, actions later |
+| 2026-10-27 | Admin details | Sections (Groups + Sessions for a user, Members + Invite links for a group), destructive-text Revoke behind a confirmation sheet | Sections leave room for later settings and actions |
 | 2026-10-27 | Confirm a repayment | Tap my repayment row → sheet with the amount large and one button (B) | See the figure before confirming; 2 taps |
 | 2026-10-27 | Recorded repayments | Done section under Repayments, thin green circle check, tap mine → undo sheet ("Undo repayment" / "Keep it") | Undo without going through the feed; outline check over a filled pastille |
 | 2026-10-27 | Repayment wording | "Repayment" on screen (code says settlement); feed row "You paid Léa back" with a "Repayment" meta line | Reads as a transfer, not an expense |
+| 2026-10-27 | Home title | "ardoise" instead of "Groups" | The first screen names the app |
+| 2026-10-27 | Admin user meta | "Joined 19 Sep" only, no sign-in or passkey count | The full line read as too much |

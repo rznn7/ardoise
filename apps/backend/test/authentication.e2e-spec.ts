@@ -115,6 +115,44 @@ describe('Authentication', () => {
         .expect(400);
     });
 
+    it('complete registration refuses a link revoked after begin', async () => {
+      const { id: groupId } = await seedGroup(pgClient);
+      await seedInviteLink(pgClient, { groupId, token: 'revoked-midway' });
+      const beginResponse = await request(app.getHttpServer())
+        .post('/auth/register/begin')
+        .send({ inviteToken: 'revoked-midway' })
+        .expect(200);
+      await pgClient.query(
+        `UPDATE invite_link SET revoked_at = NOW() WHERE token = 'revoked-midway'`,
+      );
+
+      const response = await request(app.getHttpServer())
+        .post('/auth/register/complete')
+        .send({
+          stateId: (beginResponse.body as BeginRegistrationResponse).stateId,
+          attestation: {},
+        })
+        .expect(400);
+
+      expect(response.body).toEqual({ error: 'INVITE_EXPIRED' });
+      const { rows } = await pgClient.query('SELECT id FROM users');
+      expect(rows).toHaveLength(0);
+    });
+
+    it('begin registration refuses a revoked link', async () => {
+      const { id: groupId } = await seedGroup(pgClient);
+      await seedInviteLink(pgClient, {
+        groupId,
+        token: 'revoked-registration-token',
+        revoked: true,
+      });
+
+      await request(app.getHttpServer())
+        .post('/auth/register/begin')
+        .send({ inviteToken: 'revoked-registration-token' })
+        .expect(400);
+    });
+
     it('rejects an unknown stateId on complete', async () => {
       await request(app.getHttpServer())
         .post('/auth/register/complete')

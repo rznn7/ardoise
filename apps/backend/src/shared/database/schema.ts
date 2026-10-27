@@ -60,10 +60,12 @@ export const inviteLink = pgTable('invite_link', {
   burnedByUserId: integer().references(() => users.id),
   burnedAt: timestamp({ withTimezone: true }),
   expiresAt: timestamp({ withTimezone: true }).notNull(),
+  revokedAt: timestamp({ withTimezone: true }),
   ...timestamps,
 });
 
 export const session = pgTable('session', {
+  id: integer().generatedAlwaysAsIdentity().unique().notNull(),
   token: varchar({ length: 64 }).primaryKey(),
   userId: integer()
     .references(() => users.id, { onDelete: 'cascade' })
