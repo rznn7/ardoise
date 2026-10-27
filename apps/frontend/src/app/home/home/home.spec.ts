@@ -36,8 +36,10 @@ async function setup({
   create = vi.fn<() => Observable<ExpenseGroupSummary>>().mockReturnValue(of(NEW_GROUP)),
   takeLaunchRedirect = vi.fn<() => number | null>().mockReturnValue(null),
   balances = of([]),
+  role = 'user',
 }: {
   balances?: Observable<MyBalance[]>;
+  role?: 'user' | 'admin';
   listMine?: ListMineMock;
   create?: CreateMock;
   takeLaunchRedirect?: TakeLaunchRedirectMock;
@@ -59,8 +61,14 @@ async function setup({
       },
       { provide: LastGroupService, useValue: { takeLaunchRedirect } },
       { provide: BalanceApiService, useValue: { listMine: () => balances } },
-      provideRouter([{ path: 'group/:groupId', component: Blank }]),
-      { provide: AuthService, useValue: {} },
+      provideRouter([
+        { path: 'group/:groupId', component: Blank },
+        { path: 'admin', component: Blank },
+      ]),
+      {
+        provide: AuthService,
+        useValue: { currentUser: () => of({ id: 1, name: 'Ada', role }) },
+      },
     ],
   });
   return { listMine, create, home: fixture.componentInstance };
@@ -72,6 +80,22 @@ const TWO_GROUPS: ExpenseGroupSummary[] = [
 ];
 
 describe('Home', () => {
+  it('shows the Admin button only to admins', async () => {
+    await setup({ role: 'admin' });
+
+    await userEvent.click(screen.getByRole('link', { name: 'Admin' }));
+
+    await waitFor(() => {
+      expect(TestBed.inject(Router).url).toBe('/admin');
+    });
+  });
+
+  it('hides the Admin button from plain users', async () => {
+    await setup();
+
+    expect(screen.queryByRole('link', { name: 'Admin' })).toBeNull();
+  });
+
   it('shows a loading skeleton while groups load', async () => {
     await setup({
       listMine: vi.fn<() => Observable<ExpenseGroupSummary[]>>().mockReturnValue(new Subject()),

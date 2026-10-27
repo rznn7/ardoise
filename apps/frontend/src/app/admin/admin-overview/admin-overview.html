@@ -1,0 +1,115 @@
+@let current = state();
+<app-mobile-shell>
+  <div appShellHeader class="flex items-center bg-background px-4 py-2">
+    <button
+      aria-label="Back"
+      class="size-11 shrink-0 rounded-full"
+      hlmBtn
+      size="icon-lg"
+      type="button"
+      variant="ghost"
+      (click)="goBack('/home')"
+    >
+      <ng-icon hlm name="lucideChevronLeft" size="sm" aria-hidden="true" />
+    </button>
+  </div>
+
+  <div class="flex flex-col gap-1 px-4 pt-2 pb-4">
+    <h1 appFigure>Admin</h1>
+    <p appMeta>Instance {{ host }}</p>
+  </div>
+
+  @switch (current.status) {
+    @case ('loading') {
+      <app-page-state state="loading" />
+    }
+    @case ('error') {
+      <app-page-state
+        state="error"
+        heading="Couldn't load the overview"
+        description="Check your connection and try again."
+        (retry)="load()"
+      />
+    }
+    @case ('loaded') {
+      @let overview = current.overview;
+      <dl class="grid grid-cols-3 gap-2 px-4 pb-4">
+        <div class="flex flex-col gap-1 rounded-lg border border-border p-3">
+          <dt appEyebrow class="order-2">Users</dt>
+          <dd appTitle class="order-1">{{ overview.counts.users }}</dd>
+        </div>
+        <div class="flex flex-col gap-1 rounded-lg border border-border p-3">
+          <dt appEyebrow class="order-2">Groups</dt>
+          <dd appTitle class="order-1">{{ overview.counts.groups }}</dd>
+        </div>
+        <div class="flex flex-col gap-1 rounded-lg border border-border p-3">
+          <dt appEyebrow class="order-2">Payments</dt>
+          <dd appTitle class="order-1">{{ overview.counts.payments }}</dd>
+        </div>
+      </dl>
+
+      <div class="px-4 pb-2">
+        <div
+          aria-label="View"
+          class="w-full"
+          hlmToggleGroup
+          type="single"
+          variant="outline"
+          [nullable]="false"
+          [value]="tab()"
+          (valueChange)="selectTab($event)"
+        >
+          <button class="h-11 flex-1" hlmToggleGroupItem value="users">Users</button>
+          <button class="h-11 flex-1" hlmToggleGroupItem value="groups">Groups</button>
+        </div>
+      </div>
+
+      <ul class="flex flex-col divide-y divide-border border-y border-border pb-28">
+        @if (tab() === 'users') {
+          @for (user of overview.users; track user.id) {
+            <li>
+              <a class="block" [routerLink]="['users', user.id]">
+                <app-list-row>
+                  <span appListRowTitle class="flex items-center gap-2">
+                    {{ user.name }}
+                    @if (user.role === 'admin') {
+                      <span appMeta class="rounded-sm border border-border px-1">Admin</span>
+                    }
+                  </span>
+                  <span appListRowMeta>{{ userMeta(user) }}</span>
+                  <ng-icon
+                    appListRowTrailing
+                    class="text-muted-foreground"
+                    hlm
+                    name="lucideChevronRight"
+                    size="sm"
+                    aria-hidden="true"
+                  />
+                </app-list-row>
+              </a>
+            </li>
+          }
+        } @else {
+          @for (group of overview.groups; track group.id) {
+            <li>
+              <a class="block" [routerLink]="['groups', group.id]">
+                <app-list-row>
+                  <span appListRowTitle>{{ group.name }}</span>
+                  <span appListRowMeta>{{ groupMeta(group) }}</span>
+                  <ng-icon
+                    appListRowTrailing
+                    class="text-muted-foreground"
+                    hlm
+                    name="lucideChevronRight"
+                    size="sm"
+                    aria-hidden="true"
+                  />
+                </app-list-row>
+              </a>
+            </li>
+          }
+        }
+      </ul>
+    }
+  }
+</app-mobile-shell>

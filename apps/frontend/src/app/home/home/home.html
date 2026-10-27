@@ -1,7 +1,19 @@
 <hlm-sheet #sheet="hlmSheet">
   <app-mobile-shell>
-    <div appShellHeader class="bg-background px-4 pt-4 pb-3">
+    <div appShellHeader class="flex items-center justify-between bg-background px-4 pt-4 pb-3">
       <h1 appTitle>Groups</h1>
+      @if (isAdmin()) {
+        <a
+          aria-label="Admin"
+          class="size-11 rounded-full"
+          hlmBtn
+          routerLink="/admin"
+          size="icon-lg"
+          variant="ghost"
+        >
+          <ng-icon hlm name="lucideShield" size="sm" aria-hidden="true" />
+        </a>
+      }
     </div>
 
     @switch (state().status) {
