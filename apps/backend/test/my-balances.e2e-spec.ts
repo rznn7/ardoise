@@ -11,6 +11,7 @@ import {
   seedPayment,
   seedPaymentShare,
   seedSession,
+  seedSettlement,
   seedUser,
 } from './helpers/seed';
 import { setupTestApp } from './helpers/test-app';
@@ -26,7 +27,7 @@ describe('MyBalances', () => {
 
   afterEach(async () => {
     await pgClient.query(
-      `TRUNCATE session, users, expense_group, invite_link, passkey, member, payment, payment_share RESTART IDENTITY CASCADE`,
+      `TRUNCATE session, users, expense_group, invite_link, passkey, member, payment, payment_share, settlement RESTART IDENTITY CASCADE`,
     );
   });
 
@@ -93,5 +94,40 @@ describe('MyBalances', () => {
       { groupId: trip.id, amount: -1500 },
       { groupId: ski.id, amount: 0 },
     ]);
+  });
+
+  it('counts my repayments in my balance', async () => {
+    const alice = await seedUser(pgClient, { name: 'alice' });
+    const bob = await seedUser(pgClient, { name: 'bob' });
+    const trip = await seedGroup(pgClient, { name: 'trip' });
+    const mAlice = await seedMember(pgClient, {
+      userId: alice.id,
+      groupId: trip.id,
+    });
+    const mBob = await seedMember(pgClient, {
+      userId: bob.id,
+      groupId: trip.id,
+    });
+    const { id: paymentId } = await seedPayment(pgClient, {
+      groupId: trip.id,
+      payerMemberId: mBob.id,
+      fullAmount: 3000,
+    });
+    await seedPaymentShare(pgClient, {
+      paymentId,
+      memberId: mAlice.id,
+      amount: 3000,
+    });
+    await seedSettlement(pgClient, {
+      groupId: trip.id,
+      fromMemberId: mAlice.id,
+      toMemberId: mBob.id,
+      amount: 1000,
+    });
+    const { token } = await seedSession(pgClient, { userId: alice.id });
+
+    const response = await getMine(token).expect(200);
+
+    expect(response.body).toEqual([{ groupId: trip.id, amount: -2000 }]);
   });
 });

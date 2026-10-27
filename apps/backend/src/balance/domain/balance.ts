@@ -2,6 +2,8 @@ export type MemberTotals = {
   readonly memberId: number;
   readonly paid: number;
   readonly owed: number;
+  readonly settledOut: number;
+  readonly settledIn: number;
 };
 
 export type MemberBalance = {

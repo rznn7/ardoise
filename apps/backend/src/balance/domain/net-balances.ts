@@ -5,7 +5,7 @@ import {
 } from './balance';
 
 export const netOf = (totals: MemberTotals): number =>
-  totals.paid - totals.owed;
+  totals.paid - totals.owed + totals.settledOut - totals.settledIn;
 
 export function netBalances(totals: readonly MemberTotals[]): MemberBalance[] {
   const balances = totals.map((member) => ({

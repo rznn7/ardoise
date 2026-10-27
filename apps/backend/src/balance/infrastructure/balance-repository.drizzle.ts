@@ -6,7 +6,12 @@ import {
   type Database,
   DATABASE_CONNECTION,
 } from 'src/shared/database/database.module';
-import { member, payment, paymentShare } from 'src/shared/database/schema';
+import {
+  member,
+  payment,
+  paymentShare,
+  settlement,
+} from 'src/shared/database/schema';
 
 @Injectable()
 export class BalanceRepositoryDrizzle implements BalanceRepository {
@@ -45,6 +50,22 @@ export class BalanceRepositoryDrizzle implements BalanceRepository {
       .from(paymentShare)
       .groupBy(paymentShare.memberId)
       .as('owed_by_member');
+    const settledOutByMember = this.database
+      .select({
+        memberId: settlement.fromMemberId,
+        settledOut: sql<number>`SUM(${settlement.amount})`.as('settled_out'),
+      })
+      .from(settlement)
+      .groupBy(settlement.fromMemberId)
+      .as('settled_out_by_member');
+    const settledInByMember = this.database
+      .select({
+        memberId: settlement.toMemberId,
+        settledIn: sql<number>`SUM(${settlement.amount})`.as('settled_in'),
+      })
+      .from(settlement)
+      .groupBy(settlement.toMemberId)
+      .as('settled_in_by_member');
 
     return this.database
       .select({
@@ -52,10 +73,14 @@ export class BalanceRepositoryDrizzle implements BalanceRepository {
         groupId: member.groupId,
         paid: sql<number>`COALESCE(${paidByMember.paid}, 0)::int`,
         owed: sql<number>`COALESCE(${owedByMember.owed}, 0)::int`,
+        settledOut: sql<number>`COALESCE(${settledOutByMember.settledOut}, 0)::int`,
+        settledIn: sql<number>`COALESCE(${settledInByMember.settledIn}, 0)::int`,
       })
       .from(member)
       .leftJoin(paidByMember, eq(paidByMember.memberId, member.id))
       .leftJoin(owedByMember, eq(owedByMember.memberId, member.id))
+      .leftJoin(settledOutByMember, eq(settledOutByMember.memberId, member.id))
+      .leftJoin(settledInByMember, eq(settledInByMember.memberId, member.id))
       .$dynamic();
   }
 }
