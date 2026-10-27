@@ -85,11 +85,6 @@ export const paymentApi = {
     path: '/payments/:id',
     res: paymentResponseSchema,
   },
-  listByGroup: {
-    method: 'GET',
-    path: '/expense-groups/:groupId/payments',
-    res: z.array(paymentResponseSchema),
-  },
   create: {
     method: 'POST',
     path: '/payments',

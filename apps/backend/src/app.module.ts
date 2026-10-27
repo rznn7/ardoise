@@ -5,6 +5,7 @@ import { APP_FILTER } from '@nestjs/core';
 import { AuthModule } from './auth/infrastructure/auth.module';
 import { BalanceModule } from './balance/infrastructure/balance.module';
 import { ExpenseGroupModule } from './expense-group/infrastructure/expense-group.module';
+import { FeedModule } from './feed/infrastructure/feed.module';
 import { MemberModule } from './member/infrastructure/member.module';
 import { PaymentModule } from './payment/infrastructure/payment.module';
 import { PaymentShareModule } from './payment-share/infrastructure/payment-share.module';
@@ -23,6 +24,7 @@ import { UserModule } from './user/infrastructure/user.module';
     BalanceModule,
     ConfigModule.forRoot(),
     ExpenseGroupModule,
+    FeedModule,
     MemberModule,
     PaymentModule,
     PaymentShareModule,

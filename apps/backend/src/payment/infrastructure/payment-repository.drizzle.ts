@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { desc, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { type Payment } from 'src/payment/domain/payment';
 import { PaymentRepository } from 'src/payment/domain/payment-repository';
 import {
@@ -19,24 +19,14 @@ export class PaymentRepositoryDrizzle implements PaymentRepository {
       where: eq(payment.id, id),
     });
 
-    return row ? this.toDomain(row) : null;
-  }
-
-  async findByGroupId(groupId: number): Promise<Payment[]> {
-    const rows = await this.database
-      .select()
-      .from(payment)
-      .where(eq(payment.groupId, groupId))
-      .orderBy(desc(payment.paidAt), desc(payment.id));
-
-    return rows.map((row) => this.toDomain(row));
+    return row ? toPayment(row) : null;
   }
 
   async create(input: Omit<Payment, 'id' | 'createdAt'>): Promise<Payment> {
     const [row] = await this.database.insert(payment).values(input).returning();
 
     if (!row) throw new Error('Payment insert returned no row');
-    return this.toDomain(row);
+    return toPayment(row);
   }
 
   async update(
@@ -49,23 +39,21 @@ export class PaymentRepositoryDrizzle implements PaymentRepository {
       .where(eq(payment.id, id))
       .returning();
 
-    return row ? this.toDomain(row) : null;
+    return row ? toPayment(row) : null;
   }
 
   async delete(id: number): Promise<void> {
     await this.database.delete(payment).where(eq(payment.id, id));
   }
-
-  private toDomain(row: typeof payment.$inferSelect): Payment {
-    return {
-      id: row.id,
-      payerMemberId: row.payerMemberId,
-      groupId: row.groupId,
-      title: row.title,
-      paidAt: row.paidAt,
-      fullAmount: row.fullAmount,
-      splitType: row.splitType,
-      createdAt: row.createdAt,
-    };
-  }
 }
+
+export const toPayment = (row: typeof payment.$inferSelect): Payment => ({
+  id: row.id,
+  payerMemberId: row.payerMemberId,
+  groupId: row.groupId,
+  title: row.title,
+  paidAt: row.paidAt,
+  fullAmount: row.fullAmount,
+  splitType: row.splitType,
+  createdAt: row.createdAt,
+});
