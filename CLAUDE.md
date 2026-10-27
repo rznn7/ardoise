@@ -73,7 +73,7 @@ Read `docs/design.md` before building any screen. In feature templates (`src/app
 
 ## Testing
 
-Strategy, coverage and the use case table are in `docs/testing.md`. Breadth goes in the fast layers; Playwright stays thin.
+Strategy, coverage and the use case table are in `docs/testing.md`. Breadth goes in the fast layers; Playwright stays thin. Coverage is not a target: a test earns its place only by catching a bug no other layer catches.
 
 - Pure rules (backend domain, frontend formatting) are pure functions with unit specs covering their edge cases.
 - Backend coverage goes into e2e specs in `test/`, with a real Postgres from testcontainers and supertest. Helpers are in `test/helpers/` (`setupTestApp` with provider overrides, `fakePasskeyVerifier`, `seed*` functions). Authorization is tested by the refusal and by checking nothing changed.

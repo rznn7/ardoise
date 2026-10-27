@@ -57,8 +57,20 @@ branches, functions, and the five least covered files):
 - **Frontend components**: `src/app`, the vendored helm library excluded.
 
 Locally: `pnpm --filter @ardoise/backend test:cov`, `pnpm --filter @ardoise/backend test:e2e:cov`,
-`pnpm --filter @ardoise/frontend test:cov`. There is no threshold: watch the trend. Coverage
-says which code never runs, not whether a test would catch a bug in it.
+`pnpm --filter @ardoise/frontend test:cov`.
+
+Coverage is not a target, and there is no threshold. It points at code that never runs and
+should; it says nothing about whether a test would catch a bug. A test earns its place only by
+catching a bug that no other layer catches. Do not write one to raise a figure: the domain
+figure, for instance, is not a to-do list, since a rule already proven over HTTP gains nothing
+from being isolated unless it has edge cases worth enumerating.
+
+Signs of over-testing, to prune rather than add to:
+
+- the same behavior asserted in two or three layers;
+- a test that breaks on a refactor with no bug behind it (asserting a method was called rather
+  than what the user sees);
+- a test of framework wiring, a getter, or what the types already guarantee.
 
 Playwright has no code coverage; its coverage is the use case table below.
 
