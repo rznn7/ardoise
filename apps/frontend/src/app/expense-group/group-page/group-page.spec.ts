@@ -771,6 +771,19 @@ describe('GroupPage', () => {
       expect(await screen.findByRole('button', { name: /tom paid you back/i })).toBeTruthy();
     });
 
+    it('says Done could not load and retries it', async () => {
+      const { loadDone } = await setup({
+        feedState: WITH_PAYMENT,
+        doneState: { status: 'error' },
+        url: '/group/7?tab=balances',
+      });
+      expect(await screen.findByText("Couldn't load more")).toBeTruthy();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+      expect(loadDone).toHaveBeenCalledTimes(2);
+    });
+
     it('asks the Done store for more at the bottom of Done', async () => {
       const { harness, loadMoreDone } = await setup({
         feedState: WITH_PAYMENT,

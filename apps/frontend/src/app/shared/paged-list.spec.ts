@@ -168,6 +168,17 @@ describe(PagedList.name, () => {
     expect(itemsOf(list.state(7))).toEqual([9]);
   });
 
+  it('does not ask for the next page while page one reloads', async () => {
+    await firstPage();
+
+    list.loadFirst(7);
+    await settle();
+    list.loadMore();
+    await settle();
+
+    expect(requests.filter((request) => request.cursor !== undefined)).toHaveLength(0);
+  });
+
   it('a failed refresh keeps the rows', async () => {
     await firstPage();
 

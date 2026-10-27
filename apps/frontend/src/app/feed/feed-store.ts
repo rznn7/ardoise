@@ -280,6 +280,7 @@ export class FeedStore {
         settle();
         this.toast.error("Couldn't undo the repayment");
         this.loadFirst(groupId);
+        this.done.loadFirst(groupId);
       },
     });
   }

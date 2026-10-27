@@ -88,7 +88,8 @@ export class PagedList<T> {
 
   loadMore(): void {
     const kept = this.kept();
-    if (!kept || this.more(kept) !== 'idle' || kept.nextCursor === null) return;
+    if (!kept || this.page.isLoading() || this.more(kept) !== 'idle') return;
+    if (kept.nextCursor === null) return;
     this.cursor.set(kept.nextCursor);
   }
 

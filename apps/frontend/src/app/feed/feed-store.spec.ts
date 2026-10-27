@@ -611,6 +611,17 @@ describe(FeedStore.name, () => {
       expect(error).toHaveBeenCalledWith("Couldn't undo the repayment");
     });
 
+    it('undo failure refetches Done too, so both lists agree', async () => {
+      await loadMixed();
+
+      store.undoSettlement(7, 4);
+      http.expectOne('/api/settlements/4').flush(null, { status: 404, statusText: 'Not Found' });
+      await settle();
+
+      http.expectOne('/api/expense-groups/7/settlements');
+      http.match('/api/expense-groups/7/feed');
+    });
+
     it('undo failure refetches the feed so a repayment undone elsewhere goes away', async () => {
       await loadMixed();
 

@@ -150,6 +150,7 @@ export class GroupPage {
 
   readonly doneMore = computed(() => {
     const done = this.done();
+    if (done.status === 'error') return 'error';
     return done.status === 'loaded' ? done.more : 'end';
   });
 
@@ -324,7 +325,8 @@ export class GroupPage {
   }
 
   retryMoreDone(): void {
-    this.doneStore.retryMore();
+    if (this.done().status === 'error') this.doneStore.loadFirst(this.groupId());
+    else this.doneStore.retryMore();
   }
 
   retryBalances(): void {

@@ -82,20 +82,40 @@
             </section>
           }
 
-          @if (done().length > 0) {
+          @if (done().length > 0 || doneMore() === 'error') {
             <section class="flex flex-col">
               <h2 appMeta class="px-4 pt-6 pb-2">Done</h2>
-              <ul class="flex flex-col divide-y divide-border border-y border-border">
-                @for (row of done(); track row.id) {
-                  <li [class.text-muted-foreground]="!row.mine">
-                    @if (row.mine) {
-                      <button
-                        class="block w-full text-left"
-                        hlmSheetTrigger
-                        side="bottom"
-                        type="button"
-                        (click)="selection.set({ kind: 'undo', row })"
-                      >
+              @if (done().length > 0) {
+                <ul class="flex flex-col divide-y divide-border border-y border-border">
+                  @for (row of done(); track row.id) {
+                    <li [class.text-muted-foreground]="!row.mine">
+                      @if (row.mine) {
+                        <button
+                          class="block w-full text-left"
+                          hlmSheetTrigger
+                          side="bottom"
+                          type="button"
+                          (click)="selection.set({ kind: 'undo', row })"
+                        >
+                          <app-list-row>
+                            <ng-icon
+                              appListRowLeading
+                              class="text-balance-positive"
+                              hlm
+                              name="lucideCircleCheck"
+                              size="sm"
+                              strokeWidth="1.5"
+                              aria-hidden="true"
+                            />
+                            <span appListRowTitle>{{ row.label }}</span>
+                            <span appListRowMeta>{{ dayOf(row) }}</span>
+                            <span appListRowTrailing class="gap-2 text-foreground">
+                              <app-money-amount [cents]="row.amount" [currency]="currency()" />
+                              <ng-icon hlm name="lucideChevronRight" size="sm" aria-hidden="true" />
+                            </span>
+                          </app-list-row>
+                        </button>
+                      } @else {
                         <app-list-row>
                           <ng-icon
                             appListRowLeading
@@ -108,36 +128,18 @@
                           />
                           <span appListRowTitle>{{ row.label }}</span>
                           <span appListRowMeta>{{ dayOf(row) }}</span>
-                          <span appListRowTrailing class="gap-2 text-foreground">
-                            <app-money-amount [cents]="row.amount" [currency]="currency()" />
-                            <ng-icon hlm name="lucideChevronRight" size="sm" aria-hidden="true" />
-                          </span>
+                          <app-money-amount
+                            appListRowTrailing
+                            class="text-muted-foreground"
+                            [cents]="row.amount"
+                            [currency]="currency()"
+                          />
                         </app-list-row>
-                      </button>
-                    } @else {
-                      <app-list-row>
-                        <ng-icon
-                          appListRowLeading
-                          class="text-balance-positive"
-                          hlm
-                          name="lucideCircleCheck"
-                          size="sm"
-                          strokeWidth="1.5"
-                          aria-hidden="true"
-                        />
-                        <span appListRowTitle>{{ row.label }}</span>
-                        <span appListRowMeta>{{ dayOf(row) }}</span>
-                        <app-money-amount
-                          appListRowTrailing
-                          class="text-muted-foreground"
-                          [cents]="row.amount"
-                          [currency]="currency()"
-                        />
-                      </app-list-row>
-                    }
-                  </li>
-                }
-              </ul>
+                      }
+                    </li>
+                  }
+                </ul>
+              }
               <app-load-more
                 [state]="doneMore()"
                 (reached)="loadMoreDone.emit()"
