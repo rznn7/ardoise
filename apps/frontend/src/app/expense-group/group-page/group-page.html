@@ -1,6 +1,11 @@
 @let group = groupState();
 <hlm-sheet #sheet="hlmSheet">
-  <app-mobile-shell [bleed]="group.status === 'loading' || group.status === 'loaded'">
+  <app-mobile-shell
+    [bleed]="group.status === 'loading' || group.status === 'loaded'"
+    [refreshable]="group.status === 'loaded'"
+    [refreshing]="refreshing()"
+    (refresh)="refresh()"
+  >
     @switch (group.status) {
       @case ('forbidden') {
         <app-page-state

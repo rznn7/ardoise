@@ -39,6 +39,7 @@ import { dayLabel } from 'src/app/payment/day-label';
 import { DoneStore } from 'src/app/settlement/done-store';
 import { settlementLabel } from 'src/app/settlement/settlement-label';
 import { injectGoBack } from 'src/app/shared/navigation/back';
+import { ToastService } from 'src/app/shared/toast.service';
 import { BalanceIndicator } from 'src/app/shared/ui/balance-indicator/balance-indicator';
 import { GroupHero } from 'src/app/shared/ui/group-hero/group-hero';
 import { ListRowImports } from 'src/app/shared/ui/list-row/list-row';
@@ -111,6 +112,7 @@ export class GroupPage {
   private readonly visits = inject(GroupVisitMemory);
   private readonly injector = inject(Injector);
   private readonly shell = viewChild(MobileShell);
+  private readonly toast = inject(ToastService);
 
   readonly goBack = injectGoBack();
 
@@ -118,6 +120,8 @@ export class GroupPage {
   readonly tab = input<GroupTab, string | undefined>('payments', { transform: toTab });
 
   readonly groupState = signal<GroupState>({ status: 'loading' });
+  private readonly refreshRequested = signal(false);
+  private readonly groupRefresh = signal<'idle' | 'loading' | 'error'>('idle');
   readonly inviting = signal(false);
 
   private readonly feedOfGroup = computed(() => this.feedStore.feed(this.groupId()));
@@ -218,6 +222,20 @@ export class GroupPage {
     return days;
   });
 
+  private readonly feedRefreshOfGroup = computed(() => this.feedStore.refreshState(this.groupId()));
+  private readonly doneRefreshOfGroup = computed(() => this.doneStore.refreshState(this.groupId()));
+  private readonly refreshStates = computed(() => [
+    this.groupRefresh(),
+    this.feedRefreshOfGroup()(),
+    this.doneRefreshOfGroup()(),
+  ]);
+
+  readonly refreshing = computed(
+    () =>
+      this.refreshRequested() &&
+      (this.refreshStates().includes('loading') || this.balancesRefreshing()),
+  );
+
   readonly repaymentLabel = (row: FeedRow & { kind: 'settlement' }): string => {
     const state = this.groupState();
     if (state.status !== 'loaded') return '';
@@ -233,6 +251,15 @@ export class GroupPage {
       const groupId = this.groupId();
       untracked(() => {
         this.open(groupId);
+      });
+    });
+
+    effect(() => {
+      if (!this.refreshRequested() || this.refreshing()) return;
+      const failed = this.refreshStates().includes('error');
+      untracked(() => {
+        this.refreshRequested.set(false);
+        if (failed) this.toast.error("Couldn't refresh the group");
       });
     });
 
@@ -264,6 +291,24 @@ export class GroupPage {
 
   undoSettlement(id: number): void {
     this.feedStore.undoSettlement(this.groupId(), id);
+  }
+
+  refresh(): void {
+    const groupId = this.groupId();
+    this.refreshRequested.set(true);
+    this.groupRefresh.set('loading');
+    this.feedStore.loadFirst(groupId);
+    this.doneStore.loadFirst(groupId);
+    this.balanceStore.load(groupId);
+    this.fetchGroup(groupId).subscribe({
+      next: ({ group, members, me }) => {
+        this.groupState.set({ status: 'loaded', group, members, me });
+        this.groupRefresh.set('idle');
+      },
+      error: () => {
+        this.groupRefresh.set('error');
+      },
+    });
   }
 
   loadMoreFeed(): void {
@@ -341,13 +386,17 @@ export class GroupPage {
     });
   }
 
-  private loadGroup(groupId: number): void {
-    this.groupState.set({ status: 'loading' });
-    forkJoin({
+  private fetchGroup(groupId: number) {
+    return forkJoin({
       group: this.groupApi.findOne({ params: { id: groupId } }),
       members: this.memberApi.listByGroup(groupId),
       me: this.auth.currentUser(),
-    }).subscribe({
+    });
+  }
+
+  private loadGroup(groupId: number): void {
+    this.groupState.set({ status: 'loading' });
+    this.fetchGroup(groupId).subscribe({
       next: ({ group, members, me }) => {
         this.lastGroup.remember(groupId);
         this.groupState.set({ status: 'loaded', group, members, me });

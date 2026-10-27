@@ -30,6 +30,7 @@ import { ClipboardService } from 'src/app/shared/clipboard.service';
 import { withHistoryPageIds } from 'src/app/shared/navigation/back';
 import { openFirstPage } from 'src/app/shared/navigation/first-page.testing';
 import { ShareService } from 'src/app/shared/share.service';
+import { ToastService } from 'src/app/shared/toast.service';
 import { LoadMore } from 'src/app/shared/ui/load-more/load-more';
 import { MobileShell } from 'src/app/shared/ui/mobile-shell/mobile-shell';
 
@@ -135,6 +136,9 @@ interface Setup {
   loadMoreFeed: ReturnType<typeof vi.fn<() => void>>;
   loadMoreDone: ReturnType<typeof vi.fn<() => void>>;
   harness: RouterTestingHarness;
+  feedRefresh: WritableSignal<'idle' | 'loading' | 'error'>;
+  loadDone: ReturnType<typeof vi.fn<(groupId: number) => void>>;
+  toastError: ReturnType<typeof vi.fn<(message: string) => void>>;
 }
 
 const settlementsOf = (row: FeedRow) => (row.kind === 'settlement' ? [row.settlement] : []);
@@ -179,6 +183,9 @@ async function setup({
   const undoSettlement = vi.fn<(groupId: number, id: number) => void>();
   const loadMoreFeed = vi.fn<() => void>();
   const loadMoreDone = vi.fn<() => void>();
+  const feedRefresh = signal<'idle' | 'loading' | 'error'>('idle');
+  const loadDone = vi.fn<(groupId: number) => void>();
+  const toastError = vi.fn<(message: string) => void>();
   TestBed.configureTestingModule({
     providers: [
       provideRouter(
@@ -201,6 +208,7 @@ async function setup({
           feed: () => feed,
           loadFirst: load,
           hasPages: () => true,
+          refreshState: () => feedRefresh,
           loadMore: loadMoreFeed,
           retryMore: vi.fn(),
           settledVersion: () => settled,
@@ -214,12 +222,14 @@ async function setup({
         useValue: {
           done: () => signal(doneState),
           hasPages: () => true,
-          loadFirst: vi.fn(),
+          refreshState: () => signal('idle'),
+          loadFirst: loadDone,
           loadMore: loadMoreDone,
           retryMore: vi.fn(),
         },
       },
       { provide: BalanceApiService, useValue: { listByGroup: listBalances } },
+      { provide: ToastService, useValue: { error: toastError } },
       { provide: LastGroupService, useValue: { remember, skipLaunchRedirect } },
       {
         provide: InviteLinkApiService,
@@ -254,8 +264,16 @@ async function setup({
     loadMoreFeed,
     loadMoreDone,
     harness,
+    feedRefresh,
+    loadDone,
+    toastError,
   };
 }
+
+const pullToRefresh = (harness: RouterTestingHarness): void => {
+  const shell = harness.fixture.debugElement.query(By.directive(MobileShell));
+  (shell.componentInstance as MobileShell).refresh.emit();
+};
 
 const reachBottom = (harness: RouterTestingHarness, at: string): void => {
   const [loadMore] = harness.fixture.debugElement
@@ -284,6 +302,48 @@ describe('GroupPage', () => {
 
     expect(remember).toHaveBeenCalledWith(7);
     expect(load).toHaveBeenCalledWith(7);
+  });
+
+  describe('pull to refresh', () => {
+    it('reloads the group, its balances and the first pages of the feed and Done', async () => {
+      const { harness, load, loadDone, findOne, listBalances } = await setup({
+        feedState: WITH_PAYMENT,
+      });
+
+      pullToRefresh(harness);
+      await harness.fixture.whenStable();
+
+      expect(load).toHaveBeenCalledTimes(2);
+      expect(loadDone).toHaveBeenCalledTimes(2);
+      expect(findOne).toHaveBeenCalledTimes(2);
+      expect(listBalances).toHaveBeenCalledTimes(2);
+      expect(screen.getByText('Dinner')).toBeTruthy();
+    });
+
+    it('shows the refresh until the feed is back', async () => {
+      const { harness, feedRefresh } = await setup({ feedState: WITH_PAYMENT });
+
+      pullToRefresh(harness);
+      feedRefresh.set('loading');
+      await harness.fixture.whenStable();
+      expect(screen.getByRole('status', { name: 'Refreshing' })).toBeTruthy();
+
+      feedRefresh.set('idle');
+      await harness.fixture.whenStable();
+      expect(screen.queryByRole('status', { name: 'Refreshing' })).toBeNull();
+    });
+
+    it('keeps the rows and says so when the refresh fails', async () => {
+      const { harness, findOne, toastError } = await setup({ feedState: WITH_PAYMENT });
+      findOne.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
+
+      pullToRefresh(harness);
+      await harness.fixture.whenStable();
+
+      expect(screen.getByText('Dinner')).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'Lisbon trip' })).toBeTruthy();
+      expect(toastError).toHaveBeenCalledWith("Couldn't refresh the group");
+    });
   });
 
   describe('keeping your place', () => {

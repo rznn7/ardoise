@@ -4,7 +4,23 @@
       <ng-content select="[appShellHeader]" />
     </header>
   }
-  <main #main class="flex flex-1 flex-col overflow-y-auto overscroll-contain">
+  <main
+    #main
+    #pull="appPullToRefresh"
+    class="flex flex-1 flex-col overflow-y-auto overscroll-contain"
+    [appPullToRefresh]="refreshable()"
+    (pulled)="refresh.emit()"
+  >
+    @if (refreshable() && (refreshing() || pull.distance() > 0)) {
+      <div
+        role="status"
+        class="flex shrink-0 items-center justify-center overflow-hidden"
+        [attr.aria-label]="refreshing() ? 'Refreshing' : 'Pull to refresh'"
+        [style.height.px]="refreshing() ? 56 : pull.distance()"
+      >
+        <hlm-spinner />
+      </div>
+    }
     <ng-content />
   </main>
   @if (fab()) {

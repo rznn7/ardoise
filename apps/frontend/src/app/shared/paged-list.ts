@@ -65,6 +65,12 @@ export class PagedList<T> {
     };
   }
 
+  refreshState(groupId: number): 'idle' | 'loading' | 'error' {
+    if (this.active() !== groupId || this.cursor() !== undefined) return 'idle';
+    if (this.page.isLoading()) return 'loading';
+    return this.page.error() === undefined ? 'idle' : 'error';
+  }
+
   hasPages(groupId: number): boolean {
     return this.kept()?.groupId === groupId;
   }

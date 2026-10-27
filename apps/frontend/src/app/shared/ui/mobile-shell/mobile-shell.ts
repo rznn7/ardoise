@@ -5,8 +5,11 @@ import {
   Directive,
   type ElementRef,
   input,
+  output,
   viewChild,
 } from '@angular/core';
+import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
+import { PullToRefresh } from 'src/app/shared/ui/pull-to-refresh/pull-to-refresh';
 
 @Directive({ selector: '[appShellHeader]' })
 export class ShellHeader {}
@@ -16,7 +19,7 @@ export class ShellFab {}
 
 @Component({
   selector: 'app-mobile-shell',
-  imports: [],
+  imports: [PullToRefresh, HlmSpinnerImports],
   host: {
     class: 'flex h-[100dvh] justify-center bg-background',
     '[class.pt-[env(safe-area-inset-top)]]': '!bleed()',
@@ -28,6 +31,9 @@ export class ShellFab {}
 })
 export class MobileShell {
   readonly bleed = input(false, { transform: booleanAttribute });
+  readonly refreshable = input(false, { transform: booleanAttribute });
+  readonly refreshing = input(false, { transform: booleanAttribute });
+  readonly refresh = output();
 
   protected readonly header = contentChild(ShellHeader);
   protected readonly fab = contentChild(ShellFab);

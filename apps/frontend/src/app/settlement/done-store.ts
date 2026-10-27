@@ -42,6 +42,10 @@ export class DoneStore {
     });
   }
 
+  refreshState(groupId: number): Signal<'idle' | 'loading' | 'error'> {
+    return computed(() => this.pages.refreshState(groupId));
+  }
+
   hasPages(groupId: number): boolean {
     return this.pages.hasPages(groupId);
   }
