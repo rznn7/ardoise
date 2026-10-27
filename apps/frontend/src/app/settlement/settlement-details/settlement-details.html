@@ -20,12 +20,11 @@
 
     @switch (details.status) {
       @case ('loading') {
-        <div class="flex flex-col gap-2 px-4 pt-4 pb-6">
+        <div aria-label="Loading" class="flex flex-col gap-2 px-4 pt-4 pb-6" role="status">
           <hlm-skeleton class="h-10 w-2/5" />
           <hlm-skeleton class="h-6 w-3/5" />
           <hlm-skeleton class="h-3.5 w-2/5" />
         </div>
-        <app-page-state state="loading" [skeletonRows]="0" />
       }
       @case ('not-found') {
         <app-page-state
