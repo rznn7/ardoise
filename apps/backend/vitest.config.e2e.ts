@@ -8,6 +8,13 @@ export default defineConfig({
     environment: 'node',
     include: ['test/**/*.e2e-spec.ts'],
     root: './',
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.ts'],
+      exclude: ['src/**/*.spec.ts', 'src/main.ts'],
+      reporter: ['text-summary', 'json-summary'],
+      reportsDirectory: './coverage/e2e',
+    },
   },
   resolve: {
     alias: {

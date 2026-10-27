@@ -8,7 +8,18 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.spec.ts'],
     root: './',
-    coverage: { provider: 'v8' },
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/domain/**/*.ts'],
+      exclude: [
+        'src/**/*.spec.ts',
+        'src/**/domain/*-repository.ts',
+        'src/auth/domain/passkey-verifier.ts',
+        'src/auth/domain/unit-of-work.ts',
+      ],
+      reporter: ['text-summary', 'json-summary'],
+      reportsDirectory: './coverage/unit',
+    },
   },
   resolve: {
     alias: {

@@ -43,7 +43,9 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @ardoise/backend test
+      - run: pnpm --filter @ardoise/backend test:cov
+      - if: ${{ !cancelled() }}
+        run: node scripts/coverage-summary.mts "Backend domain (unit)" apps/backend/coverage/unit/coverage-summary.json
 
   frontend-unit:
     name: Frontend unit tests
@@ -56,7 +58,9 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @ardoise/frontend test
+      - run: pnpm --filter @ardoise/frontend test:cov
+      - if: ${{ !cancelled() }}
+        run: node scripts/coverage-summary.mts "Frontend components" apps/frontend/coverage/frontend/coverage-summary.json
 
   e2e:
     name: E2E tests
@@ -70,7 +74,10 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @ardoise/e2e exec playwright install --with-deps chromium
-      - run: pnpm test:e2e
+      - run: pnpm --filter @ardoise/backend test:e2e:cov
+      - if: ${{ !cancelled() }}
+        run: node scripts/coverage-summary.mts "Backend HTTP (e2e)" apps/backend/coverage/e2e/coverage-summary.json
+      - run: pnpm --filter @ardoise/e2e test:e2e
 
   build:
     name: Build

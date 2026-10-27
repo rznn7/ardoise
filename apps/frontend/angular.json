@@ -74,7 +74,11 @@
           }
         },
         "test": {
-          "builder": "@angular/build:unit-test"
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "coverageReporters": ["text-summary", "json-summary"],
+            "coverageExclude": ["libs/**"]
+          }
         },
         "lint": {
           "builder": "@angular-eslint/builder:lint",
