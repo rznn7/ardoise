@@ -18,7 +18,11 @@ type BodyArg<E extends Endpoint> = E extends { body: z.ZodType }
   ? { body: z.input<E['body']> }
   : object;
 
-type RequestArg<E extends Endpoint> = ParamsArg<E> & BodyArg<E>;
+type QueryArg<E extends Endpoint> = E extends { query: z.ZodType }
+  ? { query?: z.input<E['query']> }
+  : object;
+
+type RequestArg<E extends Endpoint> = ParamsArg<E> & BodyArg<E> & QueryArg<E>;
 
 type Res<E extends Endpoint> = E extends { res: z.ZodType } ? z.infer<E['res']> : void;
 
@@ -29,6 +33,13 @@ type ClientMethod<E extends Endpoint> = keyof RequestArg<E> extends never
 export type ApiClient<T extends Record<string, Endpoint>> = {
   [K in keyof T]: ClientMethod<T[K]>;
 };
+
+const toQuery = (query: Record<string, unknown>): Record<string, string> =>
+  Object.fromEntries(
+    Object.entries(query).flatMap(([key, value]) =>
+      value === undefined ? [] : [[key, String(value)]],
+    ),
+  );
 
 const interpolate = (path: string, params?: Record<string, string | number>): string =>
   path.replace(/:([A-Za-z0-9_]+)/g, (_, key: string) => {
@@ -47,11 +58,16 @@ export const createApiClient = <T extends Record<string, Endpoint>>(
     client[name] = (req?: {
       params?: Record<string, string | number>;
       body?: unknown;
+      query?: Record<string, unknown>;
     }): Observable<unknown> => {
       const response = config.http.request(
         endpoint.method,
         `${config.baseUrl}${interpolate(endpoint.path, req?.params)}`,
-        { body: req?.body, withCredentials: true },
+        {
+          body: req?.body,
+          ...(req?.query ? { params: toQuery(req.query) } : {}),
+          withCredentials: true,
+        },
       );
       const schema = endpoint.res;
       return schema ? response.pipe(map((res) => schema.parse(res))) : response;

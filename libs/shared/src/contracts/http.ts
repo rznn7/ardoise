@@ -6,6 +6,7 @@ export type Endpoint = {
   method: HttpMethod;
   path: string;
   status?: number;
+  query?: z.ZodType;
   body?: z.ZodType;
   res?: z.ZodType;
 };
