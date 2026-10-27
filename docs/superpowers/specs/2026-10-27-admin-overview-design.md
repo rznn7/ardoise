@@ -13,6 +13,7 @@ The panel is also the place where instance settings and admin actions will land 
 - An admin sees, from home, in **1 tap**: how many users, groups and payments the instance has, and the list of users and of groups.
 - **1 more tap** on a user shows their groups (with role and balance) and their account info. On a group, it shows its members (with role and balance) and its invite links.
 - An admin can **revoke** an invite link that is still valid, so nobody can join with it any more.
+- An admin can **revoke** a user's active session, which signs that device out (lost or handed-over phone).
 - The screens are made of sections, so later slices can add sections (settings, actions) without reworking them.
 - Nobody who isn't an admin can see the panel or reach its endpoints.
 
@@ -22,6 +23,7 @@ The panel is also the place where instance settings and admin actions will land 
 - Richer invite links (a number of uses, admin links not tied to a group). The current `singleUse` / `expiresAt` model stays.
 - Instance settings (registration mode, default currency, limits…). The panel is built to receive them later.
 - Promoting or demoting admins from the UI. See "Becoming admin" below.
+- Passkey management (delete, re-create for a user, several passkeys per user), for the admin and for the user. Planned later; the roadmap gets the entries.
 - Search, filters or pagination of the lists (instances are small).
 - Audit log of admin actions.
 
@@ -33,9 +35,10 @@ The panel is also the place where instance settings and admin actions will land 
 
 ## Domain rules
 
-- **Only a user with `role = 'admin'` may read the admin overview or revoke an invite link through it.**
+- **Only a user with `role = 'admin'` may read the admin overview, revoke an invite link or revoke a session through it.**
 - **Revoking** an invite link sets `revokedAt` (new nullable column on `invite_link`). A revoked link behaves like an expired one: preview and consume refuse it with the same response the invite page already handles for an expired link (my call: the person joining doesn't need to know why). Revoking an already revoked, expired or used link is a no-op (204).
 - **Invite link status**, derived, in this order: `revoked` if `revokedAt` is set, `used` if single use and burned, `expired` if `expiresAt` is past, else `active`.
+- **Revoking a session** sets its `revokedAt` (the existing `Session.revoke`, as logout does). Revoking an already revoked or expired session is a no-op (204). The admin's **current** session is never offered for revocation (my call: it would sign them out mid-action); the API refuses it with 400 `CANNOT_REVOKE_CURRENT_SESSION`.
 - **Last sign-in** of a user = the latest `session.issuedAt` (my call: the closest thing to "last seen" we store; shown as "signed in 2 days ago"). Users with no session show their join date.
 - Balances shown here are the same server-computed balances as the Balances slice (`balance` domain). The admin sees amounts: the owner approved the mockups that show them.
 
@@ -70,6 +73,8 @@ Canvas 393×852, tap targets ≥ 44px. Mockups in `.superpowers/brainstorm/admin
 - Back ‹. Title: the name (with the "Admin" marker if admin). Meta: "Joined 12 Oct · signed in 2 days ago · 1 passkey".
 - **Groups** section: one row per membership, sorted by group name. Title: group name. Meta: "Moderator · 2 members" or "Member · 5 members". Trailing: the user's balance in that group with the `balance-indicator` (dot + signed amount, `€0.00` with no dot). Tap opens the admin group detail.
 - **Sessions** section: active sessions (not revoked, not expired), newest first, "Signed in 27 Oct · expires in 26 days". "No active session" when none.
+  - Each session except the one the admin is using has a trailing **Revoke** text button (destructive text). The admin's own current session shows "This device" instead.
+  - **Revoke** opens a confirmation sheet: "Sign this session out?", "This device will need the passkey to sign in again.", a destructive **Revoke** and **Cancel**. Optimistic: the row disappears at once; if the server refuses, it comes back with a toast "Couldn't revoke the session".
 - States: loading, not found (404), error with retry.
 
 ### Group detail, `/admin/groups/:groupId`
@@ -109,12 +114,21 @@ Revoking changes an invite link, so it belongs to the invite-link context, not t
 - `POST /admin/invite-links/:id/revoke` → 204. Route under `/admin` for consistency; the controller can sit in `invite-link/infrastructure`.
 - Schema: `invite_link.revoked_at timestamptz null`, then `db:generate`.
 
+### `session/` (extended)
+
+Revoking a session changes it, so it belongs to the session context.
+
+- Sessions are keyed by their token, which must never leave the server. The `session` table gains an `id` (identity, unique; the token stays the primary key) so the admin API can reference a session. Then `db:generate`.
+- `RevokeSessionUseCase`: `assertAdmin`, load by id (404 if unknown), refuse the caller's current session, `Session.revoke` unless already revoked or expired, save. One write, no unit of work.
+- `POST /admin/sessions/:id/revoke` → 204.
+
 ### Contracts (`@ardoise/shared`, `adminApi`)
 
 - `GET /admin/overview` → `{ counts: { users, groups, payments }, users: { id, name, role, createdAt, lastSignInAt | null, groupCount }[], groups: { id, name, currencyCode, createdAt, memberCount, paymentCount }[] }`
-- `GET /admin/users/:userId` → `{ user: { id, name, role, createdAt, lastSignInAt | null, passkeyCount }, groups: { groupId, name, currencyCode, isModerator, memberCount, balance }[], sessions: { issuedAt, expiresAt }[] }`
+- `GET /admin/users/:userId` → `{ user: { id, name, role, createdAt, lastSignInAt | null, passkeyCount }, groups: { groupId, name, currencyCode, isModerator, memberCount, balance }[], sessions: { id, issuedAt, expiresAt, current }[] }` (`current` is true for the caller's own session)
 - `GET /admin/groups/:groupId` → `{ group: { id, name, currencyCode, createdAt, paymentCount, totalSpent }, members: { memberId, userId, name, isModerator, balance }[], inviteLinks: { id, singleUse, status, expiresAt, burnedAt | null, burnedByName | null, revokedAt | null, createdAt }[] }`
 - `POST /admin/invite-links/:id/revoke` → 204.
+- `POST /admin/sessions/:id/revoke` → 204.
 - Never expose session tokens, passkey material or invite tokens.
 
 ## Frontend placement
@@ -132,16 +146,17 @@ Revoking changes an invite link, so it belongs to the invite-link context, not t
   - Overview counts and lists, including a user with no group.
   - User detail: groups with role, member count and balance; active sessions only; 404.
   - Group detail: members with balances; invite link statuses; 404.
-  - Revoke: 204; a revoked link can't be previewed or consumed; revoking twice is 204; 404 unknown; 403 non-admin.
-- **Frontend unit**: entry button only for admins; `adminGuard` redirects; tabs and `?tab`; row wording (groups count, sign-in, roles, link statuses); revoke optimistic and its rollback.
-- **Playwright** (`apps/e2e/e2e/`), named as use cases: *an admin sees who is on the instance*, *an admin sees a user's groups*, *an admin revokes an invite link* (then joining with it fails), *a regular user has no admin panel* (no button, `/admin` redirects home).
-- **Screenshot matrix**: home with the admin button, overview Users and Groups tabs, loading, error, user detail (with groups, with no group), group detail (links in every status), revoke sheet, not found. Light and dark.
+  - Revoke link: 204; a revoked link can't be previewed or consumed; revoking twice is 204; 404 unknown; 403 non-admin.
+  - Revoke session: 204 and that session's cookie gets 401 afterwards; twice is 204; 404 unknown; 403 non-admin; 400 on the caller's own session.
+- **Frontend unit**: entry button only for admins; `adminGuard` redirects; tabs and `?tab`; row wording (groups count, sign-in, roles, link statuses); revoke (link and session) optimistic and its rollback; no Revoke on "This device".
+- **Playwright** (`apps/e2e/e2e/`), named as use cases: *an admin sees who is on the instance*, *an admin sees a user's groups*, *an admin revokes an invite link* (then joining with it fails), *an admin signs a user's session out* (that user is sent back to login), *a regular user has no admin panel* (no button, `/admin` redirects home).
+- **Screenshot matrix**: home with the admin button, overview Users and Groups tabs, loading, error, user detail (with groups, with no group), group detail (links in every status), revoke link sheet, user sessions with "This device", revoke session sheet, not found. Light and dark.
 - **Seed**: the primary account becomes admin (the seed spec asserts it for both Alice and a kept real account); a user with no group; invite links in every status in Lisbon (active, used, expired, revoked). `docs/domain.md` and the seed spec follow.
 
 ## Docs
 
 - `docs/domain.md`: `InviteLink.revokedAt` and the status rule; "Only an admin may read the admin overview or revoke invite links through it."
-- `docs/roadmap.md`: an **Admin** section with this slice done, and the deferred items as unchecked entries: account management, richer invite links (uses, validity, no group), instance settings, a proper admin bootstrap for prod (instead of the seed).
+- `docs/roadmap.md`: an **Admin** section with this slice done, and the deferred items as unchecked entries: account management, richer invite links (uses, validity, no group), instance settings, a proper admin bootstrap for prod (instead of the seed), passkey management for the admin and for the user (delete, re-create for a user, several passkeys), next to the existing multi-device entry.
 - `docs/design.md`: the decision log entries above.
 
 ## Left to the builder
