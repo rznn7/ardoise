@@ -43,6 +43,13 @@
       "when": 1782753303852,
       "tag": "0005_mean_tinkerer",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793087152839,
+      "tag": "0006_gorgeous_triton",
+      "breakpoints": true
     }
   ]
 }
