@@ -214,7 +214,7 @@ describe('Admin read', () => {
     });
 
     it('lists members with balances and invite links with their status', async () => {
-      const { adminToken, trip, lea, loner } = await seedInstance();
+      const { adminToken, trip, lea } = await seedInstance();
       await seedInviteLink(pgClient, {
         groupId: trip.id,
         token: 'active-token',
@@ -235,7 +235,6 @@ describe('Admin read', () => {
         token: 'revoked-token',
         revoked: true,
       });
-      loner;
 
       const response = await get(
         `/admin/groups/${String(trip.id)}`,
