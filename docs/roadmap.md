@@ -54,11 +54,11 @@ See `superpowers/specs/2026-10-25-design-system-and-workflow-design.md`.
 
 ## Balances + debt simplification
 Pure domain, no DB — high value, isolated, easy win.
-- [ ] **net balance (pure domain)** — net balance per member (paid − owed).
-- [ ] **debt simplification (pure domain)** — greedy creditor/debtor matching to minimize
+- [x] **net balance (pure domain)** — net balance per member (paid − owed).
+- [x] **debt simplification (pure domain)** — greedy creditor/debtor matching to minimize
   transaction count.
-- [ ] **balance endpoint (backend)** — use-case wiring + contract.
-- [ ] **balance view (frontend)** — who-owes-whom display, hosted on the group page.
+- [x] **balance endpoint (backend)** — use-case wiring + contract.
+- [x] **balance view (frontend)** — who-owes-whom display, hosted on the group page.
 
 ## Settlement
 A settlement overlays the balance calculation; it never mutates payments.
@@ -84,8 +84,6 @@ A settlement overlays the balance calculation; it never mutates payments.
 - [ ] **production deploy** — Docker compose + Hetzner.
 - [x] **PWA** — manifest, app icon, standalone mode under a translucent status bar, reload onto a new
   deploy. iOS keyboard handling landed with payments.
-- [ ] **status bar on light screens** — `black-translucent` draws a white clock over plain light
-  screens (payment form, payment details). Look at it on the phone first.
 - [ ] **multi-device passkey** — lift the v1 single-passkey non-goal.
 - [ ] **account recovery** — lift the v1 no-recovery non-goal.
 

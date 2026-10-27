@@ -24,4 +24,13 @@ describe('BalanceIndicator', () => {
     const host = await renderBalance(0);
     expect(host.querySelector('.bg-balance-positive, .bg-balance-negative')).toBeNull();
   });
+
+  it('unsigned shows the absolute amount and keeps the dot', async () => {
+    const { fixture } = await render(BalanceIndicator, {
+      inputs: { cents: -4250, currency: 'EUR', signed: false },
+    });
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('.bg-balance-negative')).not.toBeNull();
+    expect(host.textContent.trim()).toBe('€42.50');
+  });
 });

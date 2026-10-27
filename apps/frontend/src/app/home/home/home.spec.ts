@@ -1,11 +1,16 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { type CreateInviteLinkResponse, type ExpenseGroupSummary } from '@ardoise/shared';
+import {
+  type CreateInviteLinkResponse,
+  type ExpenseGroupSummary,
+  type MyBalance,
+} from '@ardoise/shared';
 import { render, screen, waitFor, within } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { type Observable, of, Subject, throwError } from 'rxjs';
 import { AuthService } from 'src/app/auth/auth.service';
+import { BalanceApiService } from 'src/app/balance/balance-api.service';
 import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.service';
 import { LastGroupService } from 'src/app/expense-group/last-group.service';
 import { InviteLinkApiService } from 'src/app/invite-link/invite-link-api.service';
@@ -30,7 +35,9 @@ async function setup({
   listMine = vi.fn<() => Observable<ExpenseGroupSummary[]>>().mockReturnValue(of([])),
   create = vi.fn<() => Observable<ExpenseGroupSummary>>().mockReturnValue(of(NEW_GROUP)),
   takeLaunchRedirect = vi.fn<() => number | null>().mockReturnValue(null),
+  balances = of([]),
 }: {
+  balances?: Observable<MyBalance[]>;
   listMine?: ListMineMock;
   create?: CreateMock;
   takeLaunchRedirect?: TakeLaunchRedirectMock;
@@ -51,6 +58,7 @@ async function setup({
         },
       },
       { provide: LastGroupService, useValue: { takeLaunchRedirect } },
+      { provide: BalanceApiService, useValue: { listMine: () => balances } },
       provideRouter([{ path: 'group/:groupId', component: Blank }]),
       { provide: AuthService, useValue: {} },
     ],
@@ -242,6 +250,52 @@ describe('Home', () => {
 
     await waitFor(() => {
       expect(TestBed.inject(Router).url).toBe('/group/2');
+    });
+  });
+
+  describe('balances', () => {
+    const slotOf = (name: string): HTMLElement => {
+      const link = screen.getByRole('link', { name: new RegExp(name) });
+      const slot = link.querySelector<HTMLElement>('[data-testid="balance-slot"]');
+      if (!slot) throw new Error(`no balance slot for ${name}`);
+      return slot;
+    };
+    const twoGroups = () =>
+      vi.fn<() => Observable<ExpenseGroupSummary[]>>().mockReturnValue(of(TWO_GROUPS));
+
+    it('shows my balance on each group row', async () => {
+      await setup({
+        listMine: twoGroups(),
+        balances: of([
+          { groupId: 1, amount: -2820 },
+          { groupId: 2, amount: 1830 },
+        ]),
+      });
+
+      expect(slotOf('Trip').textContent.trim()).toBe('−€28.20');
+      expect(slotOf('Flat').textContent.trim()).toBe('+€18.30');
+    });
+
+    it('leaves the slot empty for a settled group', async () => {
+      await setup({
+        listMine: twoGroups(),
+        balances: of([
+          { groupId: 1, amount: 0 },
+          { groupId: 2, amount: 500 },
+        ]),
+      });
+
+      expect(slotOf('Trip').textContent.trim()).toBe('');
+    });
+
+    it('still lists the groups when balances fail', async () => {
+      await setup({
+        listMine: twoGroups(),
+        balances: throwError(() => new Error('offline')),
+      });
+
+      expect(slotOf('Trip').textContent.trim()).toBe('');
+      expect(slotOf('Flat').textContent.trim()).toBe('');
     });
   });
 });

@@ -42,3 +42,7 @@ export async function addPayment(
 export function feedRow(page: Page, title: string) {
   return page.getByRole('listitem').filter({ hasText: title });
 }
+
+export function heroBalance(page: Page, label: RegExp) {
+  return page.getByRole('button', { name: label });
+}

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { MoneyAmount } from 'src/app/shared/ui/money-amount/money-amount';
 
 @Component({
@@ -12,10 +12,17 @@ import { MoneyAmount } from 'src/app/shared/ui/money-amount/money-amount';
     } @else if (cents() < 0) {
       <span aria-hidden="true" class="size-1.5 rounded-full bg-balance-negative"></span>
     }
-    <app-money-amount [cents]="cents()" [currency]="currency()" [signed]="true" />
+    <app-money-amount
+      [cents]="signed() ? cents() : absolute()"
+      [currency]="currency()"
+      [signed]="signed()"
+    />
   `,
 })
 export class BalanceIndicator {
   readonly cents = input.required<number>();
   readonly currency = input.required<string>();
+  readonly signed = input(true);
+
+  protected readonly absolute = computed(() => Math.abs(this.cents()));
 }

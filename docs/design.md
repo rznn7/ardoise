@@ -12,7 +12,7 @@ The living reference for every screen. Read before building UI. Origin and ratio
 - Color is rare and meaningful:
   - **Balances:** a small green/red dot next to an ink amount. The only color tied to money.
   - **One moment surface per screen, at most:** a backdrop (see Backdrops) behind the screen's hero element.
-  - **Violet** speaks for Ardoise: login, accept-invite, the home overall balance.
+  - **Violet** speaks for Ardoise: login, accept-invite.
   - **Violet, cobalt, sunset, ember** are group identities, derived from the group id. A group's color appears on its hero, and on its home row as its backdrop fading in from the right edge behind the trailing content (amount), which is white over it. Never a dot: dots are for balances.
 - Dark mode is a real theme, maintained alongside light. Preference `system | light | dark`, stored in `localStorage['ardoise.theme']`, default `system`.
 
@@ -58,6 +58,7 @@ Current app-level blocks:
 - `group-chip`: small chip with the group's colour and name, so the target group is always visible in the add/edit flow and details.
 - `figure-input`: the large amount field (`appFigureInput`) of the add flow's first step.
 - `stepper`: − / + with the value between, 44px buttons, for share weights.
+- `balance-bar`: one member's balance as an ink bar on a centre axis, left when they owe, right when they're owed, scaled to the group's largest balance.
 
 ## Template rules
 
@@ -122,3 +123,6 @@ With the frontend running (`pnpm dev:front`), `pnpm --filter @ardoise/e2e screen
 | 2026-10-26 | Payment detail actions | Text-only Edit/Delete | Icons made it heavier |
 | 2026-10-26 | Money format on options screen | app-wide MoneyAmount (€24.50) | one format per screen |
 | 2026-10-26 | App icon | Full word `ardoise` over violet sunrise, dark halo | Over a lone `a` and other palettes; halo over a uniform dim or a text shadow |
+| 2026-10-26 | Group hero balance | Under the members, right-aligned (C5): "You owe" / "Owed to you" / "Settled up" | Z reading; the figure stays small |
+| 2026-10-26 | Balances access on the group page | Payments / Balances tabs under the hero (C) | Most visible access |
+| 2026-10-26 | Balances tab | Member ink bars, then repayments (T3) | Nicest to scan, outside the quick flow |

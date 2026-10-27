@@ -7,6 +7,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import {
   type CreateInviteLinkResponse,
   type ExpenseGroupSummary,
+  type GroupBalancesResponse,
   type GroupMember,
   type MeResponse,
 } from '@ardoise/shared';
@@ -14,6 +15,7 @@ import { screen, waitFor, within } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { type Observable, of, Subject, throwError } from 'rxjs';
 import { AuthApiService } from 'src/app/auth/auth-api.service';
+import { BalanceApiService } from 'src/app/balance/balance-api.service';
 import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.service';
 import { LastGroupService } from 'src/app/expense-group/last-group.service';
 import { InviteLinkApiService } from 'src/app/invite-link/invite-link-api.service';
@@ -72,8 +74,26 @@ const payment = (overrides: Partial<FeedPayment>): FeedPayment => ({
   ...overrides,
 });
 
+const balancesOf = (mine: number): GroupBalancesResponse => ({
+  balances: [
+    { memberId: 11, amount: mine },
+    { memberId: 12, amount: -mine },
+    { memberId: 13, amount: 0 },
+  ],
+  transfers:
+    mine === 0
+      ? []
+      : mine < 0
+        ? [{ fromMemberId: 11, toMemberId: 12, amount: -mine }]
+        : [{ fromMemberId: 12, toMemberId: 11, amount: mine }],
+});
+
+const WITH_PAYMENT: FeedState = { status: 'loaded', payments: [payment({})] };
+
 interface Setup {
   feed: WritableSignal<FeedState>;
+  settled: WritableSignal<number>;
+  listBalances: ReturnType<typeof vi.fn<() => Observable<GroupBalancesResponse>>>;
   load: ReturnType<typeof vi.fn<(groupId: number) => void>>;
   remember: ReturnType<typeof vi.fn<(groupId: number) => void>>;
   skipLaunchRedirect: ReturnType<typeof vi.fn<() => void>>;
@@ -84,14 +104,22 @@ async function setup({
   members = MEMBERS,
   feedState = { status: 'loaded', payments: [] },
   findOne = vi.fn<() => Observable<ExpenseGroupSummary>>().mockReturnValue(of(GROUP)),
+  balances = balancesOf(0),
+  url = '/group/7',
   from,
 }: {
   members?: GroupMember[];
   feedState?: FeedState;
   findOne?: Setup['findOne'];
+  balances?: GroupBalancesResponse | Observable<GroupBalancesResponse>;
+  url?: string;
   from?: string;
 } = {}): Promise<Setup> {
   const feed = signal<FeedState>(feedState);
+  const settled = signal(0);
+  const listBalances = vi
+    .fn<() => Observable<GroupBalancesResponse>>()
+    .mockReturnValue('balances' in balances ? of(balances) : balances);
   const load = vi.fn<(groupId: number) => void>();
   const remember = vi.fn<(groupId: number) => void>();
   const skipLaunchRedirect = vi.fn<() => void>();
@@ -110,7 +138,11 @@ async function setup({
       { provide: ExpenseGroupApiService, useValue: { findOne } },
       { provide: MemberApiService, useValue: { listByGroup: () => of(members) } },
       { provide: AuthApiService, useValue: { me: () => of(ME) } },
-      { provide: PaymentStore, useValue: { feed: () => feed, load } },
+      {
+        provide: PaymentStore,
+        useValue: { feed: () => feed, load, settledVersion: () => settled },
+      },
+      { provide: BalanceApiService, useValue: { listByGroup: listBalances } },
       { provide: LastGroupService, useValue: { remember, skipLaunchRedirect } },
       {
         provide: InviteLinkApiService,
@@ -127,12 +159,12 @@ async function setup({
   const harness = await RouterTestingHarness.create();
   if (from) {
     await openFirstPage(harness, from);
-    await harness.navigateByUrl('/group/7');
+    await harness.navigateByUrl(url);
   } else {
-    await openFirstPage(harness, '/group/7');
+    await openFirstPage(harness, url);
   }
   harness.detectChanges();
-  return { feed, load, remember, skipLaunchRedirect, findOne };
+  return { feed, settled, listBalances, load, remember, skipLaunchRedirect, findOne };
 }
 
 describe('GroupPage', () => {
@@ -372,5 +404,128 @@ describe('GroupPage', () => {
 
     expect(screen.queryByRole('heading', { name: 'Lisbon trip' })).toBeNull();
     expect(screen.getByRole('status', { name: 'Loading' })).toBeTruthy();
+  });
+
+  describe('balance', () => {
+    it('shows what I owe under the members', async () => {
+      await setup({ feedState: WITH_PAYMENT, balances: balancesOf(-1500) });
+
+      const balance = await screen.findByRole('button', { name: /you owe/i });
+      expect(within(balance).getByText('€15.00')).toBeTruthy();
+    });
+
+    it('shows what I am owed', async () => {
+      await setup({ feedState: WITH_PAYMENT, balances: balancesOf(1500) });
+
+      const balance = await screen.findByRole('button', { name: /owed to you/i });
+      expect(within(balance).getByText('€15.00')).toBeTruthy();
+    });
+
+    it('shows Settled up at zero once there are payments', async () => {
+      await setup({ feedState: WITH_PAYMENT, balances: balancesOf(0) });
+
+      const balance = await screen.findByRole('button', { name: /settled up/i });
+      expect(within(balance).getByText('€0.00')).toBeTruthy();
+    });
+
+    it('shows no balance in a group without payments', async () => {
+      await setup({ balances: balancesOf(0) });
+
+      expect(screen.queryByRole('button', { name: /settled up/i })).toBeNull();
+    });
+
+    it('hides the balance when it cannot load', async () => {
+      await setup({
+        feedState: WITH_PAYMENT,
+        balances: throwError(() => new HttpErrorResponse({ status: 500 })),
+      });
+
+      expect(screen.queryByRole('button', { name: /you owe|owed to you|settled up/i })).toBeNull();
+    });
+
+    it('opens the balances tab from the hero balance', async () => {
+      await setup({ feedState: WITH_PAYMENT, balances: balancesOf(-1500) });
+
+      await userEvent.click(await screen.findByRole('button', { name: /you owe/i }));
+
+      expect(await screen.findByText('You pay Léa')).toBeTruthy();
+      expect(TestBed.inject(Location).path()).toBe('/group/7?tab=balances');
+    });
+
+    it('opens directly on the balances tab from the URL', async () => {
+      await setup({
+        feedState: WITH_PAYMENT,
+        balances: balancesOf(-1500),
+        url: '/group/7?tab=balances',
+      });
+
+      expect(await screen.findByText('You pay Léa')).toBeTruthy();
+      expect(screen.queryByRole('link', { name: /dinner/i })).toBeNull();
+    });
+
+    it('switches tabs without adding a history entry', async () => {
+      await setup({ feedState: WITH_PAYMENT, balances: balancesOf(-1500), from: '/home' });
+      const location = TestBed.inject(Location);
+      const go = vi.spyOn(location, 'go');
+
+      await userEvent.click(screen.getByRole('button', { name: 'Balances' }));
+      await waitFor(() => {
+        expect(location.path()).toBe('/group/7?tab=balances');
+      });
+      await userEvent.click(screen.getByRole('button', { name: 'Payments' }));
+      await waitFor(() => {
+        expect(location.path()).toBe('/group/7');
+      });
+
+      expect(go).not.toHaveBeenCalled();
+    });
+
+    it('reloads balances when a payment change settles', async () => {
+      const { settled, listBalances } = await setup({ feedState: WITH_PAYMENT });
+      expect(listBalances).toHaveBeenCalledTimes(1);
+
+      settled.set(1);
+      TestBed.tick();
+
+      expect(listBalances).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('balances tab while payments are not known', () => {
+    it('stays loading until the payments arrive', async () => {
+      await setup({
+        feedState: { status: 'loading' },
+        balances: balancesOf(0),
+        url: '/group/7?tab=balances',
+      });
+
+      expect(await screen.findByRole('status', { name: 'Loading' })).toBeTruthy();
+      expect(screen.queryByText('Nothing to settle yet')).toBeNull();
+    });
+
+    it('shows an error with retry when the payments fail', async () => {
+      const { load, listBalances } = await setup({
+        feedState: { status: 'error' },
+        balances: balancesOf(-1500),
+        url: '/group/7?tab=balances',
+      });
+
+      expect(await screen.findByText("Couldn't load balances")).toBeTruthy();
+      expect(screen.queryByText('Nothing to settle yet')).toBeNull();
+      await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+      expect(load).toHaveBeenCalledTimes(2);
+      expect(listBalances).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not count a payment that is still saving', async () => {
+      await setup({
+        feedState: { status: 'loaded', payments: [payment({ id: -1, pending: true })] },
+        balances: balancesOf(0),
+        url: '/group/7?tab=balances',
+      });
+
+      expect(await screen.findByText('Nothing to settle yet')).toBeTruthy();
+      expect(screen.queryByRole('button', { name: /settled up/i })).toBeNull();
+    });
   });
 });

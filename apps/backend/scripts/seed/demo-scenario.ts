@@ -226,8 +226,42 @@ export async function seedDemo(
     isModerator: true,
   });
 
+  const dinners = await seedGroup(client, {
+    name: 'Friday dinners',
+    currencyCode: 'EUR',
+  });
+  const dPrimary = await seedMember(client, {
+    userId: primaryId,
+    groupId: dinners.id,
+    isModerator: true,
+  });
+  const dBob = await seedMember(client, {
+    userId: bob.id,
+    groupId: dinners.id,
+  });
+  const diners = [dPrimary.id, dBob.id];
+
+  await seedSplitPayment(client, {
+    groupId: dinners.id,
+    payerMemberId: dPrimary.id,
+    title: 'Ramen',
+    fullAmount: 4000,
+    splitType: 'equal',
+    paidAt: daysAgoAt(7, 20),
+    participants: equally(diners),
+  });
+  await seedSplitPayment(client, {
+    groupId: dinners.id,
+    payerMemberId: dBob.id,
+    title: 'Tapas',
+    fullAmount: 4000,
+    splitType: 'equal',
+    paidAt: daysAgoAt(14, 20),
+    participants: equally(diners),
+  });
+
   for (const userId of otherRealIds) {
-    for (const groupId of [lisbon.id, flat.id, ski.id]) {
+    for (const groupId of [lisbon.id, flat.id, ski.id, dinners.id]) {
       await seedMember(client, { userId, groupId });
     }
   }

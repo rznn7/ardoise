@@ -34,7 +34,7 @@ export class ListRowBackdrop {}
         <ng-content select="[appListRowTitle]" />
         <ng-content select="[appListRowMeta]" />
       </div>
-      <div class="relative flex shrink-0 items-center text-white">
+      <div class="relative ml-auto flex shrink-0 items-center text-white">
         <ng-content select="[appListRowTrailing]" />
       </div>
     </div>

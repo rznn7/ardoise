@@ -1,6 +1,9 @@
+import { type INestApplication } from '@nestjs/common';
 import { type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { type Client } from 'pg';
 import { seedDemo } from 'scripts/seed/demo-scenario';
+import request from 'supertest';
+import { type App } from 'supertest/types';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import {
@@ -18,12 +21,10 @@ const PREVIEW = 'https://ardoise.rznn.dev';
 describe('Dev seed', () => {
   let pgContainer: StartedPostgreSqlContainer;
   let pgClient: Client;
-  let closeApp: () => Promise<void>;
+  let app: INestApplication<App>;
 
   beforeAll(async () => {
-    const setup = await setupTestApp();
-    ({ pgClient, pgContainer } = setup);
-    closeApp = () => setup.app.close();
+    ({ app, pgClient, pgContainer } = await setupTestApp());
   }, 30000);
 
   afterEach(async () => {
@@ -33,7 +34,7 @@ describe('Dev seed', () => {
   });
 
   afterAll(async () => {
-    await closeApp();
+    await app.close();
     await pgClient.end();
     await pgContainer.stop();
   });
@@ -87,8 +88,8 @@ describe('Dev seed', () => {
     expect(report.realAccountCount).toBe(0);
     expect(report.sessionToken).not.toBeNull();
     expect(await count('passkey')).toBe(0);
-    expect(await count('expense_group')).toBe(3);
-    expect(await count('payment')).toBe(7);
+    expect(await count('expense_group')).toBe(4);
+    expect(await count('payment')).toBe(9);
     expect(await membership(aliceId!, 'Trip to Lisbon')).toMatchObject({
       is_moderator: true,
     });
@@ -98,6 +99,34 @@ describe('Dev seed', () => {
     expect(await membership(aliceId!, 'Flatshare')).toMatchObject({
       is_moderator: false,
     });
+  });
+
+  it('gives the primary account a group in every balance state', async () => {
+    const report = await seedDemo(pgClient, { origin: LOCAL });
+    const { rows: groups } = await pgClient.query<{ id: number; name: string }>(
+      `SELECT id, name FROM expense_group`,
+    );
+    const nameOf = new Map(groups.map((g) => [g.id, g.name]));
+
+    const response = await request(app.getHttpServer())
+      .get('/balances/mine')
+      .set('Cookie', `session_token=${report.sessionToken ?? ''}`)
+      .expect(200);
+
+    const balances = new Map(
+      (response.body as { groupId: number; amount: number }[]).map((b) => [
+        nameOf.get(b.groupId),
+        b.amount,
+      ]),
+    );
+    expect(balances.get('Trip to Lisbon')).toBeGreaterThan(0);
+    expect(balances.get('Flatshare')).toBeLessThan(0);
+    expect(balances.get('Ski 2027')).toBe(0);
+    expect(balances.get('Friday dinners')).toBe(0);
+    const { rows } = await pgClient.query(
+      `SELECT p.id FROM payment p JOIN expense_group g ON g.id = p.group_id WHERE g.name = 'Friday dinners'`,
+    );
+    expect(rows).toHaveLength(2);
   });
 
   it('never prints a session token off localhost', async () => {
@@ -161,7 +190,12 @@ describe('Dev seed', () => {
     expect(await membership(olderId, 'Trip to Lisbon')).toMatchObject({
       is_moderator: true,
     });
-    for (const group of ['Trip to Lisbon', 'Flatshare', 'Ski 2027']) {
+    for (const group of [
+      'Trip to Lisbon',
+      'Flatshare',
+      'Ski 2027',
+      'Friday dinners',
+    ]) {
       expect(await membership(youngerId, group)).toMatchObject({
         is_moderator: false,
       });
@@ -191,8 +225,8 @@ describe('Dev seed', () => {
       payments: await count('payment'),
       shares: await count('payment_share'),
     }).toEqual(first);
-    expect(first.groups).toBe(3);
-    expect(first.payments).toBe(7);
+    expect(first.groups).toBe(4);
+    expect(first.payments).toBe(9);
     const { rows } = await pgClient.query<{ name: string; n: string }>(
       `SELECT name, count(*) AS n FROM users WHERE name IN ('Bob', 'Carol', 'David') GROUP BY name`,
     );

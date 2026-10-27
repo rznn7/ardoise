@@ -35,7 +35,12 @@
                   <app-list-row>
                     <app-group-fade appListRowBackdrop [groupId]="group.id" />
                     <span appListRowTitle>{{ group.name }}</span>
-                    <span appListRowTrailing data-testid="balance-slot"></span>
+                    <span appListRowTrailing data-testid="balance-slot">
+                      @let balance = balanceOf(group.id);
+                      @if (balance) {
+                        <app-balance-indicator [cents]="balance" [currency]="group.currencyCode" />
+                      }
+                    </span>
                   </app-list-row>
                 </a>
               </li>
@@ -45,14 +50,7 @@
       }
     }
 
-    <button
-      appShellFab
-      aria-label="Create a group"
-      hlmBtn
-      hlmSheetTrigger
-      side="bottom"
-      size="fab"
-    >
+    <button appShellFab aria-label="Create a group" hlmBtn hlmSheetTrigger side="bottom" size="fab">
       <ng-icon hlm name="lucidePlus" size="sm" aria-hidden="true" />
       <span>New group</span>
     </button>

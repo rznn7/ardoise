@@ -1,7 +1,9 @@
 import {
   computePaymentShares,
   type ExpenseGroupSummary,
+  type GroupBalancesResponse,
   type GroupMember,
+  type MyBalance,
   type MeResponse,
   type PaymentResponse,
   type PaymentShareResponse,
@@ -93,6 +95,42 @@ export const PAYMENTS: PaymentResponse[] = [
     'percent',
   ),
   payment(106, 'Pastéis de nata', 750, 15, daysAgoAt(4, 10)),
+];
+
+export const GROUP_BALANCES: GroupBalancesResponse = {
+  balances: [
+    { memberId: 11, amount: -4250 },
+    { memberId: 12, amount: 8820 },
+    { memberId: 13, amount: -2110 },
+    { memberId: 14, amount: 3360 },
+    { memberId: 15, amount: -5820 },
+  ],
+  transfers: [
+    { fromMemberId: 15, toMemberId: 12, amount: 5820 },
+    { fromMemberId: 11, toMemberId: 14, amount: 3360 },
+    { fromMemberId: 13, toMemberId: 12, amount: 2110 },
+    { fromMemberId: 11, toMemberId: 12, amount: 890 },
+  ],
+};
+
+export const balancesWhereIAmAt = (amount: number): GroupBalancesResponse => ({
+  balances: MEMBERS.map((member, index) => ({
+    memberId: member.id,
+    amount: index === 0 ? amount : index === 1 ? -amount : 0,
+  })),
+  transfers:
+    amount === 0
+      ? []
+      : amount > 0
+        ? [{ fromMemberId: 12, toMemberId: 11, amount }]
+        : [{ fromMemberId: 11, toMemberId: 12, amount: -amount }],
+});
+
+export const MY_BALANCES: MyBalance[] = [
+  { groupId: 1, amount: -4250 },
+  { groupId: 2, amount: 1830 },
+  { groupId: 3, amount: 0 },
+  { groupId: 4, amount: 0 },
 ];
 
 export const SHARES: PaymentShareResponse[] = computePaymentShares({

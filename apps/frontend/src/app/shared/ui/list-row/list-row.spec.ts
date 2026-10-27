@@ -69,4 +69,17 @@ describe('ListRow', () => {
     const title = screen.getByText('A very long group name that should truncate');
     expect(title.closest('.min-w-0')!.className).not.toContain('max-w-3/5');
   });
+
+  it('pushes the trailing content to the right edge when the text is capped', async () => {
+    await render(
+      `<app-list-row>
+        <span appListRowBackdrop>bg</span>
+        <span appListRowTitle>Title</span>
+        <span appListRowTrailing>€42.50</span>
+      </app-list-row>`,
+      { imports: [...ListRowImports] },
+    );
+
+    expect(screen.getByText('€42.50').closest('.shrink-0')!.className).toContain('ml-auto');
+  });
 });
