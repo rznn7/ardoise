@@ -71,3 +71,11 @@ export async function makeNewestUserAdmin(): Promise<void> {
     ),
   );
 }
+
+export async function makeNewestUserModerator(): Promise<void> {
+  await withClient((client) =>
+    client.query(
+      `UPDATE member SET is_moderator = true WHERE user_id = (SELECT MAX(id) FROM users)`,
+    ),
+  );
+}
