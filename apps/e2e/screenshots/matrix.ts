@@ -20,6 +20,7 @@ import {
   MEMBERS,
   MY_BALANCES,
   NEW_GROUP,
+  pageOf,
   PAYMENTS,
   pending,
   SETTLEMENTS,
@@ -49,6 +50,9 @@ const PREVIEW = 'GET /invite-link/[^/]+/preview';
 const GROUPS_LIST = 'GET /expense-groups';
 const GROUP_PATH = `/group/${String(GROUP.id)}`;
 const GROUP_FEED = `GET /expense-groups/${String(GROUP.id)}/feed`;
+const NEXT_FEED_PAGE = `${GROUP_FEED}\\?cursor=.*`;
+const GROUP_DONE = `GET /expense-groups/${String(GROUP.id)}/settlements`;
+const NEXT_DONE_PAGE = `${GROUP_DONE}\\?cursor=.*`;
 const GROUP_BALANCES_PATH = `GET /expense-groups/${String(GROUP.id)}/balances`;
 const MY_BALANCES_PATH = 'GET /balances/mine';
 const BALANCES_TAB = `${GROUP_PATH}?tab=balances`;
@@ -66,7 +70,8 @@ const groupMocks: ApiMocks = {
   ...loggedIn,
   [`GET /expense-groups/${String(GROUP.id)}`]: json(GROUP),
   [`GET /expense-groups/${String(GROUP.id)}/members`]: json(MEMBERS),
-  [GROUP_FEED]: json(FEED),
+  [GROUP_FEED]: json(pageOf(FEED)),
+  [GROUP_DONE]: json(pageOf(SETTLEMENTS)),
   [findRepayment(MY_REPAYMENT.id)]: json(MY_REPAYMENT),
   [findRepayment(OTHERS_REPAYMENT.id)]: json(OTHERS_REPAYMENT),
   [GROUP_BALANCES_PATH]: json(GROUP_BALANCES),
@@ -88,6 +93,21 @@ const loadingStatus = async (page: Page): Promise<void> => {
 
 const groupLoaded = async (page: Page): Promise<void> => {
   await expect(page.getByRole('heading', { name: GROUP.name })).toBeVisible();
+};
+
+const scrollToBottom = async (page: Page): Promise<void> => {
+  await page.locator('main').evaluate((main) => {
+    main.scrollTo(0, main.scrollHeight);
+  });
+};
+
+const pullDown = async (page: Page): Promise<void> => {
+  const box = await page.locator('main').boundingBox();
+  if (!box) throw new Error('no main');
+  const x = box.x + box.width / 2;
+  await page.mouse.move(x, box.y + 40);
+  await page.mouse.down();
+  await page.mouse.move(x, box.y + 300, { steps: 12 });
 };
 
 const amountTyped = async (page: Page): Promise<void> => {
@@ -263,7 +283,7 @@ export const CELLS: ScreenshotCell[] = [
     route: 'group',
     state: 'empty',
     path: GROUP_PATH,
-    mocks: { ...groupMocks, [GROUP_FEED]: json([]) },
+    mocks: { ...groupMocks, [GROUP_FEED]: json(pageOf([])) },
     ready: visible('No payments yet'),
   },
   {
@@ -352,7 +372,7 @@ export const CELLS: ScreenshotCell[] = [
     path: BALANCES_TAB,
     mocks: {
       ...groupMocks,
-      [GROUP_FEED]: json([]),
+      [GROUP_FEED]: json(pageOf([])),
       [GROUP_BALANCES_PATH]: json(balancesWhereIAmAt(0)),
     },
     ready: visible('Nothing to settle yet'),
@@ -531,9 +551,89 @@ export const CELLS: ScreenshotCell[] = [
   },
   {
     route: 'group',
+    state: 'loading-more',
+    path: GROUP_PATH,
+    mocks: {
+      ...groupMocks,
+      [GROUP_FEED]: json(pageOf(FEED, 'next')),
+      [NEXT_FEED_PAGE]: pending,
+    },
+    ready: async (page) => {
+      await groupLoaded(page);
+      await scrollToBottom(page);
+      await expect(
+        page.getByRole('status', { name: 'Loading more' }),
+      ).toBeVisible();
+    },
+  },
+  {
+    route: 'group',
+    state: 'load-more-error',
+    path: GROUP_PATH,
+    mocks: {
+      ...groupMocks,
+      [GROUP_FEED]: json(pageOf(FEED, 'next')),
+      [NEXT_FEED_PAGE]: status(500),
+    },
+    ready: async (page) => {
+      await groupLoaded(page);
+      await scrollToBottom(page);
+      await expect(page.getByText("Couldn't load more")).toBeVisible();
+    },
+  },
+  {
+    route: 'group',
+    state: 'done-loading-more',
+    path: BALANCES_TAB,
+    mocks: {
+      ...groupMocks,
+      [GROUP_DONE]: json(pageOf(SETTLEMENTS, 'next')),
+      [NEXT_DONE_PAGE]: pending,
+    },
+    ready: async (page) => {
+      await expect(page.getByText('Done')).toBeVisible();
+      await scrollToBottom(page);
+      await expect(
+        page.getByRole('status', { name: 'Loading more' }),
+      ).toBeVisible();
+    },
+  },
+  {
+    route: 'group',
+    state: 'pulling',
+    path: GROUP_PATH,
+    mocks: groupMocks,
+    ready: async (page) => {
+      await groupLoaded(page);
+      await pullDown(page);
+      await expect(
+        page.getByRole('status', { name: 'Pull to refresh' }),
+      ).toBeVisible();
+    },
+  },
+  {
+    route: 'group',
+    state: 'refreshing',
+    path: GROUP_PATH,
+    mocks: groupMocks,
+    ready: async (page) => {
+      await groupLoaded(page);
+      await page.route('**/api/expense-groups/*/feed', () => undefined);
+      await pullDown(page);
+      await page.mouse.up();
+      await expect(
+        page.getByRole('status', { name: 'Refreshing' }),
+      ).toBeVisible();
+    },
+  },
+  {
+    route: 'group',
     state: 'only-repayments',
     path: GROUP_PATH,
-    mocks: { ...groupMocks, [GROUP_FEED]: json(feedOf([], SETTLEMENTS)) },
+    mocks: {
+      ...groupMocks,
+      [GROUP_FEED]: json(pageOf(feedOf([], SETTLEMENTS))),
+    },
     ready: visible('Tom paid Léa back'),
   },
   {
