@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { expiresIn, groupsLabel, signedInLabel } from './admin-dates';
+import { expiresIn, groupMeta, groupsLabel, signedInLabel } from './admin-dates';
 
 const NOW = new Date(2026, 9, 27, 15);
 const at = (daysAgo: number): string => new Date(2026, 9, 27 - daysAgo, 10).toISOString();
@@ -44,5 +44,28 @@ describe('expiresIn', () => {
 describe('groupsLabel', () => {
   it('handles none, one and many', () => {
     expect([0, 1, 4].map(groupsLabel)).toEqual(['No group', '1 group', '4 groups']);
+  });
+});
+
+describe('groupMeta', () => {
+  const group = {
+    id: 1,
+    name: 'Lisbon trip',
+    currencyCode: 'EUR',
+    createdAt: new Date(2026, 9, 1, 12).toISOString(),
+    paymentCount: 31,
+    totalSpent: 124000,
+  };
+
+  it('gives the currency, creation day, payment count and total spent', () => {
+    expect(groupMeta(group)).toBe('EUR · created 1 Oct · 31 payments · €1,240.00 spent');
+  });
+
+  it('says 1 payment in the singular', () => {
+    expect(groupMeta({ ...group, paymentCount: 1 })).toContain('· 1 payment ·');
+  });
+
+  it('spends in the group currency', () => {
+    expect(groupMeta({ ...group, currencyCode: 'USD' })).toContain('$1,240.00 spent');
   });
 });

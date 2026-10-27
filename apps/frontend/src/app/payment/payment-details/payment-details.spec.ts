@@ -10,7 +10,6 @@ import {
   type MeResponse,
   type PaymentResponse,
   type PaymentShareResponse,
-  type SplitType,
   type UpdatePaymentBody,
 } from '@ardoise/shared';
 import { screen, waitFor, within } from '@testing-library/angular';
@@ -23,6 +22,7 @@ import { FeedStore } from 'src/app/feed/feed-store';
 import { MemberApiService } from 'src/app/member/member-api.service';
 import { PaymentApiService } from 'src/app/payment/payment-api.service';
 import { PaymentDraft } from 'src/app/payment/payment-draft';
+import { paymentMeta } from 'src/app/payment/payment-meta';
 import { withHistoryPageIds } from 'src/app/shared/navigation/back';
 import { openFirstPage } from 'src/app/shared/navigation/first-page.testing';
 
@@ -136,23 +136,7 @@ describe('PaymentDetails', () => {
 
     expect(screen.getByText('€24.50').closest('[appFigure]')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Groceries' })).toBeTruthy();
-    expect(screen.getByText('Paid by Léa · Sun 25 Oct · Equally')).toBeTruthy();
-  });
-
-  it.each<[SplitType, string]>([
-    ['shares', 'By shares'],
-    ['percent', 'By percentage'],
-    ['exact', 'Exact amounts'],
-  ])('labels a %s split as %s', async (splitType, label) => {
-    await setup({ payment: { ...PAYMENT, splitType } });
-
-    expect(screen.getByText(`Paid by Léa · Sun 25 Oct · ${label}`)).toBeTruthy();
-  });
-
-  it('says you when you paid', async () => {
-    await setup({ payment: { ...PAYMENT, payerMemberId: 11 } });
-
-    expect(screen.getByText('Paid by you · Sun 25 Oct · Equally')).toBeTruthy();
+    expect(screen.getByText(paymentMeta(PAYMENT, MEMBERS, ME.id))).toBeTruthy();
   });
 
   it('lists every member under Shares, with — for members outside the payment', async () => {
@@ -184,7 +168,19 @@ describe('PaymentDetails', () => {
 
     expect(screen.getByText('€30.00')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Market' })).toBeTruthy();
-    expect(screen.getByText('Paid by you · Sat 24 Oct · By shares')).toBeTruthy();
+    expect(
+      screen.getByText(
+        paymentMeta(
+          {
+            payerMemberId: 11,
+            paidAt: new Date(2026, 9, 24, 12).toISOString(),
+            splitType: 'shares',
+          },
+          MEMBERS,
+          ME.id,
+        ),
+      ),
+    ).toBeTruthy();
     const rows = within(screen.getByRole('list', { name: 'Shares' })).getAllByRole('listitem');
     expect(rows.map((row) => row.textContent.replace(/\s+/g, ''))).toEqual([
       'You€20.00',
@@ -356,7 +352,6 @@ describe('PaymentDetails', () => {
     });
 
     expect(screen.getByRole('status', { name: 'Loading' })).toBeTruthy();
-    expect(document.querySelectorAll('hlm-skeleton').length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
   });
 

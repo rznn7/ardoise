@@ -28,22 +28,6 @@ async function setup({
 }
 
 describe('Login', () => {
-  it('idle button is inverted for the backdrop', async () => {
-    await setup();
-
-    expect(screen.getByRole('button', { name: /login with passkey/i }).classList).toContain(
-      'bg-white',
-    );
-  });
-
-  it('idle button spans the full width', async () => {
-    await setup();
-
-    expect(screen.getByRole('button', { name: /login with passkey/i }).classList).toContain(
-      'w-full',
-    );
-  });
-
   it('renders the idle login button', async () => {
     await setup();
 

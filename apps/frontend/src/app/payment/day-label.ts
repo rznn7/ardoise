@@ -9,6 +9,8 @@ const isSameDay = (a: Date, b: Date): boolean =>
   a.getMonth() === b.getMonth() &&
   a.getDate() === b.getDate();
 
+export const shortDay = (iso: string): string => olderDay.format(new Date(iso));
+
 export function dayLabel(date: Date, today: Date): string {
   if (isSameDay(date, today)) return 'Today';
   const yesterday = new Date(today);

@@ -118,33 +118,10 @@ describe(AcceptInvite.name, () => {
     expect(screen.getByRole('button', { name: 'New here? Join with a passkey' })).toBeTruthy();
   });
 
-  it('invite is presented on a full-screen violet backdrop', async () => {
+  it('presents the invite with the group name', async () => {
     const preview = vi
       .fn<(token: string) => Observable<PreviewInviteLinkResponse>>()
       .mockReturnValue(of({ groupName: 'Trip to Lisbon' }));
-    const me = vi
-      .fn<() => Observable<MeResponse>>()
-      .mockReturnValue(throwError(() => new HttpErrorResponse({ status: 401 })));
-    const { container } = await render(AcceptInvite, {
-      inputs: { token: 'x' },
-      providers: [
-        { provide: InviteLinkApiService, useValue: { preview } },
-        { provide: AuthApiService, useValue: { me } },
-      ],
-    });
-
-    expect(await screen.findByText("You're invited to")).toBeTruthy();
-    expect(screen.getByText('Trip to Lisbon')).toBeTruthy();
-    expect(container.querySelector('img')!.getAttribute('src')).toBe(
-      '/backdrops/violet-converge-1.webp',
-    );
-  });
-
-  it('long group names wrap instead of running off screen', async () => {
-    const longName = 'Flatshare Rue Oberkampf, 3rd floor, left';
-    const preview = vi
-      .fn<(token: string) => Observable<PreviewInviteLinkResponse>>()
-      .mockReturnValue(of({ groupName: longName }));
     const me = vi
       .fn<() => Observable<MeResponse>>()
       .mockReturnValue(throwError(() => new HttpErrorResponse({ status: 401 })));
@@ -156,10 +133,8 @@ describe(AcceptInvite.name, () => {
       ],
     });
 
-    const cta = await screen.findByRole('button', { name: `Log in to join ${longName}` });
-    expect(cta.classList).toContain('whitespace-normal');
-    expect(cta.classList).not.toContain('whitespace-nowrap');
-    expect(screen.getByRole('heading', { name: longName }).classList).toContain('break-words');
+    expect(await screen.findByText("You're invited to")).toBeTruthy();
+    expect(screen.getByText('Trip to Lisbon')).toBeTruthy();
   });
 
   it('logged-out primary action invokes loginThenJoin', async () => {

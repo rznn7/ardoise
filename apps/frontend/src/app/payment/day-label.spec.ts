@@ -1,4 +1,4 @@
-import { dayLabel } from './day-label';
+import { dayLabel, shortDay } from './day-label';
 
 describe('dayLabel', () => {
   const today = new Date(2026, 9, 26, 9, 30);
@@ -17,5 +17,11 @@ describe('dayLabel', () => {
 
   it('labels yesterday across a month boundary', () => {
     expect(dayLabel(new Date(2026, 9, 31, 12), new Date(2026, 10, 1, 8))).toBe('Yesterday');
+  });
+});
+
+describe('shortDay', () => {
+  it('formats a date with weekday, day and short month', () => {
+    expect(shortDay(new Date(2026, 9, 25, 12).toISOString())).toBe('Sun 25 Oct');
   });
 });

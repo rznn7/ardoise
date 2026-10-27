@@ -16,6 +16,7 @@ import { AuthApiService } from 'src/app/auth/auth-api.service';
 import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.service';
 import { FeedStore } from 'src/app/feed/feed-store';
 import { MemberApiService } from 'src/app/member/member-api.service';
+import { shortDay } from 'src/app/payment/day-label';
 import { SettlementApiService } from 'src/app/settlement/settlement-api.service';
 import { withHistoryPageIds } from 'src/app/shared/navigation/back';
 import { openFirstPage } from 'src/app/shared/navigation/first-page.testing';
@@ -86,7 +87,7 @@ describe('SettlementDetails', () => {
 
     expect(screen.getByRole('heading', { name: 'You paid Léa back' })).toBeTruthy();
     expect(screen.getByText('€30.00')).toBeTruthy();
-    expect(screen.getByText(/25 Oct/)).toBeTruthy();
+    expect(screen.getByText(`Repayment · ${shortDay(REPAYMENT.settledAt)}`)).toBeTruthy();
   });
 
   it('hides Undo from a member who is neither side', async () => {

@@ -120,6 +120,17 @@ describe('UpdatePayment', () => {
       .set('Cookie', `session_token=${token}`)
       .send(equalBody(aliceMember.id, [aliceMember.id, bobMember.id], 3000))
       .expect(403);
+
+    const stored = await pgClient.query<{ full_amount: number }>(
+      `SELECT full_amount FROM payment WHERE id = $1`,
+      [payment.id],
+    );
+    expect(stored.rows).toEqual([{ full_amount: 4200 }]);
+    const shares = await pgClient.query<{ amount: number }>(
+      `SELECT amount FROM payment_share WHERE payment_id = $1 ORDER BY member_id`,
+      [payment.id],
+    );
+    expect(shares.rows.map((s) => s.amount)).toEqual([2100, 2100]);
   });
 
   it('lets any member, not only the payer, change the amount', async () => {

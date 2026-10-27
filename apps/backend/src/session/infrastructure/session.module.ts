@@ -1,4 +1,4 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { MeUseCase } from 'src/session/application/me.use-case';
 import { RevokeSessionUseCase } from 'src/session/application/revoke-session.use-case';
 import { SESSION_REPOSITORY } from 'src/session/domain/session-repository';
@@ -10,7 +10,7 @@ import { SessionGuard } from './session.guard';
 import { SessionRepositoryDrizzle } from './session-repository.drizzle';
 
 @Module({
-  imports: [DatabaseModule, forwardRef(() => UserModule)],
+  imports: [DatabaseModule, UserModule],
   providers: [
     { provide: SESSION_REPOSITORY, useClass: SessionRepositoryDrizzle },
     MeUseCase,
