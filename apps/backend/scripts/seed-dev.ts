@@ -35,6 +35,9 @@ async function main() {
     console.log(
       `  Friday dinners (EUR), ${you} moderator, everything paid back (all settled)\n`,
     );
+    console.log(
+      `  Admin: ${you} (primary account). Emma has no group; Lisbon has an invite link in each status.\n`,
+    );
     console.log('  Invite link (Trip to Lisbon):');
     console.log(`    ${report.inviteUrl}\n`);
     if (report.sessionToken) {
