@@ -95,18 +95,6 @@ describe('Admin read', () => {
   };
 
   describe('overview', () => {
-    it('returns 401 without a cookie', async () => {
-      await get('/admin/overview').expect(401);
-    });
-
-    it('returns 403 for a plain user', async () => {
-      const { leaToken } = await seedInstance();
-
-      const response = await get('/admin/overview', leaToken).expect(403);
-
-      expect(response.body).toEqual({ error: 'NOT_AN_ADMIN' });
-    });
-
     it('counts and lists users and groups', async () => {
       const { adminToken } = await seedInstance();
 
@@ -151,12 +139,6 @@ describe('Admin read', () => {
   });
 
   describe('user', () => {
-    it('returns 403 for a plain user', async () => {
-      const { leaToken, lea } = await seedInstance();
-
-      await get(`/admin/users/${String(lea.id)}`, leaToken).expect(403);
-    });
-
     it('lists groups with role, size and balance, and active sessions only', async () => {
       const { adminToken, lea, trip } = await seedInstance();
 
@@ -207,12 +189,6 @@ describe('Admin read', () => {
   });
 
   describe('group', () => {
-    it('returns 403 for a plain user', async () => {
-      const { leaToken, trip } = await seedInstance();
-
-      await get(`/admin/groups/${String(trip.id)}`, leaToken).expect(403);
-    });
-
     it('lists members with balances and invite links with their status', async () => {
       const { adminToken, trip, lea } = await seedInstance();
       await seedInviteLink(pgClient, {

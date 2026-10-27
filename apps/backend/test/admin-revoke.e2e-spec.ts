@@ -95,15 +95,22 @@ describe('Admin revoke', () => {
       await post('/admin/invite-links/999/revoke', 'admin-token').expect(404);
     });
 
-    it('returns 403 for a plain user', async () => {
+    it('leaves the link usable when a plain user tries to revoke it', async () => {
       await seedPeople();
       const { id: groupId } = await seedGroup(pgClient);
-      const link = await seedInviteLink(pgClient, { groupId });
+      const link = await seedInviteLink(pgClient, {
+        groupId,
+        token: 'kept',
+      });
 
       await post(
         `/admin/invite-links/${String(link.id)}/revoke`,
         'lea-token',
       ).expect(403);
+
+      await request(app.getHttpServer())
+        .get('/invite-link/kept/preview')
+        .expect(200);
     });
   });
 
@@ -136,13 +143,18 @@ describe('Admin revoke', () => {
       await post('/admin/sessions/999/revoke', 'admin-token').expect(404);
     });
 
-    it('returns 403 for a plain user', async () => {
+    it('keeps the session signed in when a plain user tries to revoke it', async () => {
       const { sessionId } = await seedPeople();
 
       await post(
         `/admin/sessions/${String(await sessionId('admin-token'))}/revoke`,
         'lea-token',
       ).expect(403);
+
+      await request(app.getHttpServer())
+        .post('/auth/me')
+        .set('Cookie', 'session_token=admin-token')
+        .expect(200);
     });
 
     it("refuses the caller's current session", async () => {
