@@ -2,6 +2,7 @@ import { Location } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, signal, type WritableSignal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter, Router, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import {
@@ -24,10 +25,14 @@ import { LastGroupService } from 'src/app/expense-group/last-group.service';
 import { type FeedRow, type FeedState, FeedStore } from 'src/app/feed/feed-store';
 import { InviteLinkApiService } from 'src/app/invite-link/invite-link-api.service';
 import { MemberApiService } from 'src/app/member/member-api.service';
+import { type DoneState, DoneStore } from 'src/app/settlement/done-store';
 import { ClipboardService } from 'src/app/shared/clipboard.service';
 import { withHistoryPageIds } from 'src/app/shared/navigation/back';
 import { openFirstPage } from 'src/app/shared/navigation/first-page.testing';
 import { ShareService } from 'src/app/shared/share.service';
+import { ToastService } from 'src/app/shared/toast.service';
+import { LoadMore } from 'src/app/shared/ui/load-more/load-more';
+import { MobileShell } from 'src/app/shared/ui/mobile-shell/mobile-shell';
 
 import { GroupPage } from './group-page';
 
@@ -116,7 +121,7 @@ const balancesOf = (mine: number): GroupBalancesResponse => ({
         : [{ fromMemberId: 12, toMemberId: 11, amount: mine }],
 });
 
-const WITH_PAYMENT: FeedState = { status: 'loaded', rows: [payment({})] };
+const WITH_PAYMENT: FeedState = { status: 'loaded', more: 'end', rows: [payment({})] };
 
 interface Setup {
   feed: WritableSignal<FeedState>;
@@ -128,18 +133,39 @@ interface Setup {
   findOne: ReturnType<typeof vi.fn<() => Observable<ExpenseGroupSummary>>>;
   recordSettlement: ReturnType<typeof vi.fn<(body: CreateSettlementBody) => void>>;
   undoSettlement: ReturnType<typeof vi.fn<(groupId: number, id: number) => void>>;
+  loadMoreFeed: ReturnType<typeof vi.fn<() => void>>;
+  loadMoreDone: ReturnType<typeof vi.fn<() => void>>;
+  harness: RouterTestingHarness;
+  feedRefresh: WritableSignal<'idle' | 'loading' | 'error'>;
+  loadDone: ReturnType<typeof vi.fn<(groupId: number) => void>>;
+  toastError: ReturnType<typeof vi.fn<(message: string) => void>>;
 }
+
+const settlementsOf = (row: FeedRow) => (row.kind === 'settlement' ? [row.settlement] : []);
+
+const doneOf = (feed: FeedState): DoneState =>
+  feed.status === 'loaded'
+    ? {
+        status: 'loaded',
+        more: 'end',
+        settlements: feed.rows.flatMap((row) =>
+          row.kind === 'settlement' && !row.pending ? [row.settlement] : [],
+        ),
+      }
+    : feed;
 
 async function setup({
   members = MEMBERS,
-  feedState = { status: 'loaded', rows: [] },
+  feedState = { status: 'loaded', more: 'end', rows: [] },
   findOne = vi.fn<() => Observable<ExpenseGroupSummary>>().mockReturnValue(of(GROUP)),
   balances = balancesOf(0),
   url = '/group/7',
   from,
+  doneState = doneOf(feedState),
 }: {
   members?: GroupMember[];
   feedState?: FeedState;
+  doneState?: DoneState;
   findOne?: Setup['findOne'];
   balances?: GroupBalancesResponse | Observable<GroupBalancesResponse>;
   url?: string;
@@ -155,6 +181,11 @@ async function setup({
   const skipLaunchRedirect = vi.fn<() => void>();
   const recordSettlement = vi.fn<(body: CreateSettlementBody) => void>();
   const undoSettlement = vi.fn<(groupId: number, id: number) => void>();
+  const loadMoreFeed = vi.fn<() => void>();
+  const loadMoreDone = vi.fn<() => void>();
+  const feedRefresh = signal<'idle' | 'loading' | 'error'>('idle');
+  const loadDone = vi.fn<(groupId: number) => void>();
+  const toastError = vi.fn<(message: string) => void>();
   TestBed.configureTestingModule({
     providers: [
       provideRouter(
@@ -175,14 +206,30 @@ async function setup({
         provide: FeedStore,
         useValue: {
           feed: () => feed,
-          load,
+          loadFirst: load,
+          hasPages: () => true,
+          refreshState: () => feedRefresh,
+          loadMore: loadMoreFeed,
+          retryMore: vi.fn(),
           settledVersion: () => settled,
           pendingSettlements: () => signal([]),
           recordSettlement,
           undoSettlement,
         },
       },
+      {
+        provide: DoneStore,
+        useValue: {
+          done: () => signal(doneState),
+          hasPages: () => true,
+          refreshState: () => signal('idle'),
+          loadFirst: loadDone,
+          loadMore: loadMoreDone,
+          retryMore: vi.fn(),
+        },
+      },
       { provide: BalanceApiService, useValue: { listByGroup: listBalances } },
+      { provide: ToastService, useValue: { error: toastError } },
       { provide: LastGroupService, useValue: { remember, skipLaunchRedirect } },
       {
         provide: InviteLinkApiService,
@@ -214,8 +261,27 @@ async function setup({
     findOne,
     recordSettlement,
     undoSettlement,
+    loadMoreFeed,
+    loadMoreDone,
+    harness,
+    feedRefresh,
+    loadDone,
+    toastError,
   };
 }
+
+const pullToRefresh = (harness: RouterTestingHarness): void => {
+  const shell = harness.fixture.debugElement.query(By.directive(MobileShell));
+  (shell.componentInstance as MobileShell).refresh.emit();
+};
+
+const reachBottom = (harness: RouterTestingHarness, at: string): void => {
+  const [loadMore] = harness.fixture.debugElement
+    .queryAll(By.directive(LoadMore))
+    .filter((el) => (el.nativeElement as HTMLElement).closest(at) !== null);
+  if (!loadMore) throw new Error(`no load-more in ${at}`);
+  (loadMore.componentInstance as LoadMore).reached.emit();
+};
 
 describe('GroupPage', () => {
   it('shows the group name and members, with You for the current user', async () => {
@@ -238,10 +304,121 @@ describe('GroupPage', () => {
     expect(load).toHaveBeenCalledWith(7);
   });
 
+  describe('pull to refresh', () => {
+    it('reloads the group, its balances and the first pages of the feed and Done', async () => {
+      const { harness, load, loadDone, findOne, listBalances } = await setup({
+        feedState: WITH_PAYMENT,
+      });
+
+      pullToRefresh(harness);
+      await harness.fixture.whenStable();
+
+      expect(load).toHaveBeenCalledTimes(2);
+      expect(loadDone).toHaveBeenCalledTimes(2);
+      expect(findOne).toHaveBeenCalledTimes(2);
+      expect(listBalances).toHaveBeenCalledTimes(2);
+      expect(screen.getByText('Dinner')).toBeTruthy();
+    });
+
+    it('shows the refresh until the feed is back', async () => {
+      const { harness, feedRefresh } = await setup({ feedState: WITH_PAYMENT });
+
+      pullToRefresh(harness);
+      feedRefresh.set('loading');
+      await harness.fixture.whenStable();
+      expect(screen.getByRole('status', { name: 'Refreshing' })).toBeTruthy();
+
+      feedRefresh.set('idle');
+      await harness.fixture.whenStable();
+      expect(screen.queryByRole('status', { name: 'Refreshing' })).toBeNull();
+    });
+
+    it('shows the refresh under the Payments and Balances selector', async () => {
+      const { harness, feedRefresh } = await setup({ feedState: WITH_PAYMENT });
+
+      pullToRefresh(harness);
+      feedRefresh.set('loading');
+      await harness.fixture.whenStable();
+
+      const selector = screen.getByRole('group', { name: 'View' });
+      const indicator = screen.getByRole('status', { name: 'Refreshing' });
+      expect(
+        selector.compareDocumentPosition(indicator) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(
+        indicator.compareDocumentPosition(screen.getByText('Dinner')) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('keeps the rows and says so when the refresh fails', async () => {
+      const { harness, findOne, toastError } = await setup({ feedState: WITH_PAYMENT });
+      findOne.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
+
+      pullToRefresh(harness);
+      await harness.fixture.whenStable();
+
+      expect(screen.getByText('Dinner')).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'Lisbon trip' })).toBeTruthy();
+      expect(toastError).toHaveBeenCalledWith("Couldn't refresh the group");
+    });
+  });
+
+  describe('keeping your place', () => {
+    it('going back from a payment shows the kept rows at the same scroll, with no request', async () => {
+      vi.spyOn(MobileShell.prototype, 'scrollTop').mockReturnValue(240);
+      const scrollTo = vi.spyOn(MobileShell.prototype, 'scrollTo');
+      const { harness, load, findOne, listBalances } = await setup({ feedState: WITH_PAYMENT });
+
+      await harness.navigateByUrl('/group/7/payments/1');
+      await harness.navigateByUrl('/group/7');
+      await harness.fixture.whenStable();
+
+      expect(screen.getByText('Dinner')).toBeTruthy();
+      expect(load).toHaveBeenCalledTimes(1);
+      expect(findOne).toHaveBeenCalledTimes(1);
+      expect(listBalances).toHaveBeenCalledTimes(1);
+      expect(scrollTo).toHaveBeenLastCalledWith(240);
+    });
+
+    it('opening the group from home loads it from the first page', async () => {
+      const { harness, load, findOne } = await setup({ feedState: WITH_PAYMENT });
+
+      await harness.navigateByUrl('/home');
+      await harness.navigateByUrl('/group/7');
+      await harness.fixture.whenStable();
+
+      expect(load).toHaveBeenCalledTimes(2);
+      expect(findOne).toHaveBeenCalledTimes(2);
+    });
+
+    it('reloads balances on the way back when a payment changed meanwhile', async () => {
+      const { harness, settled, listBalances } = await setup({ feedState: WITH_PAYMENT });
+
+      await harness.navigateByUrl('/group/7/payments/1');
+      settled.set(1);
+      await harness.navigateByUrl('/group/7');
+      await harness.fixture.whenStable();
+
+      expect(listBalances).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('asks the feed for the next page at the bottom of the list', async () => {
+    const { harness, loadMoreFeed } = await setup({
+      feedState: { ...WITH_PAYMENT, more: 'idle' },
+    });
+
+    reachBottom(harness, 'app-group-page');
+
+    expect(loadMoreFeed).toHaveBeenCalledTimes(1);
+  });
+
   it('groups payments under day headers with payer and amount', async () => {
     await setup({
       feedState: {
         status: 'loaded',
+        more: 'end',
         rows: [
           payment({ id: 1, title: 'Dinner', paidAt: daysAgo(0), payerMemberId: 11 }),
           payment({
@@ -275,7 +452,7 @@ describe('GroupPage', () => {
   });
 
   it('opens the payment details when a row is tapped', async () => {
-    await setup({ feedState: { status: 'loaded', rows: [payment({ id: 5 })] } });
+    await setup({ feedState: { status: 'loaded', more: 'end', rows: [payment({ id: 5 })] } });
 
     await userEvent.click(screen.getByRole('link', { name: /dinner/i }));
 
@@ -288,6 +465,7 @@ describe('GroupPage', () => {
     await setup({
       feedState: {
         status: 'loaded',
+        more: 'end',
         rows: [payment({ id: -1, title: 'Groceries', pending: true })],
       },
     });
@@ -448,7 +626,7 @@ describe('GroupPage', () => {
   });
 
   it('lists a repayment in the feed with its marker', async () => {
-    await setup({ feedState: { status: 'loaded', rows: [settlement({})] } });
+    await setup({ feedState: { status: 'loaded', more: 'end', rows: [settlement({})] } });
 
     const row = screen.getByRole('link', { name: /tom paid you back/i });
     expect(within(row).getByText('Repayment')).toBeTruthy();
@@ -461,7 +639,9 @@ describe('GroupPage', () => {
   });
 
   it('does not link a repayment that is still saving', async () => {
-    await setup({ feedState: { status: 'loaded', rows: [settlement({ id: -2, pending: true })] } });
+    await setup({
+      feedState: { status: 'loaded', more: 'end', rows: [settlement({ id: -2, pending: true })] },
+    });
 
     expect(screen.getByText('Tom paid you back')).toBeTruthy();
     expect(screen.getByText('Saving…')).toBeTruthy();
@@ -507,7 +687,7 @@ describe('GroupPage', () => {
 
     it('shows the balance when only repayments are left', async () => {
       await setup({
-        feedState: { status: 'loaded', rows: [settlement({})] },
+        feedState: { status: 'loaded', more: 'end', rows: [settlement({})] },
         balances: balancesOf(-1200),
       });
 
@@ -595,9 +775,53 @@ describe('GroupPage', () => {
       expect(screen.getByText('You pay Léa')).toBeTruthy();
     });
 
+    it('lists Done from the Done store, not from the loaded feed', async () => {
+      await setup({
+        feedState: WITH_PAYMENT,
+        doneState: {
+          status: 'loaded',
+          more: 'idle',
+          settlements: settlementsOf(settlement({ id: 9 })),
+        },
+        url: '/group/7?tab=balances',
+      });
+
+      expect(await screen.findByRole('button', { name: /tom paid you back/i })).toBeTruthy();
+    });
+
+    it('says Done could not load and retries it', async () => {
+      const { loadDone } = await setup({
+        feedState: WITH_PAYMENT,
+        doneState: { status: 'error' },
+        url: '/group/7?tab=balances',
+      });
+      expect(await screen.findByText("Couldn't load more")).toBeTruthy();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+      expect(loadDone).toHaveBeenCalledTimes(2);
+    });
+
+    it('asks the Done store for more at the bottom of Done', async () => {
+      const { harness, loadMoreDone } = await setup({
+        feedState: WITH_PAYMENT,
+        doneState: {
+          status: 'loaded',
+          more: 'idle',
+          settlements: settlementsOf(settlement({ id: 9 })),
+        },
+        url: '/group/7?tab=balances',
+      });
+      await screen.findByRole('button', { name: /tom paid you back/i });
+
+      reachBottom(harness, 'app-group-balances');
+
+      expect(loadMoreDone).toHaveBeenCalledTimes(1);
+    });
+
     it('undoes a repayment from the Done section', async () => {
       const { undoSettlement } = await setup({
-        feedState: { status: 'loaded', rows: [payment({}), settlement({ id: 9 })] },
+        feedState: { status: 'loaded', more: 'end', rows: [payment({}), settlement({ id: 9 })] },
         balances: balancesOf(0),
         url: '/group/7?tab=balances',
       });
@@ -647,7 +871,7 @@ describe('GroupPage', () => {
 
     it('does not count a payment that is still saving', async () => {
       await setup({
-        feedState: { status: 'loaded', rows: [payment({ id: -1, pending: true })] },
+        feedState: { status: 'loaded', more: 'end', rows: [payment({ id: -1, pending: true })] },
         balances: balancesOf(0),
         url: '/group/7?tab=balances',
       });

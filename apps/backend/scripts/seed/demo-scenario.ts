@@ -60,6 +60,74 @@ async function seedSplitPayment(
   }
 }
 
+async function seedFlatshareHistory(
+  client: Client,
+  {
+    groupId,
+    carol,
+    primary,
+  }: { groupId: number; carol: number; primary: number },
+): Promise<void> {
+  const chores = ['Groceries', 'Cleaning supplies', 'Toilet paper', 'Bin bags'];
+  const payments = Array.from({ length: 128 }, (_, i) => ({
+    payerMemberId: i % 2 === 0 ? carol : primary,
+    title: chores[Math.floor(i / 2) % chores.length] ?? 'Groceries',
+    fullAmount: 1000 + 100 * Math.floor(i / 2),
+    paidAt: daysAgoAt(10 + 2 * i, 12),
+  }));
+  const { rows } = await client.query<{ id: number }>(
+    `INSERT INTO payment (group_id, payer_member_id, title, full_amount, split_type, paid_at)
+     SELECT $1, payer, title, amount, 'equal', paid_at
+     FROM unnest($2::int[], $3::text[], $4::int[], $5::timestamptz[]) WITH ORDINALITY
+       AS p(payer, title, amount, paid_at, n)
+     ORDER BY n
+     RETURNING id`,
+    [
+      groupId,
+      payments.map((p) => p.payerMemberId),
+      payments.map((p) => p.title),
+      payments.map((p) => p.fullAmount),
+      payments.map((p) => p.paidAt),
+    ],
+  );
+  const shares = payments.flatMap((payment, i) =>
+    computePaymentShares({
+      fullAmount: payment.fullAmount,
+      payerMemberId: payment.payerMemberId,
+      splitType: 'equal',
+      participants: equally([carol, primary]),
+    }).map((share) => ({ ...share, paymentId: rows[i]?.id ?? 0 })),
+  );
+  await client.query(
+    `INSERT INTO payment_share (payment_id, member_id, input_value, amount)
+     SELECT * FROM unnest($1::int[], $2::int[], $3::int[], $4::int[])`,
+    [
+      shares.map((s) => s.paymentId),
+      shares.map((s) => s.memberId),
+      shares.map((s) => s.inputValue),
+      shares.map((s) => s.amount),
+    ],
+  );
+
+  const settlements = Array.from({ length: 60 }, (_, i) => ({
+    from: i % 2 === 0 ? primary : carol,
+    to: i % 2 === 0 ? carol : primary,
+    amount: 500 + 50 * Math.floor(i / 2),
+    settledAt: daysAgoAt(11 + 4 * i, 18),
+  }));
+  await client.query(
+    `INSERT INTO settlement (group_id, from_member_id, to_member_id, created_by_member_id, amount, settled_at)
+     SELECT $1, f, t, f, a, d FROM unnest($2::int[], $3::int[], $4::int[], $5::timestamptz[]) AS s(f, t, a, d)`,
+    [
+      groupId,
+      settlements.map((s) => s.from),
+      settlements.map((s) => s.to),
+      settlements.map((s) => s.amount),
+      settlements.map((s) => s.settledAt),
+    ],
+  );
+}
+
 const equally = (memberIds: readonly number[]): SplitParticipant[] =>
   memberIds.map((memberId) => ({ memberId, inputValue: 0 }));
 
@@ -236,6 +304,12 @@ export async function seedDemo(
     toMemberId: fCarol.id,
     amount: 1000,
     settledAt: daysAgoAt(1, 18),
+  });
+
+  await seedFlatshareHistory(client, {
+    groupId: flat.id,
+    carol: fCarol.id,
+    primary: fPrimary.id,
   });
 
   const ski = await seedGroup(client, {

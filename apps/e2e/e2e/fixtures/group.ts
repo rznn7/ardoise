@@ -67,3 +67,19 @@ export async function confirmRepayment(
   await sheet.getByRole('button', { name: confirm }).click();
   expect((await recorded).ok()).toBe(true);
 }
+
+export async function pullToRefresh(page: Page): Promise<void> {
+  const box = await page.locator('main').boundingBox();
+  if (!box) throw new Error('no main');
+  const x = box.x + box.width / 2;
+  await page.mouse.move(x, box.y + 40);
+  await page.mouse.down();
+  await page.mouse.move(x, box.y + 300, { steps: 12 });
+  await page.mouse.up();
+}
+
+export async function scrollToBottom(page: Page): Promise<void> {
+  await page.locator('main').evaluate((main) => {
+    main.scrollTo(0, main.scrollHeight);
+  });
+}

@@ -11,5 +11,6 @@ export class FeedApiService {
     baseUrl: inject(API_BASE_URL),
   });
 
-  listByGroup = (groupId: number) => this.feed.listByGroup({ params: { groupId } });
+  listByGroup = (groupId: number, cursor?: string) =>
+    this.feed.listByGroup({ params: { groupId }, query: { cursor } });
 }

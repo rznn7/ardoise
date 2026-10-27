@@ -1,13 +1,17 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import {
+  afterNextRender,
   Component,
   computed,
+  DestroyRef,
   effect,
   inject,
+  Injector,
   input,
   numberAttribute,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { type ExpenseGroupSummary, type GroupMember, type MeResponse } from '@ardoise/shared';
@@ -32,15 +36,21 @@ import { type FeedRow, FeedStore } from 'src/app/feed/feed-store';
 import { InviteLinkPanel } from 'src/app/invite-link/invite-link-panel/invite-link-panel';
 import { MemberApiService } from 'src/app/member/member-api.service';
 import { dayLabel } from 'src/app/payment/day-label';
+import { DoneStore } from 'src/app/settlement/done-store';
 import { settlementLabel } from 'src/app/settlement/settlement-label';
 import { injectGoBack } from 'src/app/shared/navigation/back';
+import { ToastService } from 'src/app/shared/toast.service';
 import { BalanceIndicator } from 'src/app/shared/ui/balance-indicator/balance-indicator';
 import { GroupHero } from 'src/app/shared/ui/group-hero/group-hero';
 import { ListRowImports } from 'src/app/shared/ui/list-row/list-row';
-import { MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
+import { LoadMore } from 'src/app/shared/ui/load-more/load-more';
+import { MobileShell, MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
 import { MoneyAmount } from 'src/app/shared/ui/money-amount/money-amount';
 import { PageStateImports } from 'src/app/shared/ui/page-state/page-state';
+import { RefreshIndicator } from 'src/app/shared/ui/refresh-indicator/refresh-indicator';
 import { AppTextImports } from 'src/app/shared/ui/text/text';
+
+import { GroupVisitMemory, isReturnFromChild } from './group-visit';
 
 type GroupState =
   | { status: 'loading' }
@@ -71,6 +81,7 @@ const isNotAccessible = (error: unknown): boolean =>
   imports: [
     RouterLink,
     MobileShellImports,
+    RefreshIndicator,
     GroupHero,
     ListRowImports,
     MoneyAmount,
@@ -85,6 +96,7 @@ const isNotAccessible = (error: unknown): boolean =>
     HlmToggleGroupImports,
     BalanceIndicator,
     GroupBalances,
+    LoadMore,
   ],
   providers: [provideIcons({ lucideChevronLeft, lucideEllipsis, lucidePlus, lucideUserPlus })],
   templateUrl: './group-page.html',
@@ -94,10 +106,15 @@ export class GroupPage {
   private readonly memberApi = inject(MemberApiService);
   private readonly auth = inject(AuthService);
   private readonly feedStore = inject(FeedStore);
+  private readonly doneStore = inject(DoneStore);
   private readonly lastGroup = inject(LastGroupService);
   private readonly balanceStore = inject(BalanceStore);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly visits = inject(GroupVisitMemory);
+  private readonly injector = inject(Injector);
+  private readonly shell = viewChild(MobileShell);
+  private readonly toast = inject(ToastService);
 
   readonly goBack = injectGoBack();
 
@@ -105,6 +122,8 @@ export class GroupPage {
   readonly tab = input<GroupTab, string | undefined>('payments', { transform: toTab });
 
   readonly groupState = signal<GroupState>({ status: 'loading' });
+  private readonly refreshRequested = signal(false);
+  private readonly groupRefresh = signal<'idle' | 'loading' | 'error'>('idle');
   readonly inviting = signal(false);
 
   private readonly feedOfGroup = computed(() => this.feedStore.feed(this.groupId()));
@@ -123,12 +142,18 @@ export class GroupPage {
   );
   readonly pendingSettlements = computed(() => this.pendingSettlementsOfGroup()());
 
+  private readonly doneOfGroup = computed(() => this.doneStore.done(this.groupId()));
+  private readonly done = computed(() => this.doneOfGroup()());
+
   readonly settlements = computed(() => {
-    const feed = this.feed();
-    if (feed.status !== 'loaded') return [];
-    return feed.rows.flatMap((row) =>
-      row.kind === 'settlement' && !row.pending ? [row.settlement] : [],
-    );
+    const done = this.done();
+    return done.status === 'loaded' ? done.settlements : [];
+  });
+
+  readonly doneMore = computed(() => {
+    const done = this.done();
+    if (done.status === 'error') return 'error';
+    return done.status === 'loaded' ? done.more : 'end';
   });
 
   readonly hasActivity = computed(() => {
@@ -200,6 +225,20 @@ export class GroupPage {
     return days;
   });
 
+  private readonly feedRefreshOfGroup = computed(() => this.feedStore.refreshState(this.groupId()));
+  private readonly doneRefreshOfGroup = computed(() => this.doneStore.refreshState(this.groupId()));
+  private readonly refreshStates = computed(() => [
+    this.groupRefresh(),
+    this.feedRefreshOfGroup()(),
+    this.doneRefreshOfGroup()(),
+  ]);
+
+  readonly refreshing = computed(
+    () =>
+      this.refreshRequested() &&
+      (this.refreshStates().includes('loading') || this.balancesRefreshing()),
+  );
+
   readonly repaymentLabel = (row: FeedRow & { kind: 'settlement' }): string => {
     const state = this.groupState();
     if (state.status !== 'loaded') return '';
@@ -207,10 +246,23 @@ export class GroupPage {
   };
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => {
+      this.rememberVisit();
+    });
+
     effect(() => {
       const groupId = this.groupId();
       untracked(() => {
         this.open(groupId);
+      });
+    });
+
+    effect(() => {
+      if (!this.refreshRequested() || this.refreshing()) return;
+      const failed = this.refreshStates().includes('error');
+      untracked(() => {
+        this.refreshRequested.set(false);
+        if (failed) this.toast.error("Couldn't refresh the group");
       });
     });
 
@@ -244,8 +296,44 @@ export class GroupPage {
     this.feedStore.undoSettlement(this.groupId(), id);
   }
 
+  refresh(): void {
+    const groupId = this.groupId();
+    this.refreshRequested.set(true);
+    this.groupRefresh.set('loading');
+    this.feedStore.loadFirst(groupId);
+    this.doneStore.loadFirst(groupId);
+    this.balanceStore.load(groupId);
+    this.fetchGroup(groupId).subscribe({
+      next: ({ group, members, me }) => {
+        this.groupState.set({ status: 'loaded', group, members, me });
+        this.groupRefresh.set('idle');
+      },
+      error: () => {
+        this.groupRefresh.set('error');
+      },
+    });
+  }
+
+  loadMoreFeed(): void {
+    this.feedStore.loadMore();
+  }
+
+  retryMoreFeed(): void {
+    this.feedStore.retryMore();
+  }
+
+  loadMoreDone(): void {
+    this.doneStore.loadMore();
+  }
+
+  retryMoreDone(): void {
+    if (this.done().status === 'error') this.doneStore.loadFirst(this.groupId());
+    else this.doneStore.retryMore();
+  }
+
   retryBalances(): void {
-    if (this.feed().status === 'error') this.feedStore.load(this.groupId());
+    if (this.feed().status === 'error') this.feedStore.loadFirst(this.groupId());
+    if (this.done().status === 'error') this.doneStore.loadFirst(this.groupId());
     this.balanceStore.load(this.groupId());
   }
 
@@ -254,23 +342,65 @@ export class GroupPage {
   }
 
   retryFeed(): void {
-    this.feedStore.load(this.groupId());
+    this.feedStore.loadFirst(this.groupId());
   }
 
   private open(groupId: number): void {
     this.lastGroup.skipLaunchRedirect();
-    this.feedStore.load(groupId);
+    if (this.resume(groupId)) return;
+    this.feedStore.loadFirst(groupId);
+    this.doneStore.loadFirst(groupId);
     this.balanceStore.load(groupId);
     this.loadGroup(groupId);
   }
 
-  private loadGroup(groupId: number): void {
-    this.groupState.set({ status: 'loading' });
-    forkJoin({
+  private resume(groupId: number): boolean {
+    const navigation = this.router.currentNavigation() ?? this.router.lastSuccessfulNavigation();
+    const previous = navigation?.previousNavigation?.finalUrl;
+    const visit = this.visits.recall(groupId);
+    if (
+      !visit ||
+      !isReturnFromChild(previous && this.router.serializeUrl(previous), groupId) ||
+      !this.feedStore.hasPages(groupId) ||
+      !this.doneStore.hasPages(groupId)
+    ) {
+      return false;
+    }
+    this.groupState.set({
+      status: 'loaded',
+      group: visit.group,
+      members: visit.members,
+      me: visit.me,
+    });
+    if (untracked(this.settledOfGroup)() !== visit.settledVersion) this.balanceStore.load(groupId);
+    afterNextRender(() => this.shell()?.scrollTo(visit.scrollTop), { injector: this.injector });
+    return true;
+  }
+
+  private rememberVisit(): void {
+    const state = this.groupState();
+    const shell = this.shell();
+    if (state.status !== 'loaded' || !shell) return;
+    this.visits.remember(this.groupId(), {
+      group: state.group,
+      members: state.members,
+      me: state.me,
+      scrollTop: shell.scrollTop(),
+      settledVersion: untracked(this.settledOfGroup)(),
+    });
+  }
+
+  private fetchGroup(groupId: number) {
+    return forkJoin({
       group: this.groupApi.findOne({ params: { id: groupId } }),
       members: this.memberApi.listByGroup(groupId),
       me: this.auth.currentUser(),
-    }).subscribe({
+    });
+  }
+
+  private loadGroup(groupId: number): void {
+    this.groupState.set({ status: 'loading' });
+    this.fetchGroup(groupId).subscribe({
       next: ({ group, members, me }) => {
         this.lastGroup.remember(groupId);
         this.groupState.set({ status: 'loaded', group, members, me });

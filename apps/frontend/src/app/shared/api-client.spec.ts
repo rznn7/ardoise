@@ -1,5 +1,5 @@
 import { type HttpClient } from '@angular/common/http';
-import { expenseGroupApi, type ExpenseGroupSummary } from '@ardoise/shared';
+import { expenseGroupApi, type ExpenseGroupSummary, feedApi } from '@ardoise/shared';
 import { firstValueFrom, of } from 'rxjs';
 
 import { type ApiClient, createApiClient } from './api-client';
@@ -29,6 +29,26 @@ describe('createApiClient', () => {
 
     expect(request).toHaveBeenCalledWith('GET', '/api/expense-groups/5', {
       body: undefined,
+      withCredentials: true,
+    });
+  });
+
+  it('sends the query and leaves out undefined values', () => {
+    const request = vi.fn().mockReturnValue(of({ items: [], nextCursor: null }));
+    const http = { request } as unknown as HttpClient;
+    const feed = createApiClient(feedApi, { http, baseUrl: '/api' });
+
+    feed.listByGroup({ params: { groupId: 3 }, query: { cursor: 'abc' } });
+    feed.listByGroup({ params: { groupId: 3 }, query: { cursor: undefined } });
+
+    expect(request).toHaveBeenNthCalledWith(1, 'GET', '/api/expense-groups/3/feed', {
+      body: undefined,
+      params: { cursor: 'abc' },
+      withCredentials: true,
+    });
+    expect(request).toHaveBeenNthCalledWith(2, 'GET', '/api/expense-groups/3/feed', {
+      body: undefined,
+      params: {},
       withCredentials: true,
     });
   });

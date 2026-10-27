@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { type Endpoint } from './http.js';
+import { pageQuerySchema, pageSchema } from './page.js';
 
 const INT4_MAX = 2_147_483_647;
 
@@ -15,6 +16,9 @@ export const settlementResponseSchema = z.object({
   createdAt: z.string(),
 });
 export type SettlementResponse = z.infer<typeof settlementResponseSchema>;
+
+export const settlementPageSchema = pageSchema(settlementResponseSchema);
+export type SettlementPage = z.infer<typeof settlementPageSchema>;
 
 export const createSettlementRequestSchema = z
   .object({
@@ -42,6 +46,12 @@ export const settlementErrorSchema = z.object({
 export type SettlementError = z.infer<typeof settlementErrorSchema>;
 
 export const settlementApi = {
+  listByGroup: {
+    method: 'GET',
+    path: '/expense-groups/:groupId/settlements',
+    query: pageQuerySchema,
+    res: settlementPageSchema,
+  },
   findOne: {
     method: 'GET',
     path: '/settlements/:id',
