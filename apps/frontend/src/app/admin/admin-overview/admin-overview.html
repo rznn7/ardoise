@@ -64,52 +64,54 @@
         </div>
       </div>
 
-      <ul class="flex flex-col divide-y divide-border border-y border-border pb-28">
-        @if (tab() === 'users') {
-          @for (user of overview.users; track user.id) {
-            <li>
-              <a class="block" [routerLink]="['users', user.id]">
-                <app-list-row>
-                  <span appListRowTitle class="flex items-center gap-2">
-                    {{ user.name }}
-                    @if (user.role === 'admin') {
-                      <span appMeta class="rounded-sm border border-border px-1">Admin</span>
-                    }
-                  </span>
-                  <span appListRowMeta>{{ userMeta(user) }}</span>
-                  <ng-icon
-                    appListRowTrailing
-                    class="text-muted-foreground"
-                    hlm
-                    name="lucideChevronRight"
-                    size="sm"
-                    aria-hidden="true"
-                  />
-                </app-list-row>
-              </a>
-            </li>
+      <div class="pb-28">
+        <ul class="flex flex-col divide-y divide-border border-y border-border">
+          @if (tab() === 'users') {
+            @for (user of overview.users; track user.id) {
+              <li>
+                <a class="block" [routerLink]="['users', user.id]">
+                  <app-list-row>
+                    <span appListRowTitle class="flex items-center gap-2">
+                      {{ user.name }}
+                      @if (user.role === 'admin') {
+                        <span appMeta class="rounded-sm border border-border px-1">Admin</span>
+                      }
+                    </span>
+                    <span appListRowMeta>{{ userMeta(user) }}</span>
+                    <ng-icon
+                      appListRowTrailing
+                      class="text-muted-foreground"
+                      hlm
+                      name="lucideChevronRight"
+                      size="sm"
+                      aria-hidden="true"
+                    />
+                  </app-list-row>
+                </a>
+              </li>
+            }
+          } @else {
+            @for (group of overview.groups; track group.id) {
+              <li>
+                <a class="block" [routerLink]="['groups', group.id]">
+                  <app-list-row>
+                    <span appListRowTitle>{{ group.name }}</span>
+                    <span appListRowMeta>{{ groupMeta(group) }}</span>
+                    <ng-icon
+                      appListRowTrailing
+                      class="text-muted-foreground"
+                      hlm
+                      name="lucideChevronRight"
+                      size="sm"
+                      aria-hidden="true"
+                    />
+                  </app-list-row>
+                </a>
+              </li>
+            }
           }
-        } @else {
-          @for (group of overview.groups; track group.id) {
-            <li>
-              <a class="block" [routerLink]="['groups', group.id]">
-                <app-list-row>
-                  <span appListRowTitle>{{ group.name }}</span>
-                  <span appListRowMeta>{{ groupMeta(group) }}</span>
-                  <ng-icon
-                    appListRowTrailing
-                    class="text-muted-foreground"
-                    hlm
-                    name="lucideChevronRight"
-                    size="sm"
-                    aria-hidden="true"
-                  />
-                </app-list-row>
-              </a>
-            </li>
-          }
-        }
-      </ul>
+        </ul>
+      </div>
     }
   }
 </app-mobile-shell>
