@@ -62,6 +62,7 @@ export class GroupBalances {
   readonly hasActivity = input.required<boolean>();
   readonly settlements = input<readonly SettlementResponse[]>([]);
   readonly pendingSettlements = input<readonly CreateSettlementBody[]>([]);
+  readonly refreshing = input(false);
 
   readonly retry = output();
   readonly record = output<RepaymentToRecord>();

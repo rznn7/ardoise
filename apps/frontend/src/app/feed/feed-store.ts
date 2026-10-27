@@ -274,6 +274,7 @@ export class FeedStore {
       error: () => {
         settle();
         this.toast.error("Couldn't undo the repayment");
+        this.load(groupId);
       },
     });
   }

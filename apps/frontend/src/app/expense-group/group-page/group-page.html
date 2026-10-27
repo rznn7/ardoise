@@ -116,6 +116,7 @@
               [hasActivity]="hasActivity()"
               [settlements]="settlements()"
               [pendingSettlements]="pendingSettlements()"
+              [refreshing]="balancesRefreshing()"
               (retry)="retryBalances()"
               (record)="recordSettlement($event)"
               (undo)="undoSettlement($event)"

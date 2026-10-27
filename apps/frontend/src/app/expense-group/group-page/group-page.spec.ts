@@ -579,6 +579,22 @@ describe('GroupPage', () => {
       });
     });
 
+    it('keeps a confirmed repayment locked until balances come back', async () => {
+      const { listBalances, settled } = await setup({
+        feedState: WITH_PAYMENT,
+        balances: balancesOf(-1500),
+        url: '/group/7?tab=balances',
+      });
+      expect(await screen.findByRole('button', { name: /you pay léa/i })).toBeTruthy();
+      listBalances.mockReturnValue(new Subject());
+
+      settled.set(1);
+      TestBed.tick();
+
+      expect(screen.queryByRole('button', { name: /you pay léa/i })).toBeNull();
+      expect(screen.getByText('You pay Léa')).toBeTruthy();
+    });
+
     it('undoes a repayment from the Done section', async () => {
       const { undoSettlement } = await setup({
         feedState: { status: 'loaded', rows: [payment({}), settlement({ id: 9 })] },

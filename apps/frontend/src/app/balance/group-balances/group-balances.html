@@ -45,7 +45,7 @@
               <ul class="flex flex-col divide-y divide-border border-y border-border">
                 @for (row of repayments(); track $index) {
                   <li [class.text-muted-foreground]="!row.mine">
-                    @if (row.mine && !row.pending) {
+                    @if (row.mine && !row.pending && !refreshing()) {
                       <button
                         class="block w-full text-left"
                         hlmSheetTrigger

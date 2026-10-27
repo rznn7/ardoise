@@ -454,6 +454,16 @@ describe(FeedStore.name, () => {
       expect(error).toHaveBeenCalledWith("Couldn't undo the repayment");
     });
 
+    it('undo failure refetches the feed so a repayment undone elsewhere goes away', () => {
+      loadMixed();
+
+      store.undoSettlement(7, 4);
+      http.expectOne('/api/settlements/4').flush(null, { status: 404, statusText: 'Not Found' });
+      http.expectOne('/api/expense-groups/7/feed').flush(items(older, newest));
+
+      expect(settlementRows()).toEqual([]);
+    });
+
     it('undoing a settlement leaves a payment with the same id alone', () => {
       store.load(7);
       http

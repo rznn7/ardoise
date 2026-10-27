@@ -66,9 +66,11 @@ async function renderBalances(
   {
     settlements = [],
     pendingSettlements = [],
+    refreshing = false,
   }: {
     settlements?: SettlementResponse[];
     pendingSettlements?: CreateSettlementBody[];
+    refreshing?: boolean;
   } = {},
 ) {
   const retry = vi.fn<() => void>();
@@ -84,6 +86,7 @@ async function renderBalances(
       hasActivity,
       settlements,
       pendingSettlements,
+      refreshing,
     },
     on: { retry, record, undo },
   });
@@ -187,6 +190,13 @@ describe('GroupBalances', () => {
 
       expect(screen.queryByRole('button', { name: /you pay léa/i })).toBeNull();
       expect(screen.getByText('Saving…')).toBeTruthy();
+    });
+
+    it('locks my repayment rows while balances refresh', async () => {
+      await renderBalances(MIXED, true, { refreshing: true });
+
+      expect(screen.queryByRole('button', { name: /you pay léa/i })).toBeNull();
+      expect(screen.getByText('You pay Léa')).toBeTruthy();
     });
   });
 

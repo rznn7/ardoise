@@ -113,6 +113,9 @@ export class GroupPage {
   private readonly balancesOfGroup = computed(() => this.balanceStore.balances(this.groupId()));
   readonly balances = computed(() => this.balancesOfGroup()());
 
+  private readonly refreshingOfGroup = computed(() => this.balanceStore.refreshing(this.groupId()));
+  readonly balancesRefreshing = computed(() => this.refreshingOfGroup()());
+
   private readonly settledOfGroup = computed(() => this.feedStore.settledVersion(this.groupId()));
 
   private readonly pendingSettlementsOfGroup = computed(() =>
