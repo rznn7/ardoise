@@ -1,6 +1,7 @@
 import {
   booleanAttribute,
   Component,
+  computed,
   contentChild,
   Directive,
   type ElementRef,
@@ -8,7 +9,6 @@ import {
   output,
   viewChild,
 } from '@angular/core';
-import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
 import { PullToRefresh } from 'src/app/shared/ui/pull-to-refresh/pull-to-refresh';
 
 @Directive({ selector: '[appShellHeader]' })
@@ -19,7 +19,7 @@ export class ShellFab {}
 
 @Component({
   selector: 'app-mobile-shell',
-  imports: [PullToRefresh, HlmSpinnerImports],
+  imports: [PullToRefresh],
   host: {
     class: 'flex h-[100dvh] justify-center bg-background',
     '[class.pt-[env(safe-area-inset-top)]]': '!bleed()',
@@ -32,12 +32,14 @@ export class ShellFab {}
 export class MobileShell {
   readonly bleed = input(false, { transform: booleanAttribute });
   readonly refreshable = input(false, { transform: booleanAttribute });
-  readonly refreshing = input(false, { transform: booleanAttribute });
   readonly refresh = output();
 
   protected readonly header = contentChild(ShellHeader);
   protected readonly fab = contentChild(ShellFab);
   private readonly main = viewChild.required<ElementRef<HTMLElement>>('main');
+  private readonly pull = viewChild.required(PullToRefresh);
+
+  readonly pullDistance = computed(() => this.pull().distance());
 
   private lastScrollTop = 0;
 

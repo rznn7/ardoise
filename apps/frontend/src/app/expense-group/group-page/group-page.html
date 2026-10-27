@@ -1,9 +1,9 @@
 @let group = groupState();
 <hlm-sheet #sheet="hlmSheet">
   <app-mobile-shell
+    #shell
     [bleed]="group.status === 'loading' || group.status === 'loaded'"
     [refreshable]="group.status === 'loaded'"
-    [refreshing]="refreshing()"
     (refresh)="refresh()"
   >
     @switch (group.status) {
@@ -112,6 +112,7 @@
               <button class="h-11 flex-1" hlmToggleGroupItem value="balances">Balances</button>
             </div>
           </div>
+          <app-refresh-indicator [distance]="shell.pullDistance()" [refreshing]="refreshing()" />
           @if (tab() === 'balances') {
             <app-group-balances
               [state]="balancesTab()"

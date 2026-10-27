@@ -333,6 +333,24 @@ describe('GroupPage', () => {
       expect(screen.queryByRole('status', { name: 'Refreshing' })).toBeNull();
     });
 
+    it('shows the refresh under the Payments and Balances selector', async () => {
+      const { harness, feedRefresh } = await setup({ feedState: WITH_PAYMENT });
+
+      pullToRefresh(harness);
+      feedRefresh.set('loading');
+      await harness.fixture.whenStable();
+
+      const selector = screen.getByRole('group', { name: 'View' });
+      const indicator = screen.getByRole('status', { name: 'Refreshing' });
+      expect(
+        selector.compareDocumentPosition(indicator) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(
+        indicator.compareDocumentPosition(screen.getByText('Dinner')) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
     it('keeps the rows and says so when the refresh fails', async () => {
       const { harness, findOne, toastError } = await setup({ feedState: WITH_PAYMENT });
       findOne.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 0 })));

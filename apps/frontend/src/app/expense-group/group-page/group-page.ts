@@ -47,6 +47,7 @@ import { LoadMore } from 'src/app/shared/ui/load-more/load-more';
 import { MobileShell, MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
 import { MoneyAmount } from 'src/app/shared/ui/money-amount/money-amount';
 import { PageStateImports } from 'src/app/shared/ui/page-state/page-state';
+import { RefreshIndicator } from 'src/app/shared/ui/refresh-indicator/refresh-indicator';
 import { AppTextImports } from 'src/app/shared/ui/text/text';
 
 import { GroupVisitMemory, isReturnFromChild } from './group-visit';
@@ -80,6 +81,7 @@ const isNotAccessible = (error: unknown): boolean =>
   imports: [
     RouterLink,
     MobileShellImports,
+    RefreshIndicator,
     GroupHero,
     ListRowImports,
     MoneyAmount,
