@@ -113,8 +113,12 @@
               [members]="group.members"
               [meUserId]="group.me.id"
               [currency]="group.group.currencyCode"
-              [hasPayments]="hasActivity()"
+              [hasActivity]="hasActivity()"
+              [settlements]="settlements()"
+              [pendingSettlements]="pendingSettlements()"
               (retry)="retryBalances()"
+              (record)="recordSettlement($event)"
+              (undo)="undoSettlement($event)"
             />
           } @else {
             @let currentFeed = feed();

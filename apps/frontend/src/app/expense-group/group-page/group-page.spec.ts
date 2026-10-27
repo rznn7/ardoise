@@ -6,6 +6,7 @@ import { provideRouter, Router, withComponentInputBinding } from '@angular/route
 import { RouterTestingHarness } from '@angular/router/testing';
 import {
   type CreateInviteLinkResponse,
+  type CreateSettlementBody,
   type ExpenseGroupSummary,
   type GroupBalancesResponse,
   type GroupMember,
@@ -125,6 +126,8 @@ interface Setup {
   remember: ReturnType<typeof vi.fn<(groupId: number) => void>>;
   skipLaunchRedirect: ReturnType<typeof vi.fn<() => void>>;
   findOne: ReturnType<typeof vi.fn<() => Observable<ExpenseGroupSummary>>>;
+  recordSettlement: ReturnType<typeof vi.fn<(body: CreateSettlementBody) => void>>;
+  undoSettlement: ReturnType<typeof vi.fn<(groupId: number, id: number) => void>>;
 }
 
 async function setup({
@@ -150,6 +153,8 @@ async function setup({
   const load = vi.fn<(groupId: number) => void>();
   const remember = vi.fn<(groupId: number) => void>();
   const skipLaunchRedirect = vi.fn<() => void>();
+  const recordSettlement = vi.fn<(body: CreateSettlementBody) => void>();
+  const undoSettlement = vi.fn<(groupId: number, id: number) => void>();
   TestBed.configureTestingModule({
     providers: [
       provideRouter(
@@ -173,6 +178,8 @@ async function setup({
           load,
           settledVersion: () => settled,
           pendingSettlements: () => signal([]),
+          recordSettlement,
+          undoSettlement,
         },
       },
       { provide: BalanceApiService, useValue: { listByGroup: listBalances } },
@@ -197,7 +204,17 @@ async function setup({
     await openFirstPage(harness, url);
   }
   harness.detectChanges();
-  return { feed, settled, listBalances, load, remember, skipLaunchRedirect, findOne };
+  return {
+    feed,
+    settled,
+    listBalances,
+    load,
+    remember,
+    skipLaunchRedirect,
+    findOne,
+    recordSettlement,
+    undoSettlement,
+  };
 }
 
 describe('GroupPage', () => {
@@ -542,6 +559,37 @@ describe('GroupPage', () => {
       });
 
       expect(go).not.toHaveBeenCalled();
+    });
+
+    it('records a repayment confirmed from the balances tab', async () => {
+      const { recordSettlement } = await setup({
+        feedState: WITH_PAYMENT,
+        balances: balancesOf(-1500),
+        url: '/group/7?tab=balances',
+      });
+
+      await userEvent.click(await screen.findByRole('button', { name: /you pay léa/i }));
+      await userEvent.click(await screen.findByRole('button', { name: 'I paid Léa back' }));
+
+      expect(recordSettlement).toHaveBeenCalledWith({
+        groupId: 7,
+        fromMemberId: 11,
+        toMemberId: 12,
+        amount: 1500,
+      });
+    });
+
+    it('undoes a repayment from the Done section', async () => {
+      const { undoSettlement } = await setup({
+        feedState: { status: 'loaded', rows: [payment({}), settlement({ id: 9 })] },
+        balances: balancesOf(0),
+        url: '/group/7?tab=balances',
+      });
+
+      await userEvent.click(await screen.findByRole('button', { name: /tom paid you back/i }));
+      await userEvent.click(await screen.findByRole('button', { name: 'Undo repayment' }));
+
+      expect(undoSettlement).toHaveBeenCalledWith(7, 9);
     });
 
     it('reloads balances when a payment change settles', async () => {

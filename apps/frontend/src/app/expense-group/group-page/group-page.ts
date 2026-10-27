@@ -22,7 +22,10 @@ import { HlmToggleGroupImports } from '@spartan-ng/helm/toggle-group';
 import { forkJoin } from 'rxjs';
 import { AuthService } from 'src/app/auth/auth.service';
 import { type BalancesState, BalanceStore } from 'src/app/balance/balance-store';
-import { GroupBalances } from 'src/app/balance/group-balances/group-balances';
+import {
+  GroupBalances,
+  type RepaymentToRecord,
+} from 'src/app/balance/group-balances/group-balances';
 import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.service';
 import { LastGroupService } from 'src/app/expense-group/last-group.service';
 import { type FeedRow, FeedStore } from 'src/app/feed/feed-store';
@@ -111,6 +114,19 @@ export class GroupPage {
   readonly balances = computed(() => this.balancesOfGroup()());
 
   private readonly settledOfGroup = computed(() => this.feedStore.settledVersion(this.groupId()));
+
+  private readonly pendingSettlementsOfGroup = computed(() =>
+    this.feedStore.pendingSettlements(this.groupId()),
+  );
+  readonly pendingSettlements = computed(() => this.pendingSettlementsOfGroup()());
+
+  readonly settlements = computed(() => {
+    const feed = this.feed();
+    if (feed.status !== 'loaded') return [];
+    return feed.rows.flatMap((row) =>
+      row.kind === 'settlement' && !row.pending ? [row.settlement] : [],
+    );
+  });
 
   readonly hasActivity = computed(() => {
     const feed = this.feed();
@@ -215,6 +231,14 @@ export class GroupPage {
       queryParams: { tab: tab === 'balances' ? 'balances' : null },
       replaceUrl: true,
     });
+  }
+
+  recordSettlement(repayment: RepaymentToRecord): void {
+    this.feedStore.recordSettlement({ groupId: this.groupId(), ...repayment });
+  }
+
+  undoSettlement(id: number): void {
+    this.feedStore.undoSettlement(this.groupId(), id);
   }
 
   retryBalances(): void {

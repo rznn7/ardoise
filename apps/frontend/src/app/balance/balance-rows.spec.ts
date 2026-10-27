@@ -1,6 +1,6 @@
-import { type GroupMember } from '@ardoise/shared';
+import { type GroupMember, type SettlementResponse } from '@ardoise/shared';
 
-import { memberRows, repaymentRows } from './balance-rows';
+import { doneRows, memberRows, repaymentRows } from './balance-rows';
 
 const member = (id: number, userId: number, name: string): GroupMember => ({
   id,
@@ -78,6 +78,7 @@ describe('repaymentRows', () => {
       ],
       MEMBERS,
       ME,
+      [],
     );
 
     expect(rows.map((row) => row.label)).toEqual(['You pay Léa', 'Tom pays you', 'Tom pays Léa']);
@@ -93,6 +94,7 @@ describe('repaymentRows', () => {
       ],
       MEMBERS,
       ME,
+      [],
     );
 
     expect(rows.map((row) => [row.label, row.mine])).toEqual([
@@ -100,6 +102,78 @@ describe('repaymentRows', () => {
       ['You pay Max', true],
       ['Max pays Léa', false],
       ['Tom pays Léa', false],
+    ]);
+  });
+
+  it('words the confirm button for the side I am on', () => {
+    const rows = repaymentRows(
+      [
+        { fromMemberId: 11, toMemberId: 12, amount: 3000 },
+        { fromMemberId: 13, toMemberId: 11, amount: 1200 },
+        { fromMemberId: 13, toMemberId: 12, amount: 5820 },
+      ],
+      MEMBERS,
+      ME,
+      [],
+    );
+
+    expect(rows.map((row) => row.confirmLabel)).toEqual([
+      'I paid Léa back',
+      'Tom paid me back',
+      null,
+    ]);
+  });
+
+  it('flags a repayment whose record is still saving', () => {
+    const rows = repaymentRows(
+      [
+        { fromMemberId: 11, toMemberId: 12, amount: 3000 },
+        { fromMemberId: 11, toMemberId: 14, amount: 1250 },
+      ],
+      MEMBERS,
+      ME,
+      [{ groupId: 7, fromMemberId: 11, toMemberId: 12, amount: 3000 }],
+    );
+
+    expect(rows.map((row) => [row.label, row.pending])).toEqual([
+      ['You pay Léa', true],
+      ['You pay Max', false],
+    ]);
+  });
+});
+
+describe('doneRows', () => {
+  const settlement = (
+    id: number,
+    fromMemberId: number,
+    toMemberId: number,
+    settledAt: string,
+  ): SettlementResponse => ({
+    id,
+    groupId: 7,
+    fromMemberId,
+    toMemberId,
+    amount: 1000 * id,
+    settledAt,
+    createdByMemberId: fromMemberId,
+    createdAt: settledAt,
+  });
+
+  it('lists repayments newest first, mine flagged', () => {
+    const rows = doneRows(
+      [
+        settlement(1, 11, 12, '2026-10-20T10:00:00.000Z'),
+        settlement(2, 14, 12, '2026-10-25T10:00:00.000Z'),
+        settlement(3, 13, 11, '2026-10-22T10:00:00.000Z'),
+      ],
+      MEMBERS,
+      ME,
+    );
+
+    expect(rows.map((row) => [row.id, row.label, row.amount, row.mine])).toEqual([
+      [2, 'Max paid Léa back', 2000, false],
+      [3, 'Tom paid you back', 3000, true],
+      [1, 'You paid Léa back', 1000, true],
     ]);
   });
 });
