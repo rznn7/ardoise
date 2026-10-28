@@ -138,16 +138,18 @@ export class RealtimeHub implements RealtimePublisher, OnApplicationShutdown {
           ? [sseEvent({ type: 'reset' }, currentId)]
           : replay.filter(sees).map(toEvent);
 
-      return concat(
-        from(catchUp),
-        of(sseEvent({ type: 'ready' }, currentId)),
-        merge(
-          this.published.pipe(filter(sees), map(toEvent)),
-          this.resets.pipe(
-            map(() => sseEvent({ type: 'reset' }, this.currentId())),
-          ),
-          interval(PING_INTERVAL_MS).pipe(
-            map(() => sseEvent({ type: 'ping' })),
+      return merge(
+        this.resets.pipe(
+          map(() => sseEvent({ type: 'reset' }, this.currentId())),
+        ),
+        concat(
+          from(catchUp),
+          of(sseEvent({ type: 'ready' }, currentId)),
+          merge(
+            this.published.pipe(filter(sees), map(toEvent)),
+            interval(PING_INTERVAL_MS).pipe(
+              map(() => sseEvent({ type: 'ping' })),
+            ),
           ),
         ),
       );
