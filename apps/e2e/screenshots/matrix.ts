@@ -757,6 +757,33 @@ export const CELLS: ScreenshotCell[] = [
     },
   },
   {
+    route: 'payment-details',
+    state: 'deleted-by-someone-else',
+    path: DETAILS_PATH,
+    mocks: groupMocks,
+    ready: async (page) => {
+      await expect(page.getByText('Shares')).toBeVisible();
+      const messages = [
+        { type: 'ready' },
+        {
+          type: 'payment.deleted',
+          groupId: GROUP.id,
+          opId: null,
+          id: DETAILED_PAYMENT.id,
+        },
+      ];
+      await page.route('**/api/events', (route) =>
+        route.fulfill({
+          contentType: 'text/event-stream',
+          body: messages
+            .map((message) => `data: ${JSON.stringify(message)}\n\n`)
+            .join(''),
+        }),
+      );
+      await expect(page.getByText('This payment was deleted')).toBeVisible();
+    },
+  },
+  {
     route: 'payment-edit',
     state: 'options',
     path: `${DETAILS_PATH}/edit/options`,
