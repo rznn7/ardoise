@@ -4,6 +4,7 @@ import {
   type CreateSettlementBody,
   type FeedItem,
   type FeedPage,
+  type GroupEvent,
   type PaymentResponse,
   type SettlementResponse,
   type UpdatePaymentBody,
@@ -13,6 +14,7 @@ import { PaymentApiService } from 'src/app/payment/payment-api.service';
 import { DoneStore } from 'src/app/settlement/done-store';
 import { SettlementApiService } from 'src/app/settlement/settlement-api.service';
 import { type More, PagedList } from 'src/app/shared/paged-list';
+import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
 import { ToastService } from 'src/app/shared/toast.service';
 
 import { FeedApiService } from './feed-api.service';
@@ -57,6 +59,13 @@ const isPayment = (item: FeedItem, id: number): boolean =>
 const isSettlement = (item: FeedItem, id: number): boolean =>
   item.kind === 'settlement' && item.settlement.id === id;
 
+const withoutKey = <V>(map: ReadonlyMap<number, V>, key: number): ReadonlyMap<number, V> => {
+  if (!map.has(key)) return map;
+  const next = new Map(map);
+  next.delete(key);
+  return next;
+};
+
 const withUpdate = (payment: PaymentResponse, body: UpdatePaymentBody): PaymentResponse => ({
   ...payment,
   payerMemberId: body.payerMemberId,
@@ -84,7 +93,20 @@ export class FeedStore {
   private readonly updating = signal<ReadonlyMap<number, UpdatePaymentBody>>(new Map());
   private readonly confirmedUpdates = new Map<number, UpdatePaymentBody>();
   private readonly settledMutations = signal<ReadonlyMap<number, number>>(new Map());
+  private readonly pendingByOpId = new Map<string, number>();
+  private readonly tombstones = new Set<string>();
   private nextTemporaryId = -1;
+
+  constructor() {
+    const realtime = inject(RealtimeService);
+    realtime.events.subscribe((event) => {
+      this.apply(event);
+    });
+    realtime.resynced.subscribe(() => {
+      const groupId = this.pages.keptGroupId();
+      if (groupId !== null) this.loadFirst(groupId);
+    });
+  }
 
   feed(groupId: number): Signal<FeedState> {
     return computed(() => this.feedOf(groupId));
@@ -146,8 +168,11 @@ export class FeedStore {
         createdAt: new Date().toISOString(),
       },
     };
+    const opId = crypto.randomUUID();
+    this.pendingByOpId.set(opId, temporaryId);
     this.creating.update((rows) => new Map(rows).set(temporaryId, pendingRow));
     const settle = (): void => {
+      this.pendingByOpId.delete(opId);
       this.creating.update((rows) => {
         const next = new Map(rows);
         next.delete(temporaryId);
@@ -156,7 +181,7 @@ export class FeedStore {
       this.markSettled(body.groupId);
     };
 
-    this.paymentApi.create(body, crypto.randomUUID()).subscribe({
+    this.paymentApi.create(body, opId).subscribe({
       next: ({ payment }) => {
         this.upsert(body.groupId, { kind: 'payment', payment });
         settle();
@@ -207,6 +232,7 @@ export class FeedStore {
 
     this.paymentApi.delete(id, crypto.randomUUID()).subscribe({
       next: () => {
+        this.tombstones.add(`payment:${String(id)}`);
         this.pages.patch(groupId, (items) => items.filter((item) => !isPayment(item, id)));
         settle();
       },
@@ -234,8 +260,11 @@ export class FeedStore {
         createdAt: now,
       },
     };
+    const opId = crypto.randomUUID();
+    this.pendingByOpId.set(opId, temporaryId);
     this.recording.update((pending) => new Map(pending).set(temporaryId, { body, row }));
     const settle = (): void => {
+      this.pendingByOpId.delete(opId);
       this.recording.update((pending) => {
         const next = new Map(pending);
         next.delete(temporaryId);
@@ -244,7 +273,7 @@ export class FeedStore {
       this.markSettled(body.groupId);
     };
 
-    this.settlementApi.create(body, crypto.randomUUID()).subscribe({
+    this.settlementApi.create(body, opId).subscribe({
       next: (settlement) => {
         this.upsert(body.groupId, { kind: 'settlement', settlement });
         this.done.added(body.groupId, settlement);
@@ -271,6 +300,7 @@ export class FeedStore {
 
     this.settlementApi.delete(id, crypto.randomUUID()).subscribe({
       next: () => {
+        this.tombstones.add(`settlement:${String(id)}`);
         this.pages.patch(groupId, (items) => items.filter((item) => !isSettlement(item, id)));
         this.done.removed(groupId, id);
         settle();
@@ -312,6 +342,51 @@ export class FeedStore {
         .filter((row) => !boundary || newestFirst(row, { ...boundary, pending: false }) <= 0)
         .sort(newestFirst),
     };
+  }
+
+  private apply(event: GroupEvent): void {
+    switch (event.type) {
+      case 'payment.saved':
+        this.applySaved(event.groupId, event.opId, { kind: 'payment', payment: event.payment });
+        break;
+      case 'settlement.saved':
+        this.applySaved(event.groupId, event.opId, {
+          kind: 'settlement',
+          settlement: event.settlement,
+        });
+        break;
+      case 'payment.deleted':
+        this.tombstones.add(`payment:${String(event.id)}`);
+        this.pages.patch(event.groupId, (items) =>
+          items.filter((item) => !isPayment(item, event.id)),
+        );
+        this.markSettled(event.groupId);
+        break;
+      case 'settlement.deleted':
+        this.tombstones.add(`settlement:${String(event.id)}`);
+        this.pages.patch(event.groupId, (items) =>
+          items.filter((item) => !isSettlement(item, event.id)),
+        );
+        this.done.removed(event.groupId, event.id);
+        this.markSettled(event.groupId);
+        break;
+      default:
+        break;
+    }
+  }
+
+  private applySaved(groupId: number, opId: string | null, item: FeedItem): void {
+    if (this.tombstones.has(keyOf(item))) return;
+    const temporaryId = opId === null ? undefined : this.pendingByOpId.get(opId);
+    if (temporaryId !== undefined) this.dropPending(temporaryId);
+    this.upsert(groupId, item);
+    if (item.kind === 'settlement') this.done.added(groupId, item.settlement);
+    this.markSettled(groupId);
+  }
+
+  private dropPending(temporaryId: number): void {
+    this.creating.update((rows) => withoutKey(rows, temporaryId));
+    this.recording.update((rows) => withoutKey(rows, temporaryId));
   }
 
   private upsert(groupId: number, item: FeedItem): void {

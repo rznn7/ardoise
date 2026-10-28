@@ -1,6 +1,7 @@
 import { computed, inject, Injectable, type Signal, signal } from '@angular/core';
 import { type SettlementResponse } from '@ardoise/shared';
 import { type More, PagedList } from 'src/app/shared/paged-list';
+import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
 
 import { SettlementApiService } from './settlement-api.service';
 
@@ -24,6 +25,13 @@ export class DoneStore {
     (settlement) => String(settlement.id),
   );
   private readonly hidden = signal<ReadonlySet<number>>(new Set());
+
+  constructor() {
+    inject(RealtimeService).resynced.subscribe(() => {
+      const groupId = this.pages.keptGroupId();
+      if (groupId !== null) this.loadFirst(groupId);
+    });
+  }
 
   done(groupId: number): Signal<DoneState> {
     return computed(() => {

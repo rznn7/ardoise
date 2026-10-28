@@ -75,6 +75,10 @@ export class PagedList<T> {
     return this.kept()?.groupId === groupId;
   }
 
+  keptGroupId(): number | null {
+    return this.kept()?.groupId ?? null;
+  }
+
   loadFirst(groupId: number): void {
     if (this.active() !== groupId) {
       this.active.set(groupId);
