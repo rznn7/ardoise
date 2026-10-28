@@ -112,7 +112,7 @@ describe('RealtimeService', () => {
     const { realtime, sources, received } = setup();
     realtime.connect();
 
-    sources[0]?.emit({ type: 'ping' });
+    sources[0]?.emit({ type: 'payment.renamed' });
     sources[0]?.emit('not json');
     sources[0]?.emit({ type: 'payment.deleted' });
 
