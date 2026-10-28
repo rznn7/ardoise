@@ -1,12 +1,14 @@
 import { DOCUMENT, inject, Injectable, InjectionToken, Injector } from '@angular/core';
 import { Router } from '@angular/router';
 import { type GroupEvent, type RealtimeMessage, realtimeMessageSchema } from '@ardoise/shared';
-import { fromEvent, type Observable, Subject, take } from 'rxjs';
+import { fromEvent, type Observable, Subject, type Subscription, take, timer } from 'rxjs';
 import { AuthService } from 'src/app/auth/auth.service';
 import { API_BASE_URL } from 'src/app/shared/api-config';
 import { PAGE_RELOAD } from 'src/app/shared/version/version-watcher';
 
 export const HIDDEN_RELOAD_MS = 5 * 60 * 1000;
+export const INITIAL_RETRY_MS = 1000;
+export const MAX_RETRY_MS = 30_000;
 
 export const EVENT_SOURCE = new InjectionToken<(url: string) => EventSource>('EVENT_SOURCE', {
   providedIn: 'root',
@@ -36,6 +38,9 @@ export class RealtimeService {
   private source: EventSource | null = null;
   private hiddenAt: number | null = null;
   private hasBeenReady = false;
+  private retryMs = INITIAL_RETRY_MS;
+  private revalidation: Subscription | null = null;
+  private reconnection: Subscription | null = null;
 
   readonly events: Observable<GroupEvent> = this.eventSubject.asObservable();
   readonly resynced: Observable<void> = this.resyncSubject.asObservable();
@@ -60,6 +65,10 @@ export class RealtimeService {
   }
 
   disconnect(): void {
+    this.revalidation?.unsubscribe();
+    this.reconnection?.unsubscribe();
+    this.revalidation = null;
+    this.reconnection = null;
     this.source?.close();
     this.source = null;
     this.hiddenAt = null;
@@ -72,6 +81,7 @@ export class RealtimeService {
       return;
     }
     if (message.type === 'ready') {
+      this.retryMs = INITIAL_RETRY_MS;
       if (!this.hasBeenReady) this.resyncSubject.next();
       this.hasBeenReady = true;
       return;
@@ -82,17 +92,26 @@ export class RealtimeService {
   private onClosed(): void {
     this.disconnect();
     const auth = this.injector.get(AuthService);
-    auth
+    this.revalidation = auth
       .revalidate()
       .pipe(take(1))
       .subscribe({
         next: () => {
-          this.connect();
+          this.reconnectAfterBackoff();
         },
         error: () => {
           void this.router.navigate(['/login']);
         },
       });
+  }
+
+  private reconnectAfterBackoff(): void {
+    const delay = this.retryMs;
+    this.retryMs = Math.min(this.retryMs * 2, MAX_RETRY_MS);
+    this.reconnection = timer(delay).subscribe(() => {
+      this.reconnection = null;
+      this.connect();
+    });
   }
 
   private onVisibilityChange(): void {

@@ -4,7 +4,13 @@ import { of, throwError } from 'rxjs';
 import { AuthService } from 'src/app/auth/auth.service';
 import { PAGE_RELOAD } from 'src/app/shared/version/version-watcher';
 
-import { EVENT_SOURCE, HIDDEN_RELOAD_MS, RealtimeService } from './realtime.service';
+import {
+  EVENT_SOURCE,
+  HIDDEN_RELOAD_MS,
+  INITIAL_RETRY_MS,
+  MAX_RETRY_MS,
+  RealtimeService,
+} from './realtime.service';
 
 class FakeEventSource {
   static readonly CLOSED = 2;
@@ -179,14 +185,74 @@ describe('RealtimeService', () => {
       expect(navigate).toHaveBeenCalledWith(['/login']);
     });
 
-    it('reconnects when the session is still valid', () => {
+    it('reconnects after a second when the session is still valid', () => {
+      vi.useFakeTimers();
       const { realtime, sources, navigate } = setup();
       realtime.connect();
 
       sources[0]?.fail();
+      expect(sources).toHaveLength(1);
+      vi.advanceTimersByTime(INITIAL_RETRY_MS);
 
       expect(sources).toHaveLength(2);
       expect(navigate).not.toHaveBeenCalled();
+    });
+
+    it('waits twice as long after a second failure in a row', () => {
+      vi.useFakeTimers();
+      const { realtime, sources } = setup();
+      realtime.connect();
+      sources[0]?.fail();
+      vi.advanceTimersByTime(INITIAL_RETRY_MS);
+
+      sources[1]?.fail();
+      vi.advanceTimersByTime(INITIAL_RETRY_MS);
+      expect(sources).toHaveLength(2);
+      vi.advanceTimersByTime(INITIAL_RETRY_MS);
+
+      expect(sources).toHaveLength(3);
+    });
+
+    it('never waits longer than the cap', () => {
+      vi.useFakeTimers();
+      const { realtime, sources } = setup();
+      realtime.connect();
+
+      for (let attempt = 0; attempt < 10; attempt++) {
+        sources.at(-1)?.fail();
+        vi.advanceTimersByTime(MAX_RETRY_MS);
+      }
+      const opened = sources.length;
+      sources.at(-1)?.fail();
+      vi.advanceTimersByTime(MAX_RETRY_MS);
+
+      expect(sources).toHaveLength(opened + 1);
+    });
+
+    it('starts over at a second once the stream is ready again', () => {
+      vi.useFakeTimers();
+      const { realtime, sources } = setup();
+      realtime.connect();
+      sources[0]?.fail();
+      vi.advanceTimersByTime(INITIAL_RETRY_MS);
+      sources[1]?.emit({ type: 'ready', id: 'a.0' });
+
+      sources[1]?.fail();
+      vi.advanceTimersByTime(INITIAL_RETRY_MS);
+
+      expect(sources).toHaveLength(3);
+    });
+
+    it('opens nothing when disconnected while a reconnect is pending', () => {
+      vi.useFakeTimers();
+      const { realtime, sources } = setup();
+      realtime.connect();
+      sources[0]?.fail();
+
+      realtime.disconnect();
+      vi.advanceTimersByTime(MAX_RETRY_MS);
+
+      expect(sources).toHaveLength(1);
     });
 
     it('lets the browser retry on its own while the stream is still connecting', () => {
