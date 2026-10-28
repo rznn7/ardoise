@@ -37,6 +37,7 @@ export class RealtimeService {
   private readonly resyncSubject = new Subject<void>();
   private source: EventSource | null = null;
   private hiddenAt: number | null = null;
+  private wanted = false;
   private hasBeenReady = false;
   private retryMs = INITIAL_RETRY_MS;
   private revalidation: Subscription | null = null;
@@ -53,6 +54,8 @@ export class RealtimeService {
 
   connect(): void {
     if (this.source) return;
+    this.cancelRecovery();
+    this.wanted = true;
     this.hasBeenReady = false;
     const source = this.openSource(`${this.baseUrl}/events`);
     source.onmessage = (message: MessageEvent) => {
@@ -65,13 +68,22 @@ export class RealtimeService {
   }
 
   disconnect(): void {
+    this.cancelRecovery();
+    this.closeSource();
+    this.wanted = false;
+    this.hiddenAt = null;
+  }
+
+  private cancelRecovery(): void {
     this.revalidation?.unsubscribe();
     this.reconnection?.unsubscribe();
     this.revalidation = null;
     this.reconnection = null;
+  }
+
+  private closeSource(): void {
     this.source?.close();
     this.source = null;
-    this.hiddenAt = null;
   }
 
   private onMessage(message: RealtimeMessage | null): void {
@@ -90,7 +102,8 @@ export class RealtimeService {
   }
 
   private onClosed(): void {
-    this.disconnect();
+    this.cancelRecovery();
+    this.closeSource();
     const auth = this.injector.get(AuthService);
     this.revalidation = auth
       .revalidate()
@@ -100,6 +113,7 @@ export class RealtimeService {
           this.reconnectAfterBackoff();
         },
         error: () => {
+          this.disconnect();
           void this.router.navigate(['/login']);
         },
       });
@@ -115,7 +129,7 @@ export class RealtimeService {
   }
 
   private onVisibilityChange(): void {
-    if (!this.source) return;
+    if (!this.wanted) return;
     if (this.document.visibilityState === 'hidden') {
       this.hiddenAt ??= Date.now();
       return;

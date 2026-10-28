@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { AuthService } from 'src/app/auth/auth.service';
 import { PAGE_RELOAD } from 'src/app/shared/version/version-watcher';
 
@@ -163,6 +163,32 @@ describe('RealtimeService', () => {
       expect(reload).not.toHaveBeenCalled();
     });
 
+    it('reloads when the stream dropped while hidden and the wait outlasted five minutes', () => {
+      vi.useFakeTimers();
+      const { realtime, sources, reload } = setup();
+      realtime.connect();
+
+      setVisibility('hidden');
+      sources[0]?.fail();
+      vi.advanceTimersByTime(HIDDEN_RELOAD_MS);
+      setVisibility('visible');
+
+      expect(reload).toHaveBeenCalledOnce();
+    });
+
+    it('stays after an explicit disconnect', () => {
+      vi.useFakeTimers();
+      const { realtime, reload } = setup();
+      realtime.connect();
+
+      setVisibility('hidden');
+      realtime.disconnect();
+      vi.advanceTimersByTime(HIDDEN_RELOAD_MS);
+      setVisibility('visible');
+
+      expect(reload).not.toHaveBeenCalled();
+    });
+
     it('stays when not connected', () => {
       vi.useFakeTimers();
       const { reload } = setup();
@@ -253,6 +279,33 @@ describe('RealtimeService', () => {
       vi.advanceTimersByTime(MAX_RETRY_MS);
 
       expect(sources).toHaveLength(1);
+    });
+
+    it('neither navigates nor reconnects when disconnected while revalidating', () => {
+      vi.useFakeTimers();
+      const pending = new Subject<unknown>();
+      const { realtime, sources, navigate } = setup(() => pending);
+      realtime.connect();
+      sources[0]?.fail();
+
+      realtime.disconnect();
+      pending.error(new Error('401'));
+      vi.advanceTimersByTime(MAX_RETRY_MS);
+
+      expect(navigate).not.toHaveBeenCalled();
+      expect(sources).toHaveLength(1);
+    });
+
+    it('lets a manual connect replace a pending reconnect', () => {
+      vi.useFakeTimers();
+      const { realtime, sources } = setup();
+      realtime.connect();
+      sources[0]?.fail();
+
+      realtime.connect();
+      vi.advanceTimersByTime(MAX_RETRY_MS);
+
+      expect(sources).toHaveLength(2);
     });
 
     it('lets the browser retry on its own while the stream is still connecting', () => {
