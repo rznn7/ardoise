@@ -109,26 +109,22 @@ export class SettlementDetails {
   });
 
   constructor() {
-    inject(RealtimeService)
-      .events.pipe(takeUntilDestroyed())
-      .subscribe((event) => {
-        if (event.type === 'settlement.saved' && event.settlement.id === this.settlementId()) {
-          const saved = event.settlement;
-          this.state.update((state) =>
-            state.status === 'loaded' ? { ...state, settlement: saved } : state,
-          );
-          this.load(this.groupId(), this.settlementId());
-        }
-        if (
-          event.type === 'settlement.deleted' &&
-          event.id === this.settlementId() &&
-          !this.leaving
-        ) {
-          this.leaving = true;
-          this.toast.message('This repayment was undone');
-          this.goBack(this.groupUrl());
-        }
-      });
+    const realtime = inject(RealtimeService);
+    realtime.resynced.pipe(takeUntilDestroyed()).subscribe(() => {
+      this.load(this.groupId(), this.settlementId(), { leaveWhenGone: true });
+    });
+    realtime.events.pipe(takeUntilDestroyed()).subscribe((event) => {
+      if (event.type === 'settlement.saved' && event.settlement.id === this.settlementId()) {
+        const saved = event.settlement;
+        this.state.update((state) =>
+          state.status === 'loaded' ? { ...state, settlement: saved } : state,
+        );
+        this.load(this.groupId(), this.settlementId());
+      }
+      if (event.type === 'settlement.deleted' && event.id === this.settlementId()) {
+        this.leaveBecauseUndone();
+      }
+    });
 
     effect(() => {
       const groupId = this.groupId();
@@ -153,7 +149,18 @@ export class SettlementDetails {
     this.goBack(this.groupUrl());
   }
 
-  private load(groupId: number, settlementId: number): void {
+  private leaveBecauseUndone(): void {
+    if (this.leaving) return;
+    this.leaving = true;
+    this.toast.message('This repayment was undone');
+    this.goBack(this.groupUrl());
+  }
+
+  private load(
+    groupId: number,
+    settlementId: number,
+    options?: { readonly leaveWhenGone?: boolean },
+  ): void {
     const loadId = ++this.latestLoad;
     const revalidating = this.state().status === 'loaded';
     if (!revalidating) this.state.set({ status: 'loading' });
@@ -168,6 +175,10 @@ export class SettlementDetails {
       },
       error: (error: unknown) => {
         if (loadId !== this.latestLoad) return;
+        if (options?.leaveWhenGone && isNotAccessible(error)) {
+          this.leaveBecauseUndone();
+          return;
+        }
         if (revalidating && !isNotAccessible(error)) return;
         this.state.set({ status: isNotAccessible(error) ? 'not-found' : 'error' });
       },

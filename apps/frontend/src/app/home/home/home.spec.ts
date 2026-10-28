@@ -384,6 +384,22 @@ describe('Home', () => {
       expect(listBalances).toHaveBeenCalledTimes(2);
     });
 
+    it('reloads while events keep arriving', async () => {
+      const listBalances = vi.fn<() => Observable<MyBalance[]>>(() => of([]));
+      const { events } = await setup({
+        listMine: twoGroups(),
+        balances: defer(listBalances),
+      });
+      const callsBefore = listBalances.mock.calls.length;
+
+      for (let tick = 0; tick < 8; tick++) {
+        events.next({ type: 'payment.deleted', groupId: 1, opId: null, id: tick });
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+
+      expect(listBalances.mock.calls.length).toBeGreaterThan(callsBefore);
+    });
+
     it('still lists the groups when balances fail', async () => {
       await setup({
         listMine: twoGroups(),

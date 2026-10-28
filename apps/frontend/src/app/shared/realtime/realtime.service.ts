@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { DOCUMENT, inject, Injectable, InjectionToken, Injector } from '@angular/core';
 import { Router } from '@angular/router';
 import { type GroupEvent, type RealtimeMessage, realtimeMessageSchema } from '@ardoise/shared';
@@ -112,9 +113,13 @@ export class RealtimeService {
         next: () => {
           this.reconnectAfterBackoff();
         },
-        error: () => {
-          this.disconnect();
-          void this.router.navigate(['/login']);
+        error: (error: unknown) => {
+          if (error instanceof HttpErrorResponse && error.status === 401) {
+            this.disconnect();
+            void this.router.navigate(['/login']);
+            return;
+          }
+          this.reconnectAfterBackoff();
         },
       });
   }

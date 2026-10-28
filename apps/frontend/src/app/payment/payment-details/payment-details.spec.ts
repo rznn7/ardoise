@@ -76,6 +76,7 @@ interface Setup {
   router: Router;
   harness: RouterTestingHarness;
   events: Subject<GroupEvent>;
+  resynced: Subject<void>;
   message: ReturnType<typeof vi.fn<(text: string) => void>>;
 }
 
@@ -98,6 +99,7 @@ async function setup({
   };
   const clear = vi.fn<() => void>();
   const events = new Subject<GroupEvent>();
+  const resynced = new Subject<void>();
   const message = vi.fn<(text: string) => void>();
   TestBed.configureTestingModule({
     providers: [
@@ -119,7 +121,7 @@ async function setup({
         useValue: { remove, pendingUpdate: () => pending, confirmedUpdate: () => confirmed },
       },
       { provide: PaymentDraft, useValue: { clear } },
-      { provide: RealtimeService, useValue: { events } },
+      { provide: RealtimeService, useValue: { events, resynced } },
       { provide: ToastService, useValue: { message } },
     ],
   });
@@ -140,6 +142,7 @@ async function setup({
     router: TestBed.inject(Router),
     harness,
     events,
+    resynced,
     message,
   };
 }
@@ -484,6 +487,27 @@ describe('payment details route', () => {
       const { events, message, router } = await setup();
 
       events.next({ type: 'payment.deleted', groupId: 7, opId: null, id: 5 });
+
+      expect(message).toHaveBeenCalledWith('This payment was deleted');
+      await waitFor(() => {
+        expect(router.url).toBe('/group/7');
+      });
+    });
+
+    it('reloads the payment on resync without a skeleton', async () => {
+      const { resynced, findOne } = await setup();
+
+      resynced.next();
+
+      expect(findOne).toHaveBeenCalledTimes(2);
+      expect(screen.queryByRole('status', { name: 'Loading' })).toBeNull();
+    });
+
+    it('leaves with a message when the payment is gone after a resync', async () => {
+      const { resynced, findOne, message, router } = await setup();
+      findOne.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+
+      resynced.next();
 
       expect(message).toHaveBeenCalledWith('This payment was deleted');
       await waitFor(() => {

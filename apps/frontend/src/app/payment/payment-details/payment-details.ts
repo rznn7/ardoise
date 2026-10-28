@@ -183,23 +183,23 @@ export class PaymentDetails {
       });
     });
 
-    inject(RealtimeService)
-      .events.pipe(takeUntilDestroyed())
-      .subscribe((event) => {
-        if (event.type === 'payment.saved' && event.payment.id === this.paymentId()) {
-          this.confirmedUpdate.set(null);
-          const saved = event.payment;
-          this.fetched.update((state) =>
-            state.status === 'loaded' ? { ...state, payment: saved } : state,
-          );
-          this.load(this.groupId(), this.paymentId());
-        }
-        if (event.type === 'payment.deleted' && event.id === this.paymentId() && !this.leaving) {
-          this.leaving = true;
-          this.toast.message('This payment was deleted');
-          this.goBack(this.groupUrl());
-        }
-      });
+    const realtime = inject(RealtimeService);
+    realtime.resynced.pipe(takeUntilDestroyed()).subscribe(() => {
+      this.load(this.groupId(), this.paymentId(), { leaveWhenGone: true });
+    });
+    realtime.events.pipe(takeUntilDestroyed()).subscribe((event) => {
+      if (event.type === 'payment.saved' && event.payment.id === this.paymentId()) {
+        this.confirmedUpdate.set(null);
+        const saved = event.payment;
+        this.fetched.update((state) =>
+          state.status === 'loaded' ? { ...state, payment: saved } : state,
+        );
+        this.load(this.groupId(), this.paymentId());
+      }
+      if (event.type === 'payment.deleted' && event.id === this.paymentId()) {
+        this.leaveBecauseDeleted();
+      }
+    });
 
     let hadPendingUpdate = false;
     effect(() => {
@@ -235,7 +235,18 @@ export class PaymentDetails {
     this.goBack(this.groupUrl());
   }
 
-  private load(groupId: number, paymentId: number): void {
+  private leaveBecauseDeleted(): void {
+    if (this.leaving) return;
+    this.leaving = true;
+    this.toast.message('This payment was deleted');
+    this.goBack(this.groupUrl());
+  }
+
+  private load(
+    groupId: number,
+    paymentId: number,
+    options?: { readonly leaveWhenGone?: boolean },
+  ): void {
     const loadId = ++this.latestLoad;
     const revalidating = this.fetched().status === 'loaded';
     if (!revalidating) this.fetched.set({ status: 'loading' });
@@ -253,6 +264,10 @@ export class PaymentDetails {
       },
       error: (error: unknown) => {
         if (loadId !== this.latestLoad) return;
+        if (options?.leaveWhenGone && isNotAccessible(error)) {
+          this.leaveBecauseDeleted();
+          return;
+        }
         if (revalidating && !isNotAccessible(error)) return;
         this.fetched.set({ status: isNotAccessible(error) ? 'not-found' : 'error' });
       },

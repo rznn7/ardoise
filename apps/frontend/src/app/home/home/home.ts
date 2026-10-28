@@ -8,7 +8,7 @@ import { BrnSheetImports } from '@spartan-ng/brain/sheet';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
-import { catchError, debounceTime, of } from 'rxjs';
+import { auditTime, catchError, of } from 'rxjs';
 import { AuthService } from 'src/app/auth/auth.service';
 import { BalanceApiService } from 'src/app/balance/balance-api.service';
 import { BALANCE_COALESCE_MS } from 'src/app/balance/balance-store';
@@ -80,7 +80,7 @@ export class Home {
       if (addsMyGroup) this.refresh();
     });
     this.realtime.events
-      .pipe(debounceTime(BALANCE_COALESCE_MS), takeUntilDestroyed())
+      .pipe(auditTime(BALANCE_COALESCE_MS), takeUntilDestroyed())
       .subscribe(() => {
         this.loadBalances();
       });

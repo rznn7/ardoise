@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { of, Subject, throwError } from 'rxjs';
@@ -203,12 +204,29 @@ describe('RealtimeService', () => {
 
   describe('when the stream closes', () => {
     it('goes to the login page when the session is gone', () => {
-      const { realtime, sources, navigate } = setup(() => throwError(() => new Error('401')));
+      const { realtime, sources, navigate } = setup(() =>
+        throwError(() => new HttpErrorResponse({ status: 401 })),
+      );
       realtime.connect();
 
       sources[0]?.fail();
 
       expect(navigate).toHaveBeenCalledWith(['/login']);
+    });
+
+    it('reconnects after backoff without leaving when the server is unreachable', () => {
+      vi.useFakeTimers();
+      const { realtime, sources, navigate } = setup(() =>
+        throwError(() => new HttpErrorResponse({ status: 502 })),
+      );
+      realtime.connect();
+
+      sources[0]?.fail();
+      expect(sources).toHaveLength(1);
+      vi.advanceTimersByTime(INITIAL_RETRY_MS);
+
+      expect(sources).toHaveLength(2);
+      expect(navigate).not.toHaveBeenCalled();
     });
 
     it('reconnects after a second when the session is still valid', () => {
@@ -289,7 +307,7 @@ describe('RealtimeService', () => {
       sources[0]?.fail();
 
       realtime.disconnect();
-      pending.error(new Error('401'));
+      pending.error(new HttpErrorResponse({ status: 401 }));
       vi.advanceTimersByTime(MAX_RETRY_MS);
 
       expect(navigate).not.toHaveBeenCalled();
