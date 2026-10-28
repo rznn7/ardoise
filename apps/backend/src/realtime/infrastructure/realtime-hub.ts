@@ -88,11 +88,6 @@ const sseEvent = (data: RealtimeMessage, id: string): MessageEvent => ({
   data,
 });
 
-const untilResponsesFlushed = () =>
-  new Promise<void>((resolve) => {
-    setImmediate(resolve);
-  });
-
 const PING: MessageEvent = { comment: 'ping' };
 
 @Injectable()
@@ -173,9 +168,8 @@ export class RealtimeHub
     );
   }
 
-  async beforeApplicationShutdown(): Promise<void> {
+  beforeApplicationShutdown(): void {
     this.shutdown.next();
-    await untilResponsesFlushed();
   }
 
   private currentId(): string {

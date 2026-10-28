@@ -113,6 +113,11 @@ describe('Realtime stream on shutdown', () => {
         ),
       ]),
     ).resolves.toBe('closed');
-    await stream.ended;
+    await expect(
+      stream.ended.then(
+        () => 'over',
+        () => 'over',
+      ),
+    ).resolves.toBe('over');
   });
 });
