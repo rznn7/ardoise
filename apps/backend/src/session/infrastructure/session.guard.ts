@@ -28,8 +28,9 @@ export class SessionGuard implements CanActivate {
 
     if (sessionToken === undefined) throw new SessionNotFound();
 
-    const user = await this.me.execute(sessionToken);
+    const { user, session } = await this.me.execute(sessionToken);
     req.user = user;
+    req.authSession = session;
     return true;
   }
 }

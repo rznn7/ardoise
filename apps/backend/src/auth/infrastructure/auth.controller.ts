@@ -88,6 +88,6 @@ export class AuthController {
     @Cookie(SESSION_COOKIE_NAME) token: string | undefined,
   ): Promise<MeResponse> {
     if (!token) throw new UnauthorizedException();
-    return await this.doMe.execute(token);
+    return (await this.doMe.execute(token)).user;
   }
 }

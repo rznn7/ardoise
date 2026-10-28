@@ -8,6 +8,7 @@ import {
   SESSION_REPOSITORY,
   type SessionRepository,
 } from 'src/session/domain/session-repository';
+import { type AuthSession, type SessionUser } from 'src/shared/http/express';
 import { UserNotFound } from 'src/user/domain/user';
 import {
   USER_REPOSITORY,
@@ -21,7 +22,10 @@ export class MeUseCase {
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
   ) {}
 
-  async execute(sessionToken: string) {
+  async execute(sessionToken: string): Promise<{
+    user: SessionUser;
+    session: AuthSession;
+  }> {
     const session = await this.sessions.findByToken(sessionToken);
 
     if (!session) throw new SessionNotFound();
@@ -30,6 +34,9 @@ export class MeUseCase {
     const user = await this.users.findById(session.userId);
     if (!user) throw new UserNotFound();
 
-    return { id: user.id, name: user.name, role: user.role };
+    return {
+      user: { id: user.id, name: user.name, role: user.role },
+      session: { id: session.id, expiresAt: session.expiresAt },
+    };
   }
 }

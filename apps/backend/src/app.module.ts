@@ -10,6 +10,7 @@ import { FeedModule } from './feed/infrastructure/feed.module';
 import { MemberModule } from './member/infrastructure/member.module';
 import { PaymentModule } from './payment/infrastructure/payment.module';
 import { PaymentShareModule } from './payment-share/infrastructure/payment-share.module';
+import { RealtimeModule } from './realtime/infrastructure/realtime.module';
 import { SettlementModule } from './settlement/infrastructure/settlement.module';
 import { AdminExceptionFilter } from './shared/http/admin-exception.filter';
 import { AuthStateExceptionFilter } from './shared/http/auth-state-exception.filter';
@@ -32,6 +33,7 @@ import { UserModule } from './user/infrastructure/user.module';
     MemberModule,
     PaymentModule,
     PaymentShareModule,
+    RealtimeModule,
     SettlementModule,
     UserModule,
   ],
