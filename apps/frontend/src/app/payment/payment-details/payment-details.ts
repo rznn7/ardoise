@@ -9,6 +9,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import {
   computePaymentShares,
@@ -35,6 +36,8 @@ import { PaymentApiService } from 'src/app/payment/payment-api.service';
 import { PaymentDraft } from 'src/app/payment/payment-draft';
 import { paymentMeta } from 'src/app/payment/payment-meta';
 import { injectGoBack } from 'src/app/shared/navigation/back';
+import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
+import { ToastService } from 'src/app/shared/toast.service';
 import { GroupChip } from 'src/app/shared/ui/group-chip/group-chip';
 import { ListRowImports } from 'src/app/shared/ui/list-row/list-row';
 import { MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
@@ -128,6 +131,8 @@ export class PaymentDetails {
   private readonly draft = inject(PaymentDraft);
   private readonly router = inject(Router);
   private readonly goBack = injectGoBack();
+  private readonly toast = inject(ToastService);
+  private leaving = false;
 
   readonly groupId = input.required({ transform: numberAttribute });
   readonly paymentId = input.required({ transform: numberAttribute });
@@ -178,6 +183,19 @@ export class PaymentDetails {
       });
     });
 
+    inject(RealtimeService)
+      .events.pipe(takeUntilDestroyed())
+      .subscribe((event) => {
+        if (event.type === 'payment.saved' && event.payment.id === this.paymentId()) {
+          this.load(this.groupId(), this.paymentId());
+        }
+        if (event.type === 'payment.deleted' && event.id === this.paymentId() && !this.leaving) {
+          this.leaving = true;
+          this.toast.message('This payment was deleted');
+          this.goBack(this.groupUrl());
+        }
+      });
+
     let hadPendingUpdate = false;
     effect(() => {
       const pending = this.pendingUpdate() !== null;
@@ -207,6 +225,7 @@ export class PaymentDetails {
   }
 
   protected confirmDelete(): void {
+    this.leaving = true;
     this.store.remove(this.groupId(), this.paymentId());
     this.goBack(this.groupUrl());
   }

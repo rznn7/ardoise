@@ -142,7 +142,8 @@ export class PagedList<T> {
       const older = before.items.filter(
         (item) => !keys.has(this.keyOf(item)) && this.newestFirst(item, fresh) > 0,
       );
-      const reachesFurther = before.boundary !== undefined && this.newestFirst(before.boundary, fresh) > 0;
+      const reachesFurther =
+        before.boundary !== undefined && this.newestFirst(before.boundary, fresh) > 0;
       return {
         groupId,
         items: [...page.items, ...older],

@@ -582,9 +582,7 @@ describe(FeedStore.name, () => {
       store.update(7, 2, updateBody);
       const request = http.expectOne({ method: 'PUT', url: '/api/payments/2' });
 
-      events.next(
-        saved({ ...newer, title: 'Theirs' }, request.request.headers.get('x-op-id')),
-      );
+      events.next(saved({ ...newer, title: 'Theirs' }, request.request.headers.get('x-op-id')));
       request.flush({ payment: { ...newer, title: 'Mine' }, shares: [] });
 
       expect(store.confirmedUpdate(2)).toBeNull();

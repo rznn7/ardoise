@@ -4,16 +4,18 @@ import { provideRouter, Router } from '@angular/router';
 import {
   type CreateInviteLinkResponse,
   type ExpenseGroupSummary,
+  type GroupEvent,
   type MyBalance,
 } from '@ardoise/shared';
 import { render, screen, waitFor, within } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
-import { type Observable, of, Subject, throwError } from 'rxjs';
+import { defer, type Observable, of, Subject, throwError } from 'rxjs';
 import { AuthService } from 'src/app/auth/auth.service';
 import { BalanceApiService } from 'src/app/balance/balance-api.service';
 import { ExpenseGroupApiService } from 'src/app/expense-group/expense-group-api.service';
 import { LastGroupService } from 'src/app/expense-group/last-group.service';
 import { InviteLinkApiService } from 'src/app/invite-link/invite-link-api.service';
+import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
 
 import { Home } from './home';
 
@@ -47,7 +49,11 @@ async function setup({
   listMine: ListMineMock;
   create: CreateMock;
   home: Home;
+  events: Subject<GroupEvent>;
+  resynced: Subject<void>;
 }> {
+  const events = new Subject<GroupEvent>();
+  const resynced = new Subject<void>();
   const { fixture } = await render(Home, {
     providers: [
       { provide: ExpenseGroupApiService, useValue: { listMine, create } },
@@ -59,6 +65,7 @@ async function setup({
             .mockReturnValue(of({ token: 'abc' })),
         },
       },
+      { provide: RealtimeService, useValue: { events, resynced } },
       { provide: LastGroupService, useValue: { takeLaunchRedirect } },
       { provide: BalanceApiService, useValue: { listMine: () => balances } },
       provideRouter([
@@ -71,7 +78,7 @@ async function setup({
       },
     ],
   });
-  return { listMine, create, home: fixture.componentInstance };
+  return { listMine, create, home: fixture.componentInstance, events, resynced };
 }
 
 const TWO_GROUPS: ExpenseGroupSummary[] = [
@@ -168,6 +175,49 @@ describe('Home', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /create your first group/i }));
     expect(await screen.findByRole('dialog', { name: /create a group/i })).toBeTruthy();
+  });
+
+  describe('live groups', () => {
+    const flat: ExpenseGroupSummary = TWO_GROUPS[1] as ExpenseGroupSummary;
+
+    it('lists a group created elsewhere', async () => {
+      const listMine = vi
+        .fn<() => Observable<ExpenseGroupSummary[]>>()
+        .mockReturnValueOnce(of([]))
+        .mockReturnValue(of([flat]));
+      const { events } = await setup({ listMine });
+
+      events.next({ type: 'group.created', groupId: 2 });
+
+      expect(await screen.findByText('Flat')).toBeTruthy();
+      expect(screen.queryByText('No groups yet')).toBeNull();
+    });
+
+    it('lists a group I was just added to, not one another member joined', async () => {
+      const listMine = vi
+        .fn<() => Observable<ExpenseGroupSummary[]>>()
+        .mockReturnValueOnce(of([]))
+        .mockReturnValue(of([flat]));
+      const { events } = await setup({ listMine });
+
+      events.next({ type: 'member.joined', groupId: 2, userId: 5 });
+      expect(listMine).toHaveBeenCalledTimes(1);
+
+      events.next({ type: 'member.joined', groupId: 2, userId: 1 });
+      expect(await screen.findByText('Flat')).toBeTruthy();
+    });
+
+    it('refreshes the list when the connection resyncs', async () => {
+      const listMine = vi
+        .fn<() => Observable<ExpenseGroupSummary[]>>()
+        .mockReturnValueOnce(of([]))
+        .mockReturnValue(of([flat]));
+      const { resynced } = await setup({ listMine });
+
+      resynced.next();
+
+      expect(await screen.findByText('Flat')).toBeTruthy();
+    });
   });
 
   it('refreshes the list without a spinner when a group is created', async () => {
@@ -298,6 +348,24 @@ describe('Home', () => {
       });
 
       expect(slotOf('Trip').textContent.trim()).toBe('');
+    });
+
+    it('follows the balance when an event arrives, once for a burst', async () => {
+      let mine = [{ groupId: 1, amount: -2820 }];
+      const listBalances = vi.fn<() => Observable<MyBalance[]>>(() => of(mine));
+      const { events } = await setup({
+        listMine: twoGroups(),
+        balances: defer(listBalances),
+      });
+      mine = [{ groupId: 1, amount: -500 }];
+
+      events.next({ type: 'payment.deleted', groupId: 1, opId: null, id: 4 });
+      events.next({ type: 'payment.deleted', groupId: 1, opId: null, id: 5 });
+
+      await waitFor(() => {
+        expect(slotOf('Trip').textContent.trim()).toBe('−€5.00');
+      });
+      expect(listBalances).toHaveBeenCalledTimes(2);
     });
 
     it('still lists the groups when balances fail', async () => {

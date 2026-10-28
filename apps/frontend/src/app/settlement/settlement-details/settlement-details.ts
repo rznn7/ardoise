@@ -9,6 +9,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import {
   type ExpenseGroupSummary,
@@ -32,6 +33,8 @@ import { shortDay } from 'src/app/payment/day-label';
 import { SettlementApiService } from 'src/app/settlement/settlement-api.service';
 import { involvesMe, settlementLabel } from 'src/app/settlement/settlement-label';
 import { injectGoBack } from 'src/app/shared/navigation/back';
+import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
+import { ToastService } from 'src/app/shared/toast.service';
 import { GroupChip } from 'src/app/shared/ui/group-chip/group-chip';
 import { MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
 import { MoneyAmount } from 'src/app/shared/ui/money-amount/money-amount';
@@ -78,6 +81,8 @@ export class SettlementDetails {
   private readonly auth = inject(AuthService);
   private readonly store = inject(FeedStore);
   private readonly goBack = injectGoBack();
+  private readonly toast = inject(ToastService);
+  private leaving = false;
 
   readonly groupId = input.required({ transform: numberAttribute });
   readonly settlementId = input.required({ transform: numberAttribute });
@@ -104,6 +109,23 @@ export class SettlementDetails {
   });
 
   constructor() {
+    inject(RealtimeService)
+      .events.pipe(takeUntilDestroyed())
+      .subscribe((event) => {
+        if (event.type === 'settlement.saved' && event.settlement.id === this.settlementId()) {
+          this.load(this.groupId(), this.settlementId());
+        }
+        if (
+          event.type === 'settlement.deleted' &&
+          event.id === this.settlementId() &&
+          !this.leaving
+        ) {
+          this.leaving = true;
+          this.toast.message('This repayment was undone');
+          this.goBack(this.groupUrl());
+        }
+      });
+
     effect(() => {
       const groupId = this.groupId();
       const settlementId = this.settlementId();
@@ -122,13 +144,15 @@ export class SettlementDetails {
   }
 
   protected confirmUndo(): void {
+    this.leaving = true;
     this.store.undoSettlement(this.groupId(), this.settlementId());
     this.goBack(this.groupUrl());
   }
 
   private load(groupId: number, settlementId: number): void {
     const loadId = ++this.latestLoad;
-    this.state.set({ status: 'loading' });
+    const revalidating = this.state().status === 'loaded';
+    if (!revalidating) this.state.set({ status: 'loading' });
     forkJoin({
       settlement: this.settlementApi.findOne(settlementId),
       members: this.memberApi.listByGroup(groupId),
@@ -140,6 +164,7 @@ export class SettlementDetails {
       },
       error: (error: unknown) => {
         if (loadId !== this.latestLoad) return;
+        if (revalidating && !isNotAccessible(error)) return;
         this.state.set({ status: isNotAccessible(error) ? 'not-found' : 'error' });
       },
     });
