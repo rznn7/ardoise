@@ -26,7 +26,16 @@ interface Kept<T> {
   readonly boundary: T | undefined;
 }
 
+const MAX_WALK_RESTARTS = 3;
+
+interface PagedListOptions<T> {
+  readonly version?: (groupId: number) => number;
+  readonly accept?: (item: T) => boolean;
+}
+
 export class PagedList<T> {
+  private latestWalk = 0;
+  private readonly walking = signal(false);
   private readonly active = signal<number | null>(null);
   private readonly cursor = signal<string | undefined>(undefined);
 
@@ -48,6 +57,8 @@ export class PagedList<T> {
   constructor(
     private readonly fetch: (groupId: number, cursor?: string) => Observable<Page<T>>,
     private readonly keyOf: (item: T) => string,
+    private readonly newestFirst: (a: T, b: T) => number,
+    private readonly options: PagedListOptions<T> = {},
   ) {}
 
   state(groupId: number): PagedState<T> {
@@ -75,7 +86,13 @@ export class PagedList<T> {
     return this.kept()?.groupId === groupId;
   }
 
+  activeGroupId(): number | null {
+    return this.active();
+  }
+
   loadFirst(groupId: number): void {
+    this.latestWalk++;
+    this.walking.set(false);
     if (this.active() !== groupId) {
       this.active.set(groupId);
       this.cursor.set(undefined);
@@ -86,11 +103,22 @@ export class PagedList<T> {
     }
   }
 
+  resync(groupId: number): void {
+    const kept = this.kept();
+    if (kept?.groupId !== groupId) {
+      this.loadFirst(groupId);
+      return;
+    }
+    this.walking.set(true);
+    this.walk(groupId, kept.boundary, ++this.latestWalk);
+  }
+
   loadMore(): void {
     const kept = this.kept();
-    if (!kept || this.page.isLoading() || this.more(kept) !== 'idle') return;
+    if (!kept || this.walking() || this.page.isLoading() || this.more(kept) !== 'idle') return;
     if (kept.nextCursor === null) return;
-    this.cursor.set(kept.nextCursor);
+    if (this.cursor() === kept.nextCursor) this.page.reload();
+    else this.cursor.set(kept.nextCursor);
   }
 
   retryMore(): void {
@@ -115,8 +143,72 @@ export class PagedList<T> {
     });
   }
 
+  private walk(groupId: number, boundary: T | undefined, walkId: number, restarts = 0): void {
+    const startVersion = this.options.version?.(groupId);
+    const pages: Page<T>[] = [];
+    const step = (cursor?: string): void => {
+      this.fetch(groupId, cursor).subscribe({
+        next: (page) => {
+          if (walkId !== this.latestWalk) return;
+          if (this.active() !== groupId) {
+            this.walking.set(false);
+            return;
+          }
+          if (this.options.version?.(groupId) !== startVersion) {
+            this.restartWalk(groupId, boundary, walkId, restarts);
+            return;
+          }
+          pages.push(page);
+          const last = page.items.at(-1);
+          const kept = this.kept();
+          const depth = kept?.groupId === groupId ? kept.boundary : boundary;
+          const reachedDepth =
+            last === undefined || depth === undefined || this.newestFirst(last, depth) >= 0;
+          if (page.nextCursor !== null && !reachedDepth) {
+            step(page.nextCursor);
+            return;
+          }
+          this.walking.set(false);
+          this.replace(groupId, pages);
+        },
+        error: () => {
+          if (walkId === this.latestWalk) this.walking.set(false);
+        },
+      });
+    };
+    step();
+  }
+
+  private restartWalk(groupId: number, boundary: T | undefined, walkId: number, restarts: number) {
+    if (restarts >= MAX_WALK_RESTARTS) {
+      this.loadFirst(groupId);
+      return;
+    }
+    this.walk(groupId, boundary, walkId, restarts + 1);
+  }
+
+  private replace(groupId: number, pages: readonly Page<T>[]): void {
+    const accept = this.options.accept ?? (() => true);
+    const seen = new Set<string>();
+    const items = pages
+      .flatMap((page) => page.items)
+      .filter((item) => {
+        const key = this.keyOf(item);
+        if (seen.has(key) || !accept(item)) return false;
+        seen.add(key);
+        return true;
+      });
+    const last = pages.at(-1);
+    this.kept.update((before) =>
+      before?.groupId === groupId && last
+        ? { groupId, items, nextCursor: last.nextCursor, boundary: last.items.at(-1) }
+        : before,
+    );
+  }
+
   private more(kept: Kept<T>): More {
     if (kept.nextCursor === null) return 'end';
+    if (this.walking()) return 'loading';
     if (this.cursor() === undefined) return 'idle';
     if (this.page.isLoading()) return 'loading';
     return this.page.error() === undefined ? 'idle' : 'error';

@@ -40,4 +40,17 @@ describe('AuthService.currentUser', () => {
     await firstValueFrom(auth.currentUser());
     expect(me).toHaveBeenCalledTimes(2);
   });
+
+  it('announces the sign-out on logout', async () => {
+    const signedOut = vi.fn();
+    auth.signedOut.subscribe(signedOut);
+    await firstValueFrom(auth.logout());
+    expect(signedOut).toHaveBeenCalledOnce();
+  });
+
+  it('forgets the cached user on revalidate', async () => {
+    await firstValueFrom(auth.currentUser());
+    await firstValueFrom(auth.revalidate());
+    expect(me).toHaveBeenCalledTimes(2);
+  });
 });

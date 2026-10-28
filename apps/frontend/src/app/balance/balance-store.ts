@@ -1,5 +1,7 @@
-import { computed, inject, Injectable, type Signal, signal } from '@angular/core';
+import { computed, DestroyRef, inject, Injectable, type Signal, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { type GroupBalancesResponse } from '@ardoise/shared';
+import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
 
 import { BalanceApiService } from './balance-api.service';
 
@@ -7,6 +9,8 @@ export type BalancesState =
   | { readonly status: 'loading' }
   | { readonly status: 'error' }
   | { readonly status: 'loaded'; readonly balances: GroupBalancesResponse };
+
+export const BALANCE_COALESCE_MS = 300;
 
 const LOADING: BalancesState = { status: 'loading' };
 
@@ -16,7 +20,22 @@ export class BalanceStore {
   private readonly states = signal<ReadonlyMap<number, BalancesState>>(new Map());
   private readonly reloading = signal<ReadonlySet<number>>(new Set());
   private readonly latestLoads = new Map<number, number>();
+  private readonly coalescing = new Map<number, ReturnType<typeof setTimeout>>();
   private nextLoadId = 1;
+
+  constructor() {
+    const realtime = inject(RealtimeService);
+    realtime.events.pipe(takeUntilDestroyed()).subscribe(({ groupId }) => {
+      this.loadSoon(groupId);
+    });
+    realtime.resynced.pipe(takeUntilDestroyed()).subscribe(() => {
+      for (const groupId of this.states().keys()) this.load(groupId);
+    });
+    inject(DestroyRef).onDestroy(() => {
+      for (const timer of this.coalescing.values()) clearTimeout(timer);
+      this.coalescing.clear();
+    });
+  }
 
   balances(groupId: number): Signal<BalancesState> {
     return computed(() => this.states().get(groupId) ?? LOADING);
@@ -46,6 +65,15 @@ export class BalanceStore {
         this.markReloading(groupId, false);
       },
     });
+  }
+
+  private loadSoon(groupId: number): void {
+    if (!this.states().has(groupId) || this.coalescing.has(groupId)) return;
+    const timer = setTimeout(() => {
+      this.coalescing.delete(groupId);
+      this.load(groupId);
+    }, BALANCE_COALESCE_MS);
+    this.coalescing.set(groupId, timer);
   }
 
   private markReloading(groupId: number, reloading: boolean): void {

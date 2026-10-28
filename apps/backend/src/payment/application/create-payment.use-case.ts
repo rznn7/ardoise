@@ -6,14 +6,30 @@ import {
 } from 'src/payment/domain/create-payment';
 import { type Payment } from 'src/payment/domain/payment';
 import { type PaymentShare } from 'src/payment-share/domain/payment-share';
+import {
+  REALTIME_PUBLISHER,
+  type RealtimePublisher,
+} from 'src/realtime/domain/realtime-publisher';
 
 @Injectable()
 export class CreatePaymentUseCase {
-  constructor(@Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork) {}
+  constructor(
+    @Inject(UNIT_OF_WORK) private readonly uow: UnitOfWork,
+    @Inject(REALTIME_PUBLISHER) private readonly realtime: RealtimePublisher,
+  ) {}
 
-  execute(
-    input: CreatePaymentInput,
+  async execute(
+    input: CreatePaymentInput & { opId?: string },
   ): Promise<{ payment: Payment; shares: PaymentShare[] }> {
-    return this.uow.run((repos) => createPayment(repos, input));
+    const { opId, ...paymentInput } = input;
+    const result = await this.uow.run((repos) =>
+      createPayment(repos, paymentInput),
+    );
+    await this.realtime.groupChanged({
+      type: 'payment.saved',
+      payment: result.payment,
+      opId,
+    });
+    return result;
   }
 }

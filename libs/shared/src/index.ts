@@ -9,6 +9,7 @@ export * from './contracts/member.js';
 export * from './contracts/page.js';
 export * from './contracts/payment.js';
 export * from './contracts/payment-share.js';
+export * from './contracts/realtime.js';
 export * from './contracts/settlement.js';
 export * from './split/apportion.js';
 export * from './split/compute-payment-shares.js';
