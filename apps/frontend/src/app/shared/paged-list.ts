@@ -26,6 +26,8 @@ interface Kept<T> {
   readonly boundary: T | undefined;
 }
 
+const MAX_WALK_RESTARTS = 3;
+
 interface PagedListOptions<T> {
   readonly version?: (groupId: number) => number;
   readonly accept?: (item: T) => boolean;
@@ -33,6 +35,7 @@ interface PagedListOptions<T> {
 
 export class PagedList<T> {
   private latestWalk = 0;
+  private readonly walking = signal(false);
   private readonly active = signal<number | null>(null);
   private readonly cursor = signal<string | undefined>(undefined);
 
@@ -88,6 +91,8 @@ export class PagedList<T> {
   }
 
   loadFirst(groupId: number): void {
+    this.latestWalk++;
+    this.walking.set(false);
     if (this.active() !== groupId) {
       this.active.set(groupId);
       this.cursor.set(undefined);
@@ -104,12 +109,13 @@ export class PagedList<T> {
       this.loadFirst(groupId);
       return;
     }
+    this.walking.set(true);
     this.walk(groupId, kept.boundary, ++this.latestWalk);
   }
 
   loadMore(): void {
     const kept = this.kept();
-    if (!kept || this.page.isLoading() || this.more(kept) !== 'idle') return;
+    if (!kept || this.walking() || this.page.isLoading() || this.more(kept) !== 'idle') return;
     if (kept.nextCursor === null) return;
     this.cursor.set(kept.nextCursor);
   }
@@ -136,13 +142,21 @@ export class PagedList<T> {
     });
   }
 
-  private walk(groupId: number, boundary: T | undefined, walkId: number): void {
+  private walk(groupId: number, boundary: T | undefined, walkId: number, restarts = 0): void {
     const startVersion = this.options.version?.(groupId);
     const pages: Page<T>[] = [];
     const step = (cursor?: string): void => {
       this.fetch(groupId, cursor).subscribe({
         next: (page) => {
           if (walkId !== this.latestWalk) return;
+          if (this.active() !== groupId) {
+            this.walking.set(false);
+            return;
+          }
+          if (this.options.version?.(groupId) !== startVersion) {
+            this.restartWalk(groupId, boundary, walkId, restarts);
+            return;
+          }
           pages.push(page);
           const last = page.items.at(-1);
           const reachedDepth =
@@ -151,16 +165,23 @@ export class PagedList<T> {
             step(page.nextCursor);
             return;
           }
-          if (this.options.version?.(groupId) !== startVersion) {
-            this.walk(groupId, boundary, walkId);
-            return;
-          }
+          this.walking.set(false);
           this.replace(groupId, pages);
         },
-        error: () => undefined,
+        error: () => {
+          if (walkId === this.latestWalk) this.walking.set(false);
+        },
       });
     };
     step();
+  }
+
+  private restartWalk(groupId: number, boundary: T | undefined, walkId: number, restarts: number) {
+    if (restarts >= MAX_WALK_RESTARTS) {
+      this.loadFirst(groupId);
+      return;
+    }
+    this.walk(groupId, boundary, walkId, restarts + 1);
   }
 
   private replace(groupId: number, pages: readonly Page<T>[]): void {
@@ -184,6 +205,7 @@ export class PagedList<T> {
 
   private more(kept: Kept<T>): More {
     if (kept.nextCursor === null) return 'end';
+    if (this.walking()) return 'loading';
     if (this.cursor() === undefined) return 'idle';
     if (this.page.isLoading()) return 'loading';
     return this.page.error() === undefined ? 'idle' : 'error';

@@ -188,6 +188,10 @@ export class PaymentDetails {
       .subscribe((event) => {
         if (event.type === 'payment.saved' && event.payment.id === this.paymentId()) {
           this.confirmedUpdate.set(null);
+          const saved = event.payment;
+          this.fetched.update((state) =>
+            state.status === 'loaded' ? { ...state, payment: saved } : state,
+          );
           this.load(this.groupId(), this.paymentId());
         }
         if (event.type === 'payment.deleted' && event.id === this.paymentId() && !this.leaving) {

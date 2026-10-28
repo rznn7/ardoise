@@ -422,7 +422,7 @@ describe('payment details route', () => {
   });
 
   describe('live changes', () => {
-    it('drops my confirmed edit when someone else saves and the refetch fails', async () => {
+    it('shows their values, not my confirmed edit, when someone else saves and the refetch fails', async () => {
       const edited: UpdatePaymentBody = {
         payerMemberId: 11,
         title: 'Mine',
@@ -447,7 +447,7 @@ describe('payment details route', () => {
       });
       harness.detectChanges();
 
-      expect(screen.getByRole('heading', { name: 'Groceries' })).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'Theirs' })).toBeTruthy();
     });
 
     it('shows the new title when someone else edits the payment', async () => {

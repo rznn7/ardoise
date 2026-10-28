@@ -113,6 +113,10 @@ export class SettlementDetails {
       .events.pipe(takeUntilDestroyed())
       .subscribe((event) => {
         if (event.type === 'settlement.saved' && event.settlement.id === this.settlementId()) {
+          const saved = event.settlement;
+          this.state.update((state) =>
+            state.status === 'loaded' ? { ...state, settlement: saved } : state,
+          );
           this.load(this.groupId(), this.settlementId());
         }
         if (

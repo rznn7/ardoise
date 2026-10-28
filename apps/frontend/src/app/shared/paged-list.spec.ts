@@ -288,6 +288,81 @@ describe(PagedList.name, () => {
       expect(itemsOf(list.state(7))).toEqual([1]);
     });
 
+    it('blocks loadMore while the walk is in flight, then lets it fetch', async () => {
+      await firstPage();
+
+      list.resync(7);
+      expect(moreOf(list.state(7))).toBe('loading');
+      const before = requests.length;
+      list.loadMore();
+      await settle();
+      expect(requests).toHaveLength(before);
+
+      await reply({ items: [1, 2, 3], nextCursor: 'c1' });
+      expect(moreOf(list.state(7))).toBe('idle');
+      list.loadMore();
+      await settle();
+      expect(requests.at(-1)?.cursor).toBe('c1');
+    });
+
+    it('is not overwritten by a walk once loadFirst landed', async () => {
+      await firstPage();
+
+      list.resync(7);
+      const walk = requests.at(-1);
+      list.loadFirst(7);
+      await answer({ items: [7, 8], nextCursor: null });
+      walk?.response.next({ items: [1, 2, 3], nextCursor: 'c1' });
+      walk?.response.complete();
+      await settle();
+
+      expect(itemsOf(list.state(7))).toEqual([7, 8]);
+    });
+
+    it('stops walking when another group becomes active', async () => {
+      await firstPage();
+
+      list.resync(7);
+      const walk = requests.at(-1);
+      list.loadFirst(8);
+      const before = requests.length;
+      walk?.response.next({ items: [0], nextCursor: 'f1' });
+      await settle();
+
+      expect(requests.slice(before).filter((r) => r.groupId === 7)).toEqual([]);
+    });
+
+    it('falls back to loadFirst after four changes in a row', async () => {
+      let version = 0;
+      list = TestBed.runInInjectionContext(
+        () =>
+          new PagedList<number>(
+            (groupId, cursor) => {
+              const response = new Subject<Page<number>>();
+              requests.push({ groupId, cursor, response });
+              return response;
+            },
+            (item) => String(item),
+            (a, b) => a - b,
+            { version: () => version },
+          ),
+      );
+      await firstPage();
+
+      list.resync(7);
+      for (let i = 0; i < 4; i++) {
+        version++;
+        await reply({ items: [0], nextCursor: 'f1' });
+      }
+      await settle();
+      const request = requests.at(-1);
+      expect(request?.cursor).toBeUndefined();
+      await reply({ items: [5, 6], nextCursor: null });
+
+      expect(itemsOf(list.state(7))).toEqual([5, 6]);
+      expect(moreOf(list.state(7))).toBe('end');
+    });
+
     it('starts over when a change lands between two pages of the walk', async () => {
       let version = 0;
       list = TestBed.runInInjectionContext(
