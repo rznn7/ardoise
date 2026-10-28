@@ -187,7 +187,8 @@ describe('SettlementDetails', () => {
     });
 
     it('says nothing about a repayment I undid myself', async () => {
-      const { events, message } = await setup();
+      const { events, message, router } = await setup();
+      vi.spyOn(router, 'navigateByUrl').mockReturnValue(new Promise(() => undefined));
 
       await userEvent.click(screen.getByRole('button', { name: 'Undo repayment' }));
       const sheet = await screen.findByRole('dialog');

@@ -51,6 +51,8 @@ export class Home {
   private readonly router = inject(Router);
   private readonly balanceApi = inject(BalanceApiService);
   private readonly realtime = inject(RealtimeService);
+  private latestBalancesLoad = 0;
+  private latestGroupsLoad = 0;
 
   private readonly balances = signal<ReadonlyMap<number, number>>(new Map());
   private readonly me = toSignal(
@@ -102,23 +104,29 @@ export class Home {
   private load(options?: { silent?: boolean }): void {
     if (!options?.silent) this.state.set({ status: 'loading' });
     this.loadBalances();
+    const groupsLoadId = ++this.latestGroupsLoad;
     this.expenseGroupApi.listMine().subscribe({
       next: (groups) => {
+        if (groupsLoadId !== this.latestGroupsLoad) return;
         this.state.set({ status: 'loaded', groups });
         this.openLastGroupOnLaunch(groups);
       },
       error: () => {
+        if (groupsLoadId !== this.latestGroupsLoad) return;
         this.state.set({ status: 'error' });
       },
     });
   }
 
   private loadBalances(): void {
+    const loadId = ++this.latestBalancesLoad;
     this.balanceApi.listMine().subscribe({
       next: (balances) => {
+        if (loadId !== this.latestBalancesLoad) return;
         this.balances.set(new Map(balances.map(({ groupId, amount }) => [groupId, amount])));
       },
       error: () => {
+        if (loadId !== this.latestBalancesLoad) return;
         this.balances.set(new Map());
       },
     });

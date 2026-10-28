@@ -208,23 +208,22 @@ describe(PagedList.name, () => {
   });
 
   describe('resync', () => {
-    const resyncWith = async (page: Page<number>) => {
-      list.resync(7);
-      requests.at(-1)?.response.next(page);
-      requests.at(-1)?.response.complete();
+    const reply = async (page: Page<number>) => {
+      const request = requests.at(-1);
+      request?.response.next(page);
+      request?.response.complete();
       await settle();
     };
 
-    const loadTwoPages = async () => {
+    it('walks from the top down to the loaded depth and takes the last cursor', async () => {
       await firstPage();
       list.loadMore();
       await answer({ items: [4, 5], nextCursor: 'c2' });
-    };
 
-    it('merges the first page into the loaded pages and keeps the cursor', async () => {
-      await loadTwoPages();
-
-      await resyncWith({ items: [0, 1, 2], nextCursor: 'fresh' });
+      list.resync(7);
+      await reply({ items: [0, 1, 2], nextCursor: 'f1' });
+      expect(requests.at(-1)?.cursor).toBe('f1');
+      await reply({ items: [3, 4, 5], nextCursor: 'f2' });
 
       expect(list.state(7)).toEqual({
         status: 'loaded',
@@ -232,35 +231,52 @@ describe(PagedList.name, () => {
         more: 'idle',
         boundary: 5,
       });
-    });
-
-    it('drops rows of the first range that the server no longer returns', async () => {
-      await loadTwoPages();
-
-      await resyncWith({ items: [1, 3], nextCursor: 'fresh' });
-
-      expect(itemsOf(list.state(7))).toEqual([1, 3, 4, 5]);
-    });
-
-    it('takes the cursor of the first page when it holds every loaded row', async () => {
-      await firstPage();
-
-      await resyncWith({ items: [1, 2, 3], nextCursor: 'fresh' });
-
-      expect(list.state(7)).toMatchObject({ items: [1, 2, 3], boundary: 3 });
       list.loadMore();
       await settle();
-      expect(requests.at(-1)?.cursor).toBe('fresh');
+      expect(requests.at(-1)?.cursor).toBe('f2');
     });
 
-    it('keeps the rows when the refetch fails', async () => {
-      await loadTwoPages();
+    it('loads the rows between a first page that overlaps nothing and the loaded depth', async () => {
+      list.loadFirst(7);
+      await answer({ items: [10, 11, 12], nextCursor: 'c1' });
+
+      list.resync(7);
+      await reply({ items: [1, 2, 3], nextCursor: 'f1' });
+      await reply({ items: [4, 5, 6, 7, 8, 9], nextCursor: 'f2' });
+      await reply({ items: [10, 11, 12], nextCursor: 'f3' });
+
+      expect(itemsOf(list.state(7))).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    });
+
+    it('drops a row deleted beyond the first page', async () => {
+      await firstPage();
+      list.loadMore();
+      await answer({ items: [4, 5], nextCursor: 'c2' });
+
+      list.resync(7);
+      await reply({ items: [1, 2, 3], nextCursor: 'f1' });
+      await reply({ items: [5, 6], nextCursor: 'f2' });
+
+      expect(itemsOf(list.state(7))).toEqual([1, 2, 3, 5, 6]);
+    });
+
+    it('empties the list when the first page comes back empty', async () => {
+      await firstPage();
+
+      list.resync(7);
+      await reply({ items: [], nextCursor: null });
+
+      expect(itemsOf(list.state(7))).toEqual([]);
+    });
+
+    it('keeps the rows when the walk fails', async () => {
+      await firstPage();
 
       list.resync(7);
       requests.at(-1)?.response.error(new Error('offline'));
       await settle();
 
-      expect(itemsOf(list.state(7))).toEqual([1, 2, 3, 4, 5]);
+      expect(itemsOf(list.state(7))).toEqual([1, 2, 3]);
     });
 
     it('loads the first page when nothing is kept for the group', async () => {
@@ -270,6 +286,35 @@ describe(PagedList.name, () => {
       expect(requests.at(-1)?.cursor).toBeUndefined();
       await answer({ items: [1], nextCursor: null });
       expect(itemsOf(list.state(7))).toEqual([1]);
+    });
+
+    it('starts over when a change lands between two pages of the walk', async () => {
+      let version = 0;
+      list = TestBed.runInInjectionContext(
+        () =>
+          new PagedList<number>(
+            (groupId, cursor) => {
+              const response = new Subject<Page<number>>();
+              requests.push({ groupId, cursor, response });
+              return response;
+            },
+            (item) => String(item),
+            (a, b) => a - b,
+            { version: () => version },
+          ),
+      );
+      await firstPage();
+
+      list.resync(7);
+      await reply({ items: [0, 1], nextCursor: 'f1' });
+      version++;
+      list.patch(7, (items) => [...items, 99]);
+      await reply({ items: [2, 3], nextCursor: null });
+
+      expect(itemsOf(list.state(7))).toContain(99);
+      expect(requests.at(-1)?.cursor).toBeUndefined();
+      await reply({ items: [0, 1, 2, 3, 99], nextCursor: null });
+      expect(itemsOf(list.state(7))).toEqual([0, 1, 2, 3, 99]);
     });
   });
 });

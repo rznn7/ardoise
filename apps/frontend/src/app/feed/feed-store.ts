@@ -87,6 +87,10 @@ export class FeedStore {
     (groupId, cursor) => this.fetchSettled(groupId, cursor),
     keyOf,
     newestFirst,
+    {
+      version: (groupId) => this.settledCount(groupId),
+      accept: (item) => !this.tombstones.has(keyOf(item)),
+    },
   );
   private readonly creating = signal<ReadonlyMap<number, FeedRow>>(new Map());
   private readonly recording = signal<ReadonlyMap<number, PendingSettlement>>(new Map());

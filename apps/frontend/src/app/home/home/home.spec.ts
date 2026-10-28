@@ -178,6 +178,22 @@ describe('Home', () => {
   });
 
   describe('live groups', () => {
+    it('keeps the newest group list when responses arrive out of order', async () => {
+      const slow = new Subject<ExpenseGroupSummary[]>();
+      const listMine = vi
+        .fn<() => Observable<ExpenseGroupSummary[]>>()
+        .mockReturnValueOnce(slow)
+        .mockReturnValue(of([TWO_GROUPS[1] as ExpenseGroupSummary]));
+      const { resynced } = await setup({ listMine });
+
+      resynced.next();
+      expect(await screen.findByText('Flat')).toBeTruthy();
+      slow.next([TWO_GROUPS[0] as ExpenseGroupSummary]);
+
+      expect(screen.getByText('Flat')).toBeTruthy();
+      expect(screen.queryByText('Trip')).toBeNull();
+    });
+
     const flat: ExpenseGroupSummary = TWO_GROUPS[1] as ExpenseGroupSummary;
 
     it('lists a group created elsewhere', async () => {

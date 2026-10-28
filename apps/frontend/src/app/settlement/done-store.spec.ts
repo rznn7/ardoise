@@ -131,7 +131,7 @@ describe(DoneStore.name, () => {
     expect(open).toHaveLength(1);
   });
 
-  it('keeps older loaded pages when the connection resyncs', async () => {
+  it('walks back to the loaded depth when the connection resyncs', async () => {
     await loadDone('c1');
     store.loadMore();
     await settle();
@@ -145,6 +145,11 @@ describe(DoneStore.name, () => {
     http.expectOne('/api/expense-groups/7/settlements').flush({
       items: [settlement(4, '2026-10-26T10:00:00.000Z'), settlement(3, '2026-10-20T10:00:00.000Z')],
       nextCursor: 'c9',
+    });
+    await settle();
+    http.expectOne('/api/expense-groups/7/settlements?cursor=c9').flush({
+      items: [settlement(2, '2026-10-10T10:00:00.000Z'), settlement(1, '2026-10-01T10:00:00.000Z')],
+      nextCursor: null,
     });
     await settle();
 

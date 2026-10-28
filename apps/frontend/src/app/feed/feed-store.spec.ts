@@ -604,7 +604,7 @@ describe(FeedStore.name, () => {
       expect(store.confirmedUpdate(2)).toBeNull();
     });
 
-    it('keeps older loaded pages when the connection resyncs', async () => {
+    it('walks back to the loaded depth when the connection resyncs', async () => {
       store.loadFirst(7);
       await settle();
       http
@@ -622,10 +622,71 @@ describe(FeedStore.name, () => {
       await settle();
       http
         .expectOne('/api/expense-groups/7/feed')
-        .flush({ items: items(newest, theirs), nextCursor: 'more' });
+        .flush({ items: items(newest, theirs), nextCursor: 'p2' });
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed?cursor=p2')
+        .flush({ items: items(newer, older), nextCursor: null });
       await settle();
 
       expect(loadedIds()).toEqual([3, 10, 2, 1]);
+    });
+
+    it('keeps an event that lands between two pages of the resync walk', async () => {
+      store.loadFirst(7);
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed')
+        .flush({ items: items(newest, newer), nextCursor: 'more' });
+      await settle();
+
+      resynced.next();
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed')
+        .flush({ items: items(newest), nextCursor: 'p2' });
+      await settle();
+      const second = http.expectOne('/api/expense-groups/7/feed?cursor=p2');
+      events.next(saved(theirs));
+      second.flush({ items: items(newer), nextCursor: null });
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed?cursor=p2')
+        .flush({ items: items(newer), nextCursor: null });
+      await settle();
+      expect(loadedIds()).toContain(10);
+
+      http
+        .expectOne('/api/expense-groups/7/feed')
+        .flush({ items: items(newest, theirs), nextCursor: 'p2' });
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed?cursor=p2')
+        .flush({ items: items(newer), nextCursor: null });
+      await settle();
+
+      expect(loadedIds()).toEqual([3, 10, 2]);
+    });
+
+    it('does not bring back a deleted payment the walk still returns', async () => {
+      await loadFeed();
+      resynced.next();
+      await settle();
+      const request = http.expectOne('/api/expense-groups/7/feed');
+
+      store.remove(7, 2);
+      http.expectOne({ method: 'DELETE', url: '/api/payments/2' }).flush(null);
+      request.flush({ items: items(older, newest, newer), nextCursor: null });
+      await settle();
+      http
+        .match('/api/expense-groups/7/feed')
+        .filter((r) => !r.cancelled)
+        .forEach((r) => {
+          r.flush({ items: items(older, newest, newer), nextCursor: null });
+        });
+      await settle();
+
+      expect(loadedIds()).toEqual([3, 1]);
     });
 
     it('shows one row when the event of an own create arrives before the response', async () => {

@@ -187,6 +187,7 @@ export class PaymentDetails {
       .events.pipe(takeUntilDestroyed())
       .subscribe((event) => {
         if (event.type === 'payment.saved' && event.payment.id === this.paymentId()) {
+          this.confirmedUpdate.set(null);
           this.load(this.groupId(), this.paymentId());
         }
         if (event.type === 'payment.deleted' && event.id === this.paymentId() && !this.leaving) {

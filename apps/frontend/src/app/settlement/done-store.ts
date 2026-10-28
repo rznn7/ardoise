@@ -26,6 +26,7 @@ export class DoneStore {
     (groupId, cursor) => this.fetchSettled(groupId, cursor),
     (settlement) => String(settlement.id),
     newestFirst,
+    { version: (groupId) => this.mutations.get(groupId) ?? 0 },
   );
   private readonly mutations = new Map<number, number>();
   private readonly hidden = signal<ReadonlySet<number>>(new Set());

@@ -422,6 +422,34 @@ describe('payment details route', () => {
   });
 
   describe('live changes', () => {
+    it('drops my confirmed edit when someone else saves and the refetch fails', async () => {
+      const edited: UpdatePaymentBody = {
+        payerMemberId: 11,
+        title: 'Mine',
+        paidAt: PAYMENT.paidAt,
+        fullAmount: 3000,
+        splitType: 'equal',
+        participants: [{ memberId: 11 }, { memberId: 12 }],
+      };
+      const { findOne, pending, confirm, harness, events } = await setup({ pendingBody: edited });
+      confirm(edited);
+      findOne.mockReturnValue(new Subject<PaymentResponse>());
+      pending.set(null);
+      harness.detectChanges();
+      expect(screen.getByRole('heading', { name: 'Mine' })).toBeTruthy();
+
+      findOne.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+      events.next({
+        type: 'payment.saved',
+        groupId: 7,
+        opId: null,
+        payment: { ...PAYMENT, title: 'Theirs' },
+      });
+      harness.detectChanges();
+
+      expect(screen.getByRole('heading', { name: 'Groceries' })).toBeTruthy();
+    });
+
     it('shows the new title when someone else edits the payment', async () => {
       const findOne = vi
         .fn<(id: number) => Observable<PaymentResponse>>()
@@ -464,7 +492,8 @@ describe('payment details route', () => {
     });
 
     it('says nothing about a payment I deleted myself', async () => {
-      const { events, message } = await setup();
+      const { events, message, router } = await setup();
+      vi.spyOn(router, 'navigateByUrl').mockReturnValue(new Promise(() => undefined));
 
       await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
       const dialog = await screen.findByRole('dialog');
