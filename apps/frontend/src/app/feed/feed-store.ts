@@ -38,15 +38,15 @@ interface PendingSettlement {
   readonly row: FeedRow;
 }
 
-const dateOf = (row: FeedRow): number =>
+const dateOf = (row: FeedItem): number =>
   Date.parse(row.kind === 'payment' ? row.payment.paidAt : row.settlement.settledAt);
 
-const idOf = (row: FeedRow): number =>
+const idOf = (row: FeedItem): number =>
   row.kind === 'payment' ? row.payment.id : row.settlement.id;
 
-const kindRank = (row: FeedRow): number => (row.kind === 'payment' ? 0 : 1);
+const kindRank = (row: FeedItem): number => (row.kind === 'payment' ? 0 : 1);
 
-const newestFirst = (a: FeedRow, b: FeedRow): number =>
+const newestFirst = (a: FeedItem, b: FeedItem): number =>
   dateOf(b) - dateOf(a) || kindRank(a) - kindRank(b) || idOf(b) - idOf(a);
 
 const keyOf = (item: FeedItem): string =>
@@ -86,6 +86,7 @@ export class FeedStore {
   private readonly pages = new PagedList<FeedItem>(
     (groupId, cursor) => this.fetchSettled(groupId, cursor),
     keyOf,
+    newestFirst,
   );
   private readonly creating = signal<ReadonlyMap<number, FeedRow>>(new Map());
   private readonly recording = signal<ReadonlyMap<number, PendingSettlement>>(new Map());
@@ -107,7 +108,7 @@ export class FeedStore {
     });
     realtime.resynced.pipe(takeUntilDestroyed()).subscribe(() => {
       const groupId = this.pages.activeGroupId();
-      if (groupId !== null) this.loadFirst(groupId);
+      if (groupId !== null) this.pages.resync(groupId);
     });
   }
 
@@ -213,8 +214,9 @@ export class FeedStore {
 
     this.paymentApi.update(id, body, opId).subscribe({
       next: ({ payment }) => {
-        this.confirmedUpdates.set(id, body);
-        this.acceptOwn(groupId, opId, { kind: 'payment', payment });
+        if (this.acceptOwn(groupId, opId, { kind: 'payment', payment })) {
+          this.confirmedUpdates.set(id, body);
+        }
         settle();
       },
       error: () => {
@@ -344,7 +346,7 @@ export class FeedStore {
       status: 'loaded',
       more: state.more,
       rows: [...rows, ...pending]
-        .filter((row) => !boundary || newestFirst(row, { ...boundary, pending: false }) <= 0)
+        .filter((row) => !boundary || newestFirst(row, boundary) <= 0)
         .sort(newestFirst),
     };
   }
@@ -381,6 +383,9 @@ export class FeedStore {
   }
 
   private applySaved(groupId: number, opId: string | null, item: FeedItem): void {
+    if (item.kind === 'payment') {
+      this.confirmedUpdates.delete(item.payment.id);
+    }
     if (opId !== null && this.pendingByOpId.has(opId)) {
       this.appliedOps.add(opId);
       const temporaryId = this.pendingByOpId.get(opId);
@@ -390,9 +395,10 @@ export class FeedStore {
     this.markEvent(groupId);
   }
 
-  private acceptOwn(groupId: number, opId: string, item: FeedItem): void {
-    if (this.appliedOps.has(opId)) return;
+  private acceptOwn(groupId: number, opId: string, item: FeedItem): boolean {
+    if (this.appliedOps.has(opId)) return false;
     this.put(groupId, item);
+    return true;
   }
 
   private put(groupId: number, item: FeedItem): void {

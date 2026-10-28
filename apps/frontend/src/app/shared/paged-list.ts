@@ -48,6 +48,7 @@ export class PagedList<T> {
   constructor(
     private readonly fetch: (groupId: number, cursor?: string) => Observable<Page<T>>,
     private readonly keyOf: (item: T) => string,
+    private readonly newestFirst: (a: T, b: T) => number,
   ) {}
 
   state(groupId: number): PagedState<T> {
@@ -90,6 +91,19 @@ export class PagedList<T> {
     }
   }
 
+  resync(groupId: number): void {
+    if (this.kept()?.groupId !== groupId) {
+      this.loadFirst(groupId);
+      return;
+    }
+    this.fetch(groupId).subscribe({
+      next: (page) => {
+        this.merge(groupId, page);
+      },
+      error: () => undefined,
+    });
+  }
+
   loadMore(): void {
     const kept = this.kept();
     if (!kept || this.page.isLoading() || this.more(kept) !== 'idle') return;
@@ -116,6 +130,25 @@ export class PagedList<T> {
           ? page.items
           : [...before.items.filter((item) => !keys.has(this.keyOf(item))), ...page.items];
       return { groupId, items, nextCursor: page.nextCursor, boundary: page.items.at(-1) };
+    });
+  }
+
+  private merge(groupId: number, page: Page<T>): void {
+    this.kept.update((before) => {
+      if (before?.groupId !== groupId) return before;
+      const fresh = page.items.at(-1);
+      if (fresh === undefined) return before;
+      const keys = new Set(page.items.map(this.keyOf));
+      const older = before.items.filter(
+        (item) => !keys.has(this.keyOf(item)) && this.newestFirst(item, fresh) > 0,
+      );
+      const reachesFurther = before.boundary !== undefined && this.newestFirst(before.boundary, fresh) > 0;
+      return {
+        groupId,
+        items: [...page.items, ...older],
+        nextCursor: reachesFurther ? before.nextCursor : page.nextCursor,
+        boundary: reachesFurther ? before.boundary : fresh,
+      };
     });
   }
 

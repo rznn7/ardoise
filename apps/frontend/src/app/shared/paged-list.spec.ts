@@ -28,6 +28,7 @@ describe(PagedList.name, () => {
             return response;
           },
           (item) => String(item),
+          (a, b) => a - b,
         ),
     );
   });
@@ -204,5 +205,71 @@ describe(PagedList.name, () => {
     await answer({ items: [42], nextCursor: null });
     expect(list.hasPages(7)).toBe(false);
     expect(itemsOf(list.state(8))).toEqual([42]);
+  });
+
+  describe('resync', () => {
+    const resyncWith = async (page: Page<number>) => {
+      list.resync(7);
+      requests.at(-1)?.response.next(page);
+      requests.at(-1)?.response.complete();
+      await settle();
+    };
+
+    const loadTwoPages = async () => {
+      await firstPage();
+      list.loadMore();
+      await answer({ items: [4, 5], nextCursor: 'c2' });
+    };
+
+    it('merges the first page into the loaded pages and keeps the cursor', async () => {
+      await loadTwoPages();
+
+      await resyncWith({ items: [0, 1, 2], nextCursor: 'fresh' });
+
+      expect(list.state(7)).toEqual({
+        status: 'loaded',
+        items: [0, 1, 2, 3, 4, 5],
+        more: 'idle',
+        boundary: 5,
+      });
+    });
+
+    it('drops rows of the first range that the server no longer returns', async () => {
+      await loadTwoPages();
+
+      await resyncWith({ items: [1, 3], nextCursor: 'fresh' });
+
+      expect(itemsOf(list.state(7))).toEqual([1, 3, 4, 5]);
+    });
+
+    it('takes the cursor of the first page when it holds every loaded row', async () => {
+      await firstPage();
+
+      await resyncWith({ items: [1, 2, 3], nextCursor: 'fresh' });
+
+      expect(list.state(7)).toMatchObject({ items: [1, 2, 3], boundary: 3 });
+      list.loadMore();
+      await settle();
+      expect(requests.at(-1)?.cursor).toBe('fresh');
+    });
+
+    it('keeps the rows when the refetch fails', async () => {
+      await loadTwoPages();
+
+      list.resync(7);
+      requests.at(-1)?.response.error(new Error('offline'));
+      await settle();
+
+      expect(itemsOf(list.state(7))).toEqual([1, 2, 3, 4, 5]);
+    });
+
+    it('loads the first page when nothing is kept for the group', async () => {
+      list.resync(7);
+      await settle();
+
+      expect(requests.at(-1)?.cursor).toBeUndefined();
+      await answer({ items: [1], nextCursor: null });
+      expect(itemsOf(list.state(7))).toEqual([1]);
+    });
   });
 });

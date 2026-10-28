@@ -25,6 +25,7 @@ export class DoneStore {
   private readonly pages = new PagedList<SettlementResponse>(
     (groupId, cursor) => this.fetchSettled(groupId, cursor),
     (settlement) => String(settlement.id),
+    newestFirst,
   );
   private readonly mutations = new Map<number, number>();
   private readonly hidden = signal<ReadonlySet<number>>(new Set());
@@ -34,7 +35,7 @@ export class DoneStore {
       .resynced.pipe(takeUntilDestroyed())
       .subscribe(() => {
         const groupId = this.pages.activeGroupId();
-        if (groupId !== null) this.loadFirst(groupId);
+        if (groupId !== null) this.pages.resync(groupId);
       });
   }
 

@@ -130,4 +130,24 @@ describe(DoneStore.name, () => {
       .filter((request) => !request.cancelled);
     expect(open).toHaveLength(1);
   });
+
+  it('keeps older loaded pages when the connection resyncs', async () => {
+    await loadDone('c1');
+    store.loadMore();
+    await settle();
+    http
+      .expectOne('/api/expense-groups/7/settlements?cursor=c1')
+      .flush({ items: [settlement(1, '2026-10-01T10:00:00.000Z')], nextCursor: null });
+    await settle();
+
+    resynced.next();
+    await settle();
+    http.expectOne('/api/expense-groups/7/settlements').flush({
+      items: [settlement(4, '2026-10-26T10:00:00.000Z'), settlement(3, '2026-10-20T10:00:00.000Z')],
+      nextCursor: 'c9',
+    });
+    await settle();
+
+    expect(ids(store.done(7)())).toEqual([4, 3, 2, 1]);
+  });
 });

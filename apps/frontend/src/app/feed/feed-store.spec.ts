@@ -576,6 +576,60 @@ describe(FeedStore.name, () => {
       expect(loadedIds()).toEqual([3, 1]);
     });
 
+    it('does not remember an own edit whose response arrives after an event on the same payment', async () => {
+      await loadFeed();
+      const { groupId: _groupId, ...updateBody } = { ...body, title: 'Mine' };
+      store.update(7, 2, updateBody);
+      const request = http.expectOne({ method: 'PUT', url: '/api/payments/2' });
+
+      events.next(
+        saved({ ...newer, title: 'Theirs' }, request.request.headers.get('x-op-id')),
+      );
+      request.flush({ payment: { ...newer, title: 'Mine' }, shares: [] });
+
+      expect(store.confirmedUpdate(2)).toBeNull();
+    });
+
+    it('forgets a remembered own edit when someone else saves the payment', async () => {
+      await loadFeed();
+      const { groupId: _groupId, ...updateBody } = { ...body, title: 'Mine' };
+      store.update(7, 2, updateBody);
+      http.expectOne({ method: 'PUT', url: '/api/payments/2' }).flush({
+        payment: { ...newer, title: 'Mine' },
+        shares: [],
+      });
+      await settle();
+      expect(store.confirmedUpdate(2)).toEqual(updateBody);
+
+      events.next(saved({ ...newer, title: 'Theirs' }));
+
+      expect(store.confirmedUpdate(2)).toBeNull();
+    });
+
+    it('keeps older loaded pages when the connection resyncs', async () => {
+      store.loadFirst(7);
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed')
+        .flush({ items: items(newest, newer), nextCursor: 'more' });
+      await settle();
+      store.loadMore();
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed?cursor=more')
+        .flush({ items: items(older), nextCursor: null });
+      await settle();
+
+      resynced.next();
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed')
+        .flush({ items: items(newest, theirs), nextCursor: 'more' });
+      await settle();
+
+      expect(loadedIds()).toEqual([3, 10, 2, 1]);
+    });
+
     it('shows one row when the event of an own create arrives before the response', async () => {
       await loadFeed();
       store.create(body);
