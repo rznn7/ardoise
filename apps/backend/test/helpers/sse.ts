@@ -71,19 +71,26 @@ export async function openStream(
   })();
 
   let isEnded = false;
-  void ended.finally(() => {
-    isEnded = true;
-  });
+  void ended.then(
+    () => {
+      isEnded = true;
+    },
+    () => {
+      isEnded = true;
+    },
+  );
 
   const waitForMessage = (timeoutMs: number) =>
     new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(() => {
-        reject(new Error(`no message within ${String(timeoutMs)}ms`));
-      }, timeoutMs);
-      waiters.push(() => {
+      const waiter = () => {
         clearTimeout(timer);
         resolve();
-      });
+      };
+      const timer = setTimeout(() => {
+        waiters.splice(waiters.indexOf(waiter), 1);
+        reject(new Error(`no message within ${String(timeoutMs)}ms`));
+      }, timeoutMs);
+      waiters.push(waiter);
     });
 
   return {
@@ -98,6 +105,7 @@ export async function openStream(
     },
     async nothing(ms) {
       await new Promise((resolve) => setTimeout(resolve, ms));
+      if (isEnded) throw new Error('stream ended');
       const [unexpected] = queue;
       if (unexpected) {
         throw new Error(

@@ -89,11 +89,12 @@ const sseEvent = (data: RealtimeMessage, id?: string): MessageEvent =>
 @Injectable()
 export class RealtimeHub implements RealtimePublisher, OnApplicationShutdown {
   private readonly logger = new Logger(RealtimeHub.name);
-  private readonly boot = randomBytes(6).toString('hex');
+  private boot = randomBytes(6).toString('hex');
   private current = 0;
   private buffer: Entry[] = [];
   private queue: Promise<void> = Promise.resolve();
   private readonly published = new Subject<Entry>();
+  private readonly resets = new Subject<void>();
   private readonly endedSessions = new Subject<number>();
   private readonly shutdown = new Subject<void>();
 
@@ -106,6 +107,7 @@ export class RealtimeHub implements RealtimePublisher, OnApplicationShutdown {
       .then(() => this.publish(change))
       .catch((error: unknown) => {
         this.logger.error(`could not publish ${change.type}`, error);
+        this.resetEveryone();
       });
     this.queue = next;
     return next;
@@ -130,7 +132,7 @@ export class RealtimeHub implements RealtimePublisher, OnApplicationShutdown {
         this.boot,
         lastEventId,
       );
-      const currentId = formatEventId(this.boot, this.current);
+      const currentId = this.currentId();
       const catchUp =
         replay === 'reset'
           ? [sseEvent({ type: 'reset' }, currentId)]
@@ -141,6 +143,9 @@ export class RealtimeHub implements RealtimePublisher, OnApplicationShutdown {
         of(sseEvent({ type: 'ready' }, currentId)),
         merge(
           this.published.pipe(filter(sees), map(toEvent)),
+          this.resets.pipe(
+            map(() => sseEvent({ type: 'reset' }, this.currentId())),
+          ),
           interval(PING_INTERVAL_MS).pipe(
             map(() => sseEvent({ type: 'ping' })),
           ),
@@ -159,6 +164,16 @@ export class RealtimeHub implements RealtimePublisher, OnApplicationShutdown {
 
   onApplicationShutdown(): void {
     this.shutdown.next();
+  }
+
+  private currentId(): string {
+    return formatEventId(this.boot, this.current);
+  }
+
+  private resetEveryone(): void {
+    this.boot = randomBytes(6).toString('hex');
+    this.buffer = [];
+    this.resets.next();
   }
 
   private async publish(change: GroupChange): Promise<void> {

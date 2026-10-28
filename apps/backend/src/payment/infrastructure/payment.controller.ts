@@ -21,6 +21,7 @@ import { toPaymentShareResponse } from 'src/payment-share/infrastructure/payment
 import { SessionGuard } from 'src/session/infrastructure/session.guard';
 import { CurrentUser } from 'src/shared/http/current-user.decorator';
 import { type SessionUser } from 'src/shared/http/express';
+import { OpId } from 'src/shared/http/op-id.decorator';
 import { Route } from 'src/shared/http/route.decorator';
 import { ZodValidationPipe } from 'src/shared/http/zod-validation.pipe';
 
@@ -51,10 +52,12 @@ export class PaymentController {
     @Body(new ZodValidationPipe(paymentApi.create.body))
     body: CreatePaymentRequest,
     @CurrentUser() user: SessionUser,
+    @OpId() opId: string | undefined,
   ): Promise<CreatePaymentResponse> {
     const { payment, shares } = await this.createPayment.execute({
       ...body,
       userId: user.id,
+      opId,
     });
 
     return {
@@ -69,11 +72,13 @@ export class PaymentController {
     @Body(new ZodValidationPipe(paymentApi.update.body))
     body: UpdatePaymentRequest,
     @CurrentUser() user: SessionUser,
+    @OpId() opId: string | undefined,
   ): Promise<CreatePaymentResponse> {
     const { payment, shares } = await this.updatePayment.execute({
       ...body,
       paymentId: id,
       userId: user.id,
+      opId,
     });
 
     return {
@@ -86,7 +91,12 @@ export class PaymentController {
   async delete(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: SessionUser,
+    @OpId() opId: string | undefined,
   ): Promise<void> {
-    await this.deletePayment.execute({ userId: user.id, paymentId: id });
+    await this.deletePayment.execute({
+      userId: user.id,
+      paymentId: id,
+      opId,
+    });
   }
 }

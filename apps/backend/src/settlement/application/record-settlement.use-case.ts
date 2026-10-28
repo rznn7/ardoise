@@ -5,6 +5,10 @@ import {
   type MemberRepository,
 } from 'src/member/domain/member-repository';
 import {
+  REALTIME_PUBLISHER,
+  type RealtimePublisher,
+} from 'src/realtime/domain/realtime-publisher';
+import {
   assertInvolved,
   assertValidSettlement,
   type Settlement,
@@ -21,6 +25,7 @@ export class RecordSettlementUseCase {
     @Inject(SETTLEMENT_REPOSITORY)
     private readonly settlements: SettlementRepository,
     @Inject(MEMBER_REPOSITORY) private readonly members: MemberRepository,
+    @Inject(REALTIME_PUBLISHER) private readonly realtime: RealtimePublisher,
   ) {}
 
   async execute(input: {
@@ -29,6 +34,7 @@ export class RecordSettlementUseCase {
     fromMemberId: number;
     toMemberId: number;
     amount: number;
+    opId?: string;
   }): Promise<Settlement> {
     const groupMembers = await this.members.findByGroupId(input.groupId);
     const caller = groupMembers.find((m) => m.userId === input.userId);
@@ -40,7 +46,7 @@ export class RecordSettlementUseCase {
       throw new SettlementMemberNotInGroup();
     assertInvolved(input, caller.id);
 
-    return this.settlements.create({
+    const settlement = await this.settlements.create({
       groupId: input.groupId,
       fromMemberId: input.fromMemberId,
       toMemberId: input.toMemberId,
@@ -48,5 +54,11 @@ export class RecordSettlementUseCase {
       settledAt: new Date(),
       createdByMemberId: caller.id,
     });
+    await this.realtime.groupChanged({
+      type: 'settlement.saved',
+      settlement,
+      opId: input.opId,
+    });
+    return settlement;
   }
 }
