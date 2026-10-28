@@ -46,6 +46,7 @@ const setVisibility = (state: DocumentVisibilityState): void => {
 
 function setup(revalidate: () => unknown = () => of({})) {
   vi.stubGlobal('EventSource', FakeEventSource);
+  const signedOut = new Subject<void>();
   const sources: FakeEventSource[] = [];
   const reload = vi.fn();
   const navigate = vi.fn(() => Promise.resolve(true));
@@ -61,7 +62,7 @@ function setup(revalidate: () => unknown = () => of({})) {
       },
       { provide: PAGE_RELOAD, useValue: reload },
       { provide: Router, useValue: { navigate } },
-      { provide: AuthService, useValue: { revalidate } },
+      { provide: AuthService, useValue: { revalidate, signedOut } },
     ],
   });
   const realtime = TestBed.inject(RealtimeService);
@@ -69,7 +70,7 @@ function setup(revalidate: () => unknown = () => of({})) {
   const resynced = vi.fn();
   realtime.events.subscribe((event) => received.push(event));
   realtime.resynced.subscribe(resynced);
-  return { realtime, sources, reload, navigate, received, resynced };
+  return { realtime, sources, reload, navigate, received, resynced, signedOut };
 }
 
 const paymentDeleted = { type: 'payment.deleted', groupId: 1, opId: null, id: 4 };
@@ -89,6 +90,15 @@ describe('RealtimeService', () => {
 
     expect(sources).toHaveLength(1);
     expect(sources[0]?.url).toBe('/api/events');
+  });
+
+  it('closes the stream when the user signs out', () => {
+    const { realtime, sources, signedOut } = setup();
+    realtime.connect();
+
+    signedOut.next();
+
+    expect(sources[0]?.closed).toBe(true);
   });
 
   it('closes the stream on disconnect', () => {

@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { DOCUMENT, inject, Injectable, InjectionToken, Injector } from '@angular/core';
+import { DOCUMENT, inject, Injectable, InjectionToken } from '@angular/core';
 import { Router } from '@angular/router';
 import { type GroupEvent, type RealtimeMessage, realtimeMessageSchema } from '@ardoise/shared';
 import { fromEvent, type Observable, Subject, type Subscription, take, timer } from 'rxjs';
@@ -33,7 +33,7 @@ export class RealtimeService {
   private readonly reload = inject(PAGE_RELOAD);
   private readonly document = inject(DOCUMENT);
   private readonly router = inject(Router);
-  private readonly injector = inject(Injector);
+  private readonly auth = inject(AuthService);
   private readonly eventSubject = new Subject<GroupEvent>();
   private readonly resyncSubject = new Subject<void>();
   private source: EventSource | null = null;
@@ -50,6 +50,9 @@ export class RealtimeService {
   constructor() {
     fromEvent(this.document, 'visibilitychange').subscribe(() => {
       this.onVisibilityChange();
+    });
+    this.auth.signedOut.subscribe(() => {
+      this.disconnect();
     });
   }
 
@@ -105,8 +108,7 @@ export class RealtimeService {
   private onClosed(): void {
     this.cancelRecovery();
     this.closeSource();
-    const auth = this.injector.get(AuthService);
-    this.revalidation = auth
+    this.revalidation = this.auth
       .revalidate()
       .pipe(take(1))
       .subscribe({
