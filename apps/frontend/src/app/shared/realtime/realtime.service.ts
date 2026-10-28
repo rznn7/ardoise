@@ -87,7 +87,7 @@ export class RealtimeService {
   }
 
   private onMessage(message: RealtimeMessage | null): void {
-    if (message === null || message.type === 'ping') return;
+    if (message === null) return;
     if (message.type === 'reset') {
       this.reload();
       return;

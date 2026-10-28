@@ -49,7 +49,6 @@ export const realtimeMessageSchema = z.discriminatedUnion('type', [
   ...groupEventSchemas,
   z.object({ type: z.literal('ready') }),
   z.object({ type: z.literal('reset') }),
-  z.object({ type: z.literal('ping') }),
 ]);
 
 export type RealtimeMessage = z.infer<typeof realtimeMessageSchema>;

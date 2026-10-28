@@ -108,7 +108,7 @@ describe('RealtimeService', () => {
     expect(received).toEqual([paymentDeleted]);
   });
 
-  it('drops pings and unparseable messages', () => {
+  it('drops unknown and unparseable messages', () => {
     const { realtime, sources, received } = setup();
     realtime.connect();
 

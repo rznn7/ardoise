@@ -83,8 +83,12 @@ const toGroupEvent = (change: GroupChange): GroupEvent => {
   }
 };
 
-const sseEvent = (data: RealtimeMessage, id?: string): MessageEvent =>
-  id === undefined ? { data } : { id, data };
+const sseEvent = (data: RealtimeMessage, id: string): MessageEvent => ({
+  id,
+  data,
+});
+
+const PING: MessageEvent = { comment: 'ping' };
 
 @Injectable()
 export class RealtimeHub implements RealtimePublisher, OnApplicationShutdown {
@@ -147,9 +151,7 @@ export class RealtimeHub implements RealtimePublisher, OnApplicationShutdown {
           of(sseEvent({ type: 'ready' }, currentId)),
           merge(
             this.published.pipe(filter(sees), map(toEvent)),
-            interval(PING_INTERVAL_MS).pipe(
-              map(() => sseEvent({ type: 'ping' })),
-            ),
+            interval(PING_INTERVAL_MS).pipe(map(() => PING)),
           ),
         ),
       );

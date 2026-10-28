@@ -17,6 +17,9 @@ const parseFrame = (frame: string): SseMessage | null => {
     if (line.startsWith('data:')) data.push(line.slice(5).trim());
   }
   if (data.length === 0) return null;
+  if (id === undefined || !/^[0-9a-f]+\.\d+$/.test(id)) {
+    throw new Error(`message without a stream id: ${frame}`);
+  }
   return { id, data: realtimeMessageSchema.parse(JSON.parse(data.join('\n'))) };
 };
 
@@ -58,7 +61,7 @@ export async function openStream(
         while (boundary !== -1) {
           const message = parseFrame(buffer.slice(0, boundary));
           buffer = buffer.slice(boundary + 2);
-          if (message && message.data.type !== 'ping') queue.push(message);
+          if (message) queue.push(message);
           boundary = buffer.indexOf('\n\n');
         }
         wake();
