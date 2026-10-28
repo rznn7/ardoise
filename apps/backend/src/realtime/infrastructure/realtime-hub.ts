@@ -1,10 +1,10 @@
 import { type GroupEvent, type RealtimeMessage } from '@ardoise/shared';
 import {
+  type BeforeApplicationShutdown,
   Inject,
   Injectable,
   Logger,
   type MessageEvent,
-  type OnApplicationShutdown,
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import {
@@ -88,10 +88,17 @@ const sseEvent = (data: RealtimeMessage, id: string): MessageEvent => ({
   data,
 });
 
+const untilResponsesFlushed = () =>
+  new Promise<void>((resolve) => {
+    setImmediate(resolve);
+  });
+
 const PING: MessageEvent = { comment: 'ping' };
 
 @Injectable()
-export class RealtimeHub implements RealtimePublisher, OnApplicationShutdown {
+export class RealtimeHub
+  implements RealtimePublisher, BeforeApplicationShutdown
+{
   private readonly logger = new Logger(RealtimeHub.name);
   private boot = randomBytes(6).toString('hex');
   private current = 0;
@@ -166,8 +173,9 @@ export class RealtimeHub implements RealtimePublisher, OnApplicationShutdown {
     );
   }
 
-  onApplicationShutdown(): void {
+  async beforeApplicationShutdown(): Promise<void> {
     this.shutdown.next();
+    await untilResponsesFlushed();
   }
 
   private currentId(): string {

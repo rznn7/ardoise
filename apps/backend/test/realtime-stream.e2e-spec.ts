@@ -76,3 +76,43 @@ describe('Realtime stream', () => {
     await stream.nothing(300);
   });
 });
+
+describe('Realtime stream on shutdown', () => {
+  let app: INestApplication<App>;
+  let pgContainer: StartedPostgreSqlContainer;
+  let pgClient: Client;
+
+  beforeAll(async () => {
+    ({ app, pgClient, pgContainer } = await setupTestApp());
+    await app.listen(0);
+  }, 30000);
+
+  afterAll(async () => {
+    await pgClient.end();
+    await pgContainer.stop();
+  });
+
+  it('closes promptly and ends the stream while a client is still connected', async () => {
+    const { id: userId } = await seedUser(pgClient);
+    const { token } = await seedSession(pgClient, { userId });
+    const stream = await openStream(
+      await app.getUrl(),
+      `session_token=${token}`,
+    );
+    await stream.next();
+
+    const closing = app.close();
+
+    await expect(
+      Promise.race([
+        closing.then(() => 'closed'),
+        new Promise((resolve) =>
+          setTimeout(() => {
+            resolve('hung');
+          }, 3000),
+        ),
+      ]),
+    ).resolves.toBe('closed');
+    await stream.ended;
+  });
+});

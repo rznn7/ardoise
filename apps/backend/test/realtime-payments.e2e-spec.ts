@@ -266,6 +266,23 @@ describe('Realtime payments and repayments', () => {
     expect((await second.next()).data).toEqual({ type: 'ready' });
   });
 
+  it('replays nothing of the group to an outsider with the same last id', async () => {
+    const { group, alice, bob, carol } = await seedScene();
+    const first = await openStream(baseUrl, alice.cookie);
+    streams.push(first);
+    const { id: readyId } = await first.next();
+    first.close();
+    await post(bob.cookie, paymentBody(group.id, alice, bob, 'one')).expect(
+      201,
+    );
+
+    const outsider = await openStream(baseUrl, carol.cookie, readyId);
+    streams.push(outsider);
+
+    expect((await outsider.next()).data).toEqual({ type: 'ready' });
+    await outsider.nothing(300);
+  });
+
   it('drops an invalid op id without refusing the write', async () => {
     const { group, alice, bob } = await seedScene();
     const aliceStream = await connect(alice.cookie);
