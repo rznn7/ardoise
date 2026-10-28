@@ -305,6 +305,41 @@ describe(PagedList.name, () => {
       expect(requests.at(-1)?.cursor).toBe('c1');
     });
 
+    it('keeps a page loaded during the walk and lets the next loadMore fetch after it', async () => {
+      await firstPage();
+      list.loadMore();
+      await settle();
+      const more = requests.at(-1);
+
+      list.resync(7);
+      const walk = requests.at(-1);
+      more?.response.next({ items: [4, 5], nextCursor: 'c2' });
+      more?.response.complete();
+      await settle();
+      walk?.response.next({ items: [1, 2, 3], nextCursor: 'c1' });
+      walk?.response.complete();
+      await settle();
+      await reply({ items: [4, 5], nextCursor: 'c2' });
+
+      expect(itemsOf(list.state(7))).toEqual([1, 2, 3, 4, 5]);
+      list.loadMore();
+      await settle();
+      expect(requests.at(-1)?.cursor).toBe('c2');
+    });
+
+    it('loadMore fetches again when the kept cursor equals the current one', async () => {
+      await firstPage();
+      list.loadMore();
+      await answer({ items: [4], nextCursor: 'c1' });
+      const before = requests.length;
+
+      list.loadMore();
+      await settle();
+
+      expect(requests).toHaveLength(before + 1);
+      expect(requests.at(-1)?.cursor).toBe('c1');
+    });
+
     it('is not overwritten by a walk once loadFirst landed', async () => {
       await firstPage();
 

@@ -117,7 +117,8 @@ export class PagedList<T> {
     const kept = this.kept();
     if (!kept || this.walking() || this.page.isLoading() || this.more(kept) !== 'idle') return;
     if (kept.nextCursor === null) return;
-    this.cursor.set(kept.nextCursor);
+    if (this.cursor() === kept.nextCursor) this.page.reload();
+    else this.cursor.set(kept.nextCursor);
   }
 
   retryMore(): void {
@@ -159,8 +160,10 @@ export class PagedList<T> {
           }
           pages.push(page);
           const last = page.items.at(-1);
+          const kept = this.kept();
+          const depth = kept?.groupId === groupId ? kept.boundary : boundary;
           const reachedDepth =
-            last === undefined || boundary === undefined || this.newestFirst(last, boundary) >= 0;
+            last === undefined || depth === undefined || this.newestFirst(last, depth) >= 0;
           if (page.nextCursor !== null && !reachedDepth) {
             step(page.nextCursor);
             return;
