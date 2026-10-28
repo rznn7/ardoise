@@ -1,4 +1,5 @@
 import { computed, inject, Injectable, type Signal, signal, untracked } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   type CreatePaymentBody,
   type CreateSettlementBody,
@@ -93,17 +94,19 @@ export class FeedStore {
   private readonly updating = signal<ReadonlyMap<number, UpdatePaymentBody>>(new Map());
   private readonly confirmedUpdates = new Map<number, UpdatePaymentBody>();
   private readonly settledMutations = signal<ReadonlyMap<number, number>>(new Map());
-  private readonly pendingByOpId = new Map<string, number>();
+  private readonly pendingByOpId = new Map<string, number | null>();
+  private readonly appliedOps = new Set<string>();
+  private readonly eventCounts = new Map<number, number>();
   private readonly tombstones = new Set<string>();
   private nextTemporaryId = -1;
 
   constructor() {
     const realtime = inject(RealtimeService);
-    realtime.events.subscribe((event) => {
+    realtime.events.pipe(takeUntilDestroyed()).subscribe((event) => {
       this.apply(event);
     });
-    realtime.resynced.subscribe(() => {
-      const groupId = this.pages.keptGroupId();
+    realtime.resynced.pipe(takeUntilDestroyed()).subscribe(() => {
+      const groupId = this.pages.activeGroupId();
       if (groupId !== null) this.loadFirst(groupId);
     });
   }
@@ -172,7 +175,7 @@ export class FeedStore {
     this.pendingByOpId.set(opId, temporaryId);
     this.creating.update((rows) => new Map(rows).set(temporaryId, pendingRow));
     const settle = (): void => {
-      this.pendingByOpId.delete(opId);
+      this.forgetOp(opId);
       this.creating.update((rows) => {
         const next = new Map(rows);
         next.delete(temporaryId);
@@ -183,7 +186,7 @@ export class FeedStore {
 
     this.paymentApi.create(body, opId).subscribe({
       next: ({ payment }) => {
-        this.upsert(body.groupId, { kind: 'payment', payment });
+        this.acceptOwn(body.groupId, opId, { kind: 'payment', payment });
         settle();
       },
       error: () => {
@@ -194,8 +197,11 @@ export class FeedStore {
   }
 
   update(groupId: number, id: number, body: UpdatePaymentBody): void {
+    const opId = crypto.randomUUID();
+    this.pendingByOpId.set(opId, null);
     this.updating.update((updates) => new Map(updates).set(id, body));
     const settle = (): void => {
+      this.forgetOp(opId);
       this.updating.update((updates) => {
         if (updates.get(id) !== body) return updates;
         const next = new Map(updates);
@@ -205,10 +211,10 @@ export class FeedStore {
       this.markSettled(groupId);
     };
 
-    this.paymentApi.update(id, body, crypto.randomUUID()).subscribe({
+    this.paymentApi.update(id, body, opId).subscribe({
       next: ({ payment }) => {
         this.confirmedUpdates.set(id, body);
-        this.upsert(groupId, { kind: 'payment', payment });
+        this.acceptOwn(groupId, opId, { kind: 'payment', payment });
         settle();
       },
       error: () => {
@@ -264,7 +270,7 @@ export class FeedStore {
     this.pendingByOpId.set(opId, temporaryId);
     this.recording.update((pending) => new Map(pending).set(temporaryId, { body, row }));
     const settle = (): void => {
-      this.pendingByOpId.delete(opId);
+      this.forgetOp(opId);
       this.recording.update((pending) => {
         const next = new Map(pending);
         next.delete(temporaryId);
@@ -275,8 +281,7 @@ export class FeedStore {
 
     this.settlementApi.create(body, opId).subscribe({
       next: (settlement) => {
-        this.upsert(body.groupId, { kind: 'settlement', settlement });
-        this.done.added(body.groupId, settlement);
+        this.acceptOwn(body.groupId, opId, { kind: 'settlement', settlement });
         settle();
       },
       error: () => {
@@ -360,7 +365,7 @@ export class FeedStore {
         this.pages.patch(event.groupId, (items) =>
           items.filter((item) => !isPayment(item, event.id)),
         );
-        this.markSettled(event.groupId);
+        this.markEvent(event.groupId);
         break;
       case 'settlement.deleted':
         this.tombstones.add(`settlement:${String(event.id)}`);
@@ -368,7 +373,7 @@ export class FeedStore {
           items.filter((item) => !isSettlement(item, event.id)),
         );
         this.done.removed(event.groupId, event.id);
-        this.markSettled(event.groupId);
+        this.markEvent(event.groupId);
         break;
       default:
         break;
@@ -376,12 +381,29 @@ export class FeedStore {
   }
 
   private applySaved(groupId: number, opId: string | null, item: FeedItem): void {
+    if (opId !== null && this.pendingByOpId.has(opId)) {
+      this.appliedOps.add(opId);
+      const temporaryId = this.pendingByOpId.get(opId);
+      if (temporaryId !== undefined && temporaryId !== null) this.dropPending(temporaryId);
+    }
+    this.put(groupId, item);
+    this.markEvent(groupId);
+  }
+
+  private acceptOwn(groupId: number, opId: string, item: FeedItem): void {
+    if (this.appliedOps.has(opId)) return;
+    this.put(groupId, item);
+  }
+
+  private put(groupId: number, item: FeedItem): void {
     if (this.tombstones.has(keyOf(item))) return;
-    const temporaryId = opId === null ? undefined : this.pendingByOpId.get(opId);
-    if (temporaryId !== undefined) this.dropPending(temporaryId);
     this.upsert(groupId, item);
     if (item.kind === 'settlement') this.done.added(groupId, item.settlement);
-    this.markSettled(groupId);
+  }
+
+  private forgetOp(opId: string): void {
+    this.pendingByOpId.delete(opId);
+    this.appliedOps.delete(opId);
   }
 
   private dropPending(temporaryId: number): void {
@@ -411,7 +433,13 @@ export class FeedStore {
   }
 
   private settledCount(groupId: number): number {
-    return untracked(() => this.settledMutations().get(groupId) ?? 0);
+    return untracked(
+      () => (this.settledMutations().get(groupId) ?? 0) + (this.eventCounts.get(groupId) ?? 0),
+    );
+  }
+
+  private markEvent(groupId: number): void {
+    this.eventCounts.set(groupId, (this.eventCounts.get(groupId) ?? 0) + 1);
   }
 
   private markSettled(groupId: number): void {

@@ -645,6 +645,124 @@ describe(FeedStore.name, () => {
       expect(loadedIds()).toEqual([3, 2, 1]);
     });
 
+    it('keeps a payment removed when its own create resolves after its deletion', async () => {
+      await loadFeed();
+      store.create(body);
+      const request = http.expectOne({ method: 'POST', url: '/api/payments' });
+      const confirmed = payment(20, body.paidAt);
+
+      events.next(deleted(20));
+      request.flush({ payment: confirmed });
+
+      expect(loadedIds()).toEqual([3, 2, 1]);
+    });
+
+    it('drops the pending row and shows nothing for an own save already deleted', async () => {
+      await loadFeed();
+      store.create(body);
+      const request = http.expectOne({ method: 'POST', url: '/api/payments' });
+      const confirmed = payment(20, body.paidAt);
+
+      events.next(deleted(20));
+      events.next(saved(confirmed, request.request.headers.get('x-op-id')));
+
+      expect(loadedIds()).toEqual([3, 2, 1]);
+    });
+
+    it('keeps newer values when an own update resolves after a newer save', async () => {
+      await loadFeed();
+      const update = {
+        payerMemberId: 1,
+        title: 'Mine',
+        paidAt: newer.paidAt,
+        fullAmount: 1,
+        splitType: 'equal' as const,
+        participants: [{ memberId: 1, inputValue: 0 }],
+      };
+      store.update(7, 2, update);
+      const request = http.expectOne({ method: 'PUT', url: '/api/payments/2' });
+
+      events.next(saved({ ...newer, title: 'Mine' }, request.request.headers.get('x-op-id')));
+      events.next(saved({ ...newer, title: 'Newer' }));
+      request.flush({ payment: { ...newer, title: 'Mine' } });
+
+      expect(paymentRows(store.feed(7)()).find((p) => p.id === 2)?.title).toBe('Newer');
+    });
+
+    it('shows one repayment in the feed and Done when its event precedes the response', async () => {
+      await loadFeed();
+      const done = TestBed.inject(DoneStore);
+      const added = vi.spyOn(done, 'added');
+      store.recordSettlement({ groupId: 7, fromMemberId: 2, toMemberId: 1, amount: 3000 });
+      const request = http.expectOne({ method: 'POST', url: '/api/settlements' });
+      const confirmed: SettlementResponse = {
+        id: 5,
+        groupId: 7,
+        fromMemberId: 2,
+        toMemberId: 1,
+        amount: 3000,
+        settledAt: '2026-10-28T10:00:00.000Z',
+        createdByMemberId: 1,
+        createdAt: '2026-10-28T10:00:00.000Z',
+      };
+
+      events.next({
+        type: 'settlement.saved',
+        groupId: 7,
+        opId: request.request.headers.get('x-op-id'),
+        settlement: confirmed,
+      });
+      request.flush(confirmed);
+
+      const state = store.feed(7)();
+      expect(
+        state.status === 'loaded' ? state.rows.filter((r) => r.kind === 'settlement') : [],
+      ).toHaveLength(1);
+      expect(added).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps an event that arrives during a loadMore', async () => {
+      store.loadFirst(7);
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed')
+        .flush({ items: items(newest, newer), nextCursor: 'more' });
+      await settle();
+      store.loadMore();
+      await settle();
+      const second = http.expectOne('/api/expense-groups/7/feed?cursor=more');
+
+      events.next(saved(payment(10, '2026-10-10T10:00:00.000Z')));
+      second.flush({ items: items(older), nextCursor: null });
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed?cursor=more')
+        .flush({ items: items(older), nextCursor: null });
+      await settle();
+
+      expect(loadedIds()).toEqual([3, 10, 2, 1]);
+    });
+
+    it('reloads when the connection resyncs during the first fetch', async () => {
+      store.loadFirst(7);
+      await settle();
+
+      resynced.next();
+      await settle();
+
+      const open = http.match('/api/expense-groups/7/feed').filter((request) => !request.cancelled);
+      expect(open).toHaveLength(1);
+    });
+
+    it('does not count an event as an own settled mutation', async () => {
+      await loadFeed();
+      const version = store.settledVersion(7);
+
+      events.next(saved(theirs));
+
+      expect(version()).toBe(0);
+    });
+
     it('shows a repayment from someone else and removes it when undone', async () => {
       await loadFeed();
       const repaid: SettlementResponse = {

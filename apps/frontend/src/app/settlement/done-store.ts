@@ -1,6 +1,8 @@
 import { computed, inject, Injectable, type Signal, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { type SettlementResponse } from '@ardoise/shared';
-import { type More, PagedList } from 'src/app/shared/paged-list';
+import { defer, type Observable, of, switchMap } from 'rxjs';
+import { type More, type Page, PagedList } from 'src/app/shared/paged-list';
 import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
 
 import { SettlementApiService } from './settlement-api.service';
@@ -21,16 +23,19 @@ const newestFirst = (a: SettlementResponse, b: SettlementResponse): number =>
 export class DoneStore {
   private readonly api = inject(SettlementApiService);
   private readonly pages = new PagedList<SettlementResponse>(
-    (groupId, cursor) => this.api.listByGroup(groupId, cursor),
+    (groupId, cursor) => this.fetchSettled(groupId, cursor),
     (settlement) => String(settlement.id),
   );
+  private readonly mutations = new Map<number, number>();
   private readonly hidden = signal<ReadonlySet<number>>(new Set());
 
   constructor() {
-    inject(RealtimeService).resynced.subscribe(() => {
-      const groupId = this.pages.keptGroupId();
-      if (groupId !== null) this.loadFirst(groupId);
-    });
+    inject(RealtimeService)
+      .resynced.pipe(takeUntilDestroyed())
+      .subscribe(() => {
+        const groupId = this.pages.activeGroupId();
+        if (groupId !== null) this.loadFirst(groupId);
+      });
   }
 
   done(groupId: number): Signal<DoneState> {
@@ -71,6 +76,7 @@ export class DoneStore {
   }
 
   added(groupId: number, settlement: SettlementResponse): void {
+    this.markMutated(groupId);
     this.pages.patch(groupId, (items) => [
       settlement,
       ...items.filter((item) => item.id !== settlement.id),
@@ -78,6 +84,7 @@ export class DoneStore {
   }
 
   removed(groupId: number, id: number): void {
+    this.markMutated(groupId);
     this.pages.patch(groupId, (items) => items.filter((item) => item.id !== id));
     this.unhide(id);
   }
@@ -92,5 +99,24 @@ export class DoneStore {
       next.delete(id);
       return next;
     });
+  }
+
+  private fetchSettled(groupId: number, cursor?: string): Observable<Page<SettlementResponse>> {
+    return defer(() => {
+      const before = this.mutations.get(groupId) ?? 0;
+      return this.api
+        .listByGroup(groupId, cursor)
+        .pipe(
+          switchMap((page) =>
+            (this.mutations.get(groupId) ?? 0) === before
+              ? of(page)
+              : this.fetchSettled(groupId, cursor),
+          ),
+        );
+    });
+  }
+
+  private markMutated(groupId: number): void {
+    this.mutations.set(groupId, (this.mutations.get(groupId) ?? 0) + 1);
   }
 }
