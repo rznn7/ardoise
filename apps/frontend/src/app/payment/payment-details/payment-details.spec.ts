@@ -25,6 +25,7 @@ import { PaymentDraft } from 'src/app/payment/payment-draft';
 import { paymentMeta } from 'src/app/payment/payment-meta';
 import { withHistoryPageIds } from 'src/app/shared/navigation/back';
 import { openFirstPage } from 'src/app/shared/navigation/first-page.testing';
+import { EVENT_SOURCE } from 'src/app/shared/realtime/realtime.service';
 
 import { PaymentDetails } from './payment-details';
 
@@ -393,6 +394,7 @@ describe('payment details route', () => {
         { provide: MemberApiService, useValue: { listByGroup: () => of(MEMBERS) } },
         { provide: ExpenseGroupApiService, useValue: { findOne: () => of(GROUP) } },
         { provide: AuthApiService, useValue: { me: () => of(ME) } },
+        { provide: EVENT_SOURCE, useValue: () => ({ close: vi.fn() }) },
       ],
     });
     const harness = await RouterTestingHarness.create();

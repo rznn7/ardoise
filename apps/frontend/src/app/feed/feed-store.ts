@@ -156,7 +156,7 @@ export class FeedStore {
       this.markSettled(body.groupId);
     };
 
-    this.paymentApi.create(body).subscribe({
+    this.paymentApi.create(body, crypto.randomUUID()).subscribe({
       next: ({ payment }) => {
         this.upsert(body.groupId, { kind: 'payment', payment });
         settle();
@@ -180,7 +180,7 @@ export class FeedStore {
       this.markSettled(groupId);
     };
 
-    this.paymentApi.update(id, body).subscribe({
+    this.paymentApi.update(id, body, crypto.randomUUID()).subscribe({
       next: ({ payment }) => {
         this.confirmedUpdates.set(id, body);
         this.upsert(groupId, { kind: 'payment', payment });
@@ -205,7 +205,7 @@ export class FeedStore {
       this.markSettled(groupId);
     };
 
-    this.paymentApi.delete(id).subscribe({
+    this.paymentApi.delete(id, crypto.randomUUID()).subscribe({
       next: () => {
         this.pages.patch(groupId, (items) => items.filter((item) => !isPayment(item, id)));
         settle();
@@ -244,7 +244,7 @@ export class FeedStore {
       this.markSettled(body.groupId);
     };
 
-    this.settlementApi.create(body).subscribe({
+    this.settlementApi.create(body, crypto.randomUUID()).subscribe({
       next: (settlement) => {
         this.upsert(body.groupId, { kind: 'settlement', settlement });
         this.done.added(body.groupId, settlement);
@@ -269,7 +269,7 @@ export class FeedStore {
       this.markSettled(groupId);
     };
 
-    this.settlementApi.delete(id).subscribe({
+    this.settlementApi.delete(id, crypto.randomUUID()).subscribe({
       next: () => {
         this.pages.patch(groupId, (items) => items.filter((item) => !isSettlement(item, id)));
         this.done.removed(groupId, id);

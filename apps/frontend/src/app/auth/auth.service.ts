@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, Injector } from '@angular/core';
 import { type MeResponse } from '@ardoise/shared';
 import {
   type PublicKeyCredentialCreationOptionsJSON,
@@ -17,12 +17,14 @@ import {
   tap,
   throwError,
 } from 'rxjs';
+import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
 
 import { AuthApiService } from './auth-api.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly authApi = inject(AuthApiService);
+  private readonly injector = inject(Injector);
   private cachedUser: Observable<MeResponse> | null = null;
 
   currentUser(): Observable<MeResponse> {
@@ -55,9 +57,15 @@ export class AuthService {
   logout(): Observable<void> {
     return this.authApi.logout().pipe(
       tap(() => {
+        this.injector.get(RealtimeService).disconnect();
         this.forgetUser();
       }),
     );
+  }
+
+  revalidate(): Observable<MeResponse> {
+    this.forgetUser();
+    return this.currentUser();
   }
 
   login(): Observable<void> {
