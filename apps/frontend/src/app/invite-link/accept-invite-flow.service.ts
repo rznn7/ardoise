@@ -17,7 +17,7 @@ export class AcceptInviteFlow {
     return this.auth.login().pipe(switchMap(() => this.inviteLinkApi.consume(token)));
   }
 
-  registerThenJoin(token: string) {
-    return this.auth.register(token);
+  registerThenJoin(token: string, name?: string) {
+    return this.auth.register(token, name);
   }
 }

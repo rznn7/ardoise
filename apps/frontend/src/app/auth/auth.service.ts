@@ -43,7 +43,7 @@ export class AuthService {
     return this.cachedUser;
   }
 
-  register(inviteToken: string): Observable<void> {
+  register(inviteToken: string, name?: string): Observable<void> {
     return this.authApi.registerBegin({ inviteToken }).pipe(
       switchMap(({ stateId, options }) =>
         from(
@@ -51,7 +51,7 @@ export class AuthService {
         ).pipe(map((attestation) => ({ attestation, stateId }))),
       ),
       switchMap(({ attestation, stateId }) =>
-        this.authApi.registerComplete({ stateId, attestation }),
+        this.authApi.registerComplete({ stateId, attestation, name }),
       ),
       tap(() => {
         this.forgetUser();
