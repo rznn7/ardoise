@@ -16,7 +16,9 @@ test('a member changes their name and the others see it', async ({
     alice.getByRole('button', { name: /^Name\s*user-/ }),
   ).toBeVisible();
   await alice.getByRole('button', { name: /^Name/ }).click();
-  await alice.getByRole('textbox', { name: 'Your name' }).fill('Ana');
+  const nameInput = alice.getByRole('textbox', { name: 'Your name' });
+  await expect(nameInput).toBeFocused();
+  await nameInput.fill('Ana');
   await alice.getByRole('button', { name: 'Save' }).click();
   await expect(
     alice.getByRole('button', { name: /^Name\s*Ana/ }),
