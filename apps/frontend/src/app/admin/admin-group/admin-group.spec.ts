@@ -12,6 +12,7 @@ import { groupMeta } from 'src/app/admin/admin-dates';
 import { withHistoryPageIds } from 'src/app/shared/navigation/back';
 import { openFirstPage } from 'src/app/shared/navigation/first-page.testing';
 import { ToastService } from 'src/app/shared/toast.service';
+import { translatorFor } from 'src/test-providers';
 
 import { AdminGroupPage } from './admin-group';
 
@@ -107,7 +108,7 @@ describe('AdminGroupPage', () => {
     await setup();
 
     expect(screen.getByRole('heading', { name: 'Lisbon trip' })).toBeTruthy();
-    expect(screen.getByText(groupMeta(LISBON.group))).toBeTruthy();
+    expect(screen.getByText(groupMeta(LISBON.group, translatorFor('en')))).toBeTruthy();
     const ada = screen.getByRole('link', { name: /ada/i });
     expect(within(ada).getByText('Moderator')).toBeTruthy();
 

@@ -17,6 +17,8 @@ import {
   type MeResponse,
   type SettlementResponse,
 } from '@ardoise/shared';
+import { TranslocoDirective } from '@jsverse/transloco';
+import { marker } from '@jsverse/transloco-keys-manager/marker';
 import { provideIcons } from '@ng-icons/core';
 import { lucideChevronLeft } from '@ng-icons/lucide';
 import { BrnSheetImports } from '@spartan-ng/brain/sheet';
@@ -32,6 +34,7 @@ import { MemberApiService } from 'src/app/member/member-api.service';
 import { shortDay } from 'src/app/payment/day-label';
 import { SettlementApiService } from 'src/app/settlement/settlement-api.service';
 import { involvesMe, settlementLabel } from 'src/app/settlement/settlement-label';
+import { LanguageService } from 'src/app/shared/i18n/language.service';
 import { injectGoBack } from 'src/app/shared/navigation/back';
 import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
 import { ToastService } from 'src/app/shared/toast.service';
@@ -59,6 +62,7 @@ const isNotAccessible = (error: unknown): boolean =>
 @Component({
   selector: 'app-settlement-details',
   imports: [
+    TranslocoDirective,
     RouterLink,
     MobileShellImports,
     GroupChip,
@@ -82,6 +86,7 @@ export class SettlementDetails {
   private readonly store = inject(FeedStore);
   private readonly goBack = injectGoBack();
   private readonly toast = inject(ToastService);
+  private readonly language = inject(LanguageService);
   private leaving = false;
 
   readonly groupId = input.required({ transform: numberAttribute });
@@ -95,7 +100,12 @@ export class SettlementDetails {
   protected readonly label = computed(() => {
     const state = this.state();
     if (state.status !== 'loaded') return '';
-    return settlementLabel(state.settlement, state.members, state.me.id);
+    return settlementLabel(
+      state.settlement,
+      state.members,
+      state.me.id,
+      this.language.translator(),
+    );
   });
 
   protected readonly canUndo = computed(() => {
@@ -105,7 +115,9 @@ export class SettlementDetails {
 
   protected readonly date = computed(() => {
     const state = this.state();
-    return state.status === 'loaded' ? shortDay(state.settlement.settledAt) : '';
+    return state.status === 'loaded'
+      ? shortDay(state.settlement.settledAt, this.language.translator().locale)
+      : '';
   });
 
   constructor() {
@@ -152,7 +164,7 @@ export class SettlementDetails {
   private leaveBecauseUndone(): void {
     if (this.leaving) return;
     this.leaving = true;
-    this.toast.message('This repayment was undone');
+    this.toast.message(this.language.translator().translate(marker('settlement.undone.title')));
     this.goBack(this.groupUrl());
   }
 

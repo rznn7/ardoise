@@ -1,132 +1,132 @@
-<app-mobile-shell bleed>
-  <app-hero-screen palette="violet" shape="converge">
-    @let currentState = state();
-    @let currentGroupName = groupName();
+<ng-container *transloco="let t">
+  <app-mobile-shell bleed>
+    <app-hero-screen palette="violet" shape="converge">
+      @let currentState = state();
+      @let currentGroupName = groupName();
 
-    @switch (currentState) {
-      @case ('loading') {
-        <div class="flex justify-center py-10">
-          <hlm-spinner />
-        </div>
-      }
+      @switch (currentState) {
+        @case ('loading') {
+          <div class="flex justify-center py-10">
+            <hlm-spinner [aria-label]="t('ui.loading')" />
+          </div>
+        }
 
-      @case ('invalid') {
-        <div class="flex flex-col gap-3">
-          <ng-icon hlm size="lg" name="lucideTriangleAlert" />
-          <h1 appTitle>This invite is no longer valid</h1>
-          <p appBody>
-            It may have expired or already been used. Ask whoever invited you for a fresh link.
-          </p>
-        </div>
-      }
+        @case ('invalid') {
+          <div class="flex flex-col gap-3">
+            <ng-icon hlm size="lg" name="lucideTriangleAlert" />
+            <h1 appTitle>{{ t('invite.accept.invalid.title') }}</h1>
+            <p appBody>{{ t('invite.accept.invalid.description') }}</p>
+          </div>
+        }
 
-      @case ('couldNotLoad') {
-        <div class="flex flex-col gap-2">
-          <h1 appTitle>Couldn't load this invite</h1>
-          <p appBody>Check your connection and try again.</p>
-        </div>
-        <button hlmBtn variant="inverted-outline" size="xl" (click)="loadPreview()">
-          <ng-icon hlm size="sm" name="lucideRefreshCw" aria-hidden="true" />
-          <span>Retry</span>
-        </button>
-      }
+        @case ('couldNotLoad') {
+          <div class="flex flex-col gap-2">
+            <h1 appTitle>{{ t('invite.accept.loadFailed') }}</h1>
+            <p appBody>{{ t('common.checkConnection') }}</p>
+          </div>
+          <button hlmBtn variant="inverted-outline" size="xl" (click)="loadPreview()">
+            <ng-icon hlm size="sm" name="lucideRefreshCw" aria-hidden="true" />
+            <span>{{ t('common.retry') }}</span>
+          </button>
+        }
 
-      @default {
-        @if (currentGroupName) {
-          @switch (currentState) {
-            @case ('loggedIn') {
-              <div class="flex flex-col gap-2">
-                <p appEyebrow>You're invited to</p>
-                <h1 appFigure>{{ currentGroupName }}</h1>
-              </div>
-              <button hlmBtn variant="inverted" size="xl" (click)="joinLoggedIn()">
-                Join {{ currentGroupName }}
-              </button>
-            }
+        @default {
+          @if (currentGroupName) {
+            @switch (currentState) {
+              @case ('loggedIn') {
+                <div class="flex flex-col gap-2">
+                  <p appEyebrow>{{ t('invite.accept.invitedTo') }}</p>
+                  <h1 appFigure>{{ currentGroupName }}</h1>
+                </div>
+                <button hlmBtn variant="inverted" size="xl" (click)="joinLoggedIn()">
+                  {{ t('invite.accept.join', { group: currentGroupName }) }}
+                </button>
+              }
 
-            @case ('loggedOut') {
-              <div class="flex flex-col gap-2">
-                <p appEyebrow>You're invited to</p>
-                <h1 appFigure>{{ currentGroupName }}</h1>
-              </div>
-              @if (naming()) {
-                <form
-                  class="flex flex-col gap-3"
-                  (submit)="registerThenJoin($event, joinName.value)"
-                >
-                  <div class="flex flex-col gap-2">
-                    <label appBody for="join-name">Your name</label>
-                    <input
-                      #joinName
-                      autocomplete="name"
-                      class="h-11"
-                      enterkeyhint="go"
-                      hlmInput
-                      id="join-name"
-                      placeholder="Optional"
-                      [maxLength]="nameMaxLength"
-                    />
-                    <p appBody>
-                      Shown to everyone in your groups. You can change it later in Settings.
-                    </p>
+              @case ('loggedOut') {
+                <div class="flex flex-col gap-2">
+                  <p appEyebrow>{{ t('invite.accept.invitedTo') }}</p>
+                  <h1 appFigure>{{ currentGroupName }}</h1>
+                </div>
+                @if (naming()) {
+                  <form
+                    class="flex flex-col gap-3"
+                    (submit)="registerThenJoin($event, joinName.value)"
+                  >
+                    <div class="flex flex-col gap-2">
+                      <label appBody for="join-name">{{ t('settings.yourName') }}</label>
+                      <input
+                        #joinName
+                        autocomplete="name"
+                        class="h-11"
+                        enterkeyhint="go"
+                        hlmInput
+                        id="join-name"
+                        [placeholder]="t('invite.accept.optional')"
+                        [maxLength]="nameMaxLength"
+                      />
+                      <p appBody>{{ t('invite.accept.nameHint') }}</p>
+                    </div>
+                    <button hlmBtn variant="inverted" size="xl" type="submit">
+                      <ng-icon hlm size="sm" name="lucideKeyRound" aria-hidden="true" />
+                      <span>{{ t('invite.accept.createPasskey') }}</span>
+                    </button>
+                    <button
+                      hlmBtn
+                      variant="inverted-outline"
+                      size="xl"
+                      type="button"
+                      (click)="setNaming(false)"
+                    >
+                      {{ t('settings.back') }}
+                    </button>
+                  </form>
+                } @else {
+                  <div class="flex flex-col gap-3">
+                    <button hlmBtn variant="inverted" size="xl" (click)="loginThenJoin()">
+                      <ng-icon hlm size="sm" name="lucideKeyRound" aria-hidden="true" />
+                      <span>{{ t('invite.accept.loginToJoin', { group: currentGroupName }) }}</span>
+                    </button>
+                    <button
+                      #joinButton
+                      hlmBtn
+                      variant="inverted-outline"
+                      size="xl"
+                      (click)="setNaming(true)"
+                    >
+                      {{ t('invite.accept.newHere') }}
+                    </button>
                   </div>
-                  <button hlmBtn variant="inverted" size="xl" type="submit">
-                    <ng-icon hlm size="sm" name="lucideKeyRound" aria-hidden="true" />
-                    <span>Create passkey</span>
-                  </button>
-                  <button
-                    hlmBtn
-                    variant="inverted-outline"
-                    size="xl"
-                    type="button"
-                    (click)="setNaming(false)"
-                  >
-                    Back
-                  </button>
-                </form>
-              } @else {
+                }
+              }
+
+              @case ('success') {
                 <div class="flex flex-col gap-3">
-                  <button hlmBtn variant="inverted" size="xl" (click)="loginThenJoin()">
-                    <ng-icon hlm size="sm" name="lucideKeyRound" aria-hidden="true" />
-                    <span>Log in to join {{ currentGroupName }}</span>
-                  </button>
-                  <button
-                    #joinButton
-                    hlmBtn
-                    variant="inverted-outline"
-                    size="xl"
-                    (click)="setNaming(true)"
-                  >
-                    New here? Join with a passkey
-                  </button>
+                  <ng-icon hlm size="lg" name="lucideCircleCheck" />
+                  <h1 appTitle>{{ t('invite.accept.success', { group: currentGroupName }) }}</h1>
                 </div>
               }
-            }
 
-            @case ('success') {
-              <div class="flex flex-col gap-3">
-                <ng-icon hlm size="lg" name="lucideCircleCheck" />
-                <h1 appTitle>You're in! — {{ currentGroupName }}</h1>
-              </div>
-            }
+              @case ('error') {
+                <p appBody role="alert">
+                  {{ t('invite.accept.failed', { group: currentGroupName }) }}
+                </p>
+                <button hlmBtn variant="inverted-outline" size="xl" (click)="joinLoggedIn()">
+                  <ng-icon hlm size="sm" name="lucideRefreshCw" aria-hidden="true" />
+                  <span>{{ t('common.retry') }}</span>
+                </button>
+              }
 
-            @case ('error') {
-              <p appBody role="alert">Something went wrong joining {{ currentGroupName }}.</p>
-              <button hlmBtn variant="inverted-outline" size="xl" (click)="joinLoggedIn()">
-                <ng-icon hlm size="sm" name="lucideRefreshCw" aria-hidden="true" />
-                <span>Retry</span>
-              </button>
-            }
-
-            @case ('cancelled') {
-              <p appBody>Joining {{ currentGroupName }}</p>
-              <button hlmBtn variant="inverted-outline" size="xl" (click)="loginThenJoin()">
-                Passkey not completed — tap to try again
-              </button>
+              @case ('cancelled') {
+                <p appBody>{{ t('invite.accept.joining', { group: currentGroupName }) }}</p>
+                <button hlmBtn variant="inverted-outline" size="xl" (click)="loginThenJoin()">
+                  {{ t('invite.accept.cancelled') }}
+                </button>
+              }
             }
           }
         }
       }
-    }
-  </app-hero-screen>
-</app-mobile-shell>
+    </app-hero-screen>
+  </app-mobile-shell>
+</ng-container>

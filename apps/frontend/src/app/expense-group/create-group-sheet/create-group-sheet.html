@@ -1,52 +1,56 @@
-@let sheet = state();
-<div hlmSheetHeader>
-  @if (sheet.step === 'invite') {
-    <h3 hlmSheetTitle>Group created</h3>
-  } @else {
-    <h3 hlmSheetTitle>Create a group</h3>
-  }
-</div>
-@if (sheet.step === 'invite') {
-  <app-invite-link-panel class="p-4 pb-8" [groupId]="sheet.groupId" (done)="done()" />
-} @else {
-  <form class="flex flex-col gap-4 p-4 pb-8">
-    <div hlmField>
-      <label hlmFieldLabel for="group-name">Group name</label>
-      <input
-        #nameInput
-        hlmInput
-        id="group-name"
-        [value]="name()"
-        (input)="name.set(nameInput.value)"
-      />
-    </div>
-    <div hlmField>
-      <label hlmFieldLabel for="currency">Currency</label>
-      <hlm-native-select
-        selectId="currency"
-        [value]="currencyCode()"
-        (valueChange)="currencyCode.set($event ?? 'EUR')"
-      >
-        <option hlmNativeSelectOption value="EUR">EUR</option>
-        <option hlmNativeSelectOption value="USD">USD</option>
-        <option hlmNativeSelectOption value="GBP">GBP</option>
-        <option hlmNativeSelectOption value="CHF">CHF</option>
-      </hlm-native-select>
-    </div>
-    <button
-      hlmBtn
-      size="xl"
-      type="button"
-      [disabled]="name().trim().length === 0"
-      (click)="create()"
-    >
-      Create
-    </button>
-    @if (sheet.status === 'error') {
-      <div class="flex flex-col gap-2">
-        <p appError>Couldn't create the group. Your details are saved — try again.</p>
-        <button hlmBtn size="xl" type="button" variant="outline" (click)="create()">Retry</button>
-      </div>
+<ng-container *transloco="let t">
+  @let sheet = state();
+  <div hlmSheetHeader>
+    @if (sheet.step === 'invite') {
+      <h3 hlmSheetTitle>{{ t('group.create.created') }}</h3>
+    } @else {
+      <h3 hlmSheetTitle>{{ t('group.create.title') }}</h3>
     }
-  </form>
-}
+  </div>
+  @if (sheet.step === 'invite') {
+    <app-invite-link-panel class="p-4 pb-8" [groupId]="sheet.groupId" (done)="done()" />
+  } @else {
+    <form class="flex flex-col gap-4 p-4 pb-8">
+      <div hlmField>
+        <label hlmFieldLabel for="group-name">{{ t('group.create.name') }}</label>
+        <input
+          #nameInput
+          hlmInput
+          id="group-name"
+          [value]="name()"
+          (input)="name.set(nameInput.value)"
+        />
+      </div>
+      <div hlmField>
+        <label hlmFieldLabel for="currency">{{ t('group.create.currency') }}</label>
+        <hlm-native-select
+          selectId="currency"
+          [value]="currencyCode()"
+          (valueChange)="currencyCode.set($event ?? 'EUR')"
+        >
+          <option hlmNativeSelectOption value="EUR">EUR</option>
+          <option hlmNativeSelectOption value="USD">USD</option>
+          <option hlmNativeSelectOption value="GBP">GBP</option>
+          <option hlmNativeSelectOption value="CHF">CHF</option>
+        </hlm-native-select>
+      </div>
+      <button
+        hlmBtn
+        size="xl"
+        type="button"
+        [disabled]="name().trim().length === 0"
+        (click)="create()"
+      >
+        {{ t('group.create.action') }}
+      </button>
+      @if (sheet.status === 'error') {
+        <div class="flex flex-col gap-2">
+          <p appError>{{ t('group.create.failed') }}</p>
+          <button hlmBtn size="xl" type="button" variant="outline" (click)="create()">
+            {{ t('common.retry') }}
+          </button>
+        </div>
+      }
+    </form>
+  }
+</ng-container>

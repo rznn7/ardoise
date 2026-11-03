@@ -11,6 +11,8 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { type AdminGroup } from '@ardoise/shared';
+import { TranslocoDirective } from '@jsverse/transloco';
+import { marker } from '@jsverse/transloco-keys-manager/marker';
 import { provideIcons } from '@ng-icons/core';
 import { lucideChevronLeft } from '@ng-icons/lucide';
 import { BrnSheetImports } from '@spartan-ng/brain/sheet';
@@ -19,6 +21,7 @@ import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
 import { AdminApiService } from 'src/app/admin/admin-api.service';
 import { expiresIn, groupMeta, shortDate } from 'src/app/admin/admin-dates';
+import { LanguageService } from 'src/app/shared/i18n/language.service';
 import { injectGoBack } from 'src/app/shared/navigation/back';
 import { ToastService } from 'src/app/shared/toast.service';
 import { BalanceIndicator } from 'src/app/shared/ui/balance-indicator/balance-indicator';
@@ -40,6 +43,7 @@ const capitalised = (text: string): string => text.charAt(0).toUpperCase() + tex
 @Component({
   selector: 'app-admin-group',
   imports: [
+    TranslocoDirective,
     RouterLink,
     MobileShellImports,
     ListRowImports,
@@ -57,6 +61,7 @@ const capitalised = (text: string): string => text.charAt(0).toUpperCase() + tex
 export class AdminGroupPage {
   private readonly api = inject(AdminApiService);
   private readonly toast = inject(ToastService);
+  private readonly language = inject(LanguageService);
   protected readonly goBack = injectGoBack();
 
   readonly groupId = input.required({ transform: numberAttribute });
@@ -68,7 +73,7 @@ export class AdminGroupPage {
   protected readonly meta = computed(() => {
     const state = this.state();
     if (state.status !== 'loaded') return '';
-    return groupMeta(state.detail.group);
+    return groupMeta(state.detail.group, this.language.translator());
   });
 
   protected readonly links = computed((): AdminInviteLink[] => {
@@ -95,19 +100,29 @@ export class AdminGroupPage {
   }
 
   protected linkTitle(link: AdminInviteLink): string {
-    return link.singleUse ? 'Single use' : 'Multi use';
+    const { translate } = this.language.translator();
+    return link.singleUse
+      ? translate(marker('admin.group.singleUse'))
+      : translate(marker('admin.group.multiUse'));
   }
 
   protected linkMeta(link: AdminInviteLink): string {
+    const tr = this.language.translator();
+    const on = (iso: string): string => shortDate(iso, tr.locale);
     switch (link.status) {
       case 'active':
-        return capitalised(expiresIn(link.expiresAt, new Date()));
+        return capitalised(expiresIn(link.expiresAt, new Date(), tr));
       case 'used':
-        return `Used by ${link.burnedByName ?? 'someone'} · ${shortDate(link.burnedAt ?? link.createdAt)}`;
+        return tr.translate(marker('admin.group.usedBy'), {
+          name: link.burnedByName ?? tr.translate(marker('payment.meta.someone')),
+          date: on(link.burnedAt ?? link.createdAt),
+        });
       case 'expired':
-        return `Expired ${shortDate(link.expiresAt)}`;
+        return tr.translate(marker('admin.group.expired'), { date: on(link.expiresAt) });
       case 'revoked':
-        return `Revoked ${shortDate(link.revokedAt ?? link.createdAt)}`;
+        return tr.translate(marker('admin.group.revoked'), {
+          date: on(link.revokedAt ?? link.createdAt),
+        });
     }
   }
 
@@ -126,7 +141,7 @@ export class AdminGroupPage {
           next.delete(link.id);
           return next;
         });
-        this.toast.error("Couldn't revoke the link");
+        this.toast.error(this.language.translator().translate(marker('admin.group.revokeFailed')));
       },
     });
   }

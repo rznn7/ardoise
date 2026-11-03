@@ -2,6 +2,8 @@ import { Location, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { type GroupMember, type SplitType } from '@ardoise/shared';
+import { TranslocoDirective } from '@jsverse/transloco';
+import { marker } from '@jsverse/transloco-keys-manager/marker';
 import { provideIcons } from '@ng-icons/core';
 import { lucideChevronLeft } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
@@ -12,6 +14,8 @@ import { HlmToggleGroupImports } from '@spartan-ng/helm/toggle-group';
 import { FeedStore } from 'src/app/feed/feed-store';
 import { formatPercentInput } from 'src/app/payment/money-input';
 import { PaymentDraft } from 'src/app/payment/payment-draft';
+import { LanguageService } from 'src/app/shared/i18n/language.service';
+import { type TranslationKey } from 'src/app/shared/i18n/translation-key';
 import { injectGoBack } from 'src/app/shared/navigation/back';
 import { GroupChip } from 'src/app/shared/ui/group-chip/group-chip';
 import { MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
@@ -24,11 +28,11 @@ interface SplitRow {
   readonly name: string;
 }
 
-const SPLIT_MODES: readonly { readonly type: SplitType; readonly label: string }[] = [
-  { type: 'equal', label: 'Equally' },
-  { type: 'shares', label: 'Shares' },
-  { type: 'percent', label: '%' },
-  { type: 'exact', label: 'Exact' },
+const SPLIT_MODES: readonly { readonly type: SplitType; readonly labelKey: TranslationKey }[] = [
+  { type: 'equal', labelKey: marker('payment.form.split.equal') },
+  { type: 'shares', labelKey: marker('payment.form.split.shares') },
+  { type: 'percent', labelKey: marker('payment.form.split.percent') },
+  { type: 'exact', labelKey: marker('payment.form.split.exact') },
 ];
 
 const withTextOf = (
@@ -40,6 +44,7 @@ const withTextOf = (
 @Component({
   selector: 'app-options-step',
   imports: [
+    TranslocoDirective,
     NgTemplateOutlet,
     MobileShellImports,
     GroupChip,
@@ -59,6 +64,7 @@ export class OptionsStep {
   protected readonly draft = inject(PaymentDraft);
   private readonly store = inject(FeedStore);
   private readonly router = inject(Router);
+  private readonly language = inject(LanguageService);
   private readonly location = inject(Location);
   private readonly goBack = injectGoBack();
 
@@ -69,7 +75,8 @@ export class OptionsStep {
 
   protected readonly rows = computed((): readonly SplitRow[] => {
     const me = this.draft.myMemberId();
-    const nameOf = (member: GroupMember): string => (member.id === me ? 'You' : member.name);
+    const nameOf = (member: GroupMember): string =>
+      member.id === me ? this.language.translator().translate(marker('common.you')) : member.name;
     const members = this.draft.members();
     return [...members.filter((m) => m.id === me), ...members.filter((m) => m.id !== me)].map(
       (m) => ({ id: m.id, name: nameOf(m) }),
@@ -82,11 +89,17 @@ export class OptionsStep {
     const total = this.draft.runningTotal();
     if (total === null) return null;
     const percentText =
-      this.draft.splitType() === 'percent'
-        ? `${formatPercentInput(total.entered)} of ${formatPercentInput(total.target)} %`
-        : null;
+      this.draft.splitType() === 'percent' ? this.percentTotal(total.entered, total.target) : null;
     return { ...total, percentText, over: total.entered > total.target };
   });
+
+  private percentTotal(entered: number, target: number): string {
+    const { locale, translate } = this.language.translator();
+    return translate(marker('payment.form.percentTotal'), {
+      entered: formatPercentInput(entered, locale),
+      target: formatPercentInput(target, locale),
+    });
+  }
 
   protected back(): void {
     const groupId = String(this.draft.groupId());

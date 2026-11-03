@@ -16,6 +16,8 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { type ExpenseGroupSummary, type GroupMember, type MeResponse } from '@ardoise/shared';
+import { TranslocoDirective } from '@jsverse/transloco';
+import { marker } from '@jsverse/transloco-keys-manager/marker';
 import { provideIcons } from '@ng-icons/core';
 import { lucideChevronLeft, lucideEllipsis, lucidePlus, lucideUserPlus } from '@ng-icons/lucide';
 import { BrnSheetImports } from '@spartan-ng/brain/sheet';
@@ -39,6 +41,7 @@ import { MemberApiService } from 'src/app/member/member-api.service';
 import { dayLabel } from 'src/app/payment/day-label';
 import { DoneStore } from 'src/app/settlement/done-store';
 import { settlementLabel } from 'src/app/settlement/settlement-label';
+import { LanguageService } from 'src/app/shared/i18n/language.service';
 import { injectGoBack } from 'src/app/shared/navigation/back';
 import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
 import { ToastService } from 'src/app/shared/toast.service';
@@ -81,6 +84,7 @@ const isNotAccessible = (error: unknown): boolean =>
 @Component({
   selector: 'app-group-page',
   imports: [
+    TranslocoDirective,
     RouterLink,
     MobileShellImports,
     RefreshIndicator,
@@ -118,6 +122,7 @@ export class GroupPage {
   private readonly shell = viewChild(MobileShell);
   private readonly toast = inject(ToastService);
   private readonly realtime = inject(RealtimeService);
+  private readonly language = inject(LanguageService);
   private latestMembersFetch = 0;
 
   readonly goBack = injectGoBack();
@@ -181,9 +186,10 @@ export class GroupPage {
 
   readonly myBalanceLabel = computed(() => {
     const amount = this.myBalance() ?? 0;
-    if (amount < 0) return 'You owe';
-    if (amount > 0) return 'Owed to you';
-    return 'Settled up';
+    const { translate } = this.language.translator();
+    if (amount < 0) return translate(marker('group.balance.youOwe'));
+    if (amount > 0) return translate(marker('group.balance.owedToYou'));
+    return translate(marker('group.balance.settledUp'));
   });
 
   readonly memberNames = computed(() => {
@@ -191,8 +197,9 @@ export class GroupPage {
     if (state.status !== 'loaded') return '';
     const others = state.members.filter((member) => member.userId !== state.me.id);
     if (others.length === state.members.length) return others.map((m) => m.name).join(', ');
-    if (others.length === 0) return 'Just you so far';
-    return ['You', ...others.map((member) => member.name)].join(', ');
+    const { translate } = this.language.translator();
+    if (others.length === 0) return translate(marker('group.justYou'));
+    return [translate(marker('common.you')), ...others.map((member) => member.name)].join(', ');
   });
 
   readonly isModerator = computed(() => {
@@ -209,7 +216,9 @@ export class GroupPage {
     return new Map(
       state.members.map((member) => [
         member.id,
-        member.userId === state.me.id ? 'you' : member.name,
+        member.userId === state.me.id
+          ? this.language.translator().translate(marker('payment.meta.you'))
+          : member.name,
       ]),
     );
   });
@@ -218,10 +227,11 @@ export class GroupPage {
     const feed = this.feed();
     if (feed.status !== 'loaded') return [];
     const today = new Date();
+    const tr = this.language.translator();
     const days: FeedDay[] = [];
     for (const row of feed.rows) {
       const date = row.kind === 'payment' ? row.payment.paidAt : row.settlement.settledAt;
-      const label = dayLabel(new Date(date), today);
+      const label = dayLabel(new Date(date), today, tr);
       const current = days.at(-1);
       if (current?.label === label) current.rows.push(row);
       else days.push({ label, rows: [row] });
@@ -246,7 +256,7 @@ export class GroupPage {
   readonly repaymentLabel = (row: FeedRow & { kind: 'settlement' }): string => {
     const state = this.groupState();
     if (state.status !== 'loaded') return '';
-    return settlementLabel(row.settlement, state.members, state.me.id);
+    return settlementLabel(row.settlement, state.members, state.me.id, this.language.translator());
   };
 
   constructor() {
@@ -266,7 +276,8 @@ export class GroupPage {
       const failed = this.refreshStates().includes('error');
       untracked(() => {
         this.refreshRequested.set(false);
-        if (failed) this.toast.error("Couldn't refresh the group");
+        if (failed)
+          this.toast.error(this.language.translator().translate(marker('group.refreshFailed')));
       });
     });
 

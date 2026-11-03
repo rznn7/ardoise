@@ -1,22 +1,24 @@
-@let currentState = state();
+<ng-container *transloco="let t">
+  @let currentState = state();
 
-@switch (currentState.state) {
-  @case ('idle') {
-    <button hlmBtn class="w-full" variant="inverted" size="xl" (click)="login()">
-      <ng-icon name="lucideKeyRound" />
-      <span>Login with passkey</span>
-    </button>
+  @switch (currentState.state) {
+    @case ('idle') {
+      <button hlmBtn class="w-full" variant="inverted" size="xl" (click)="login()">
+        <ng-icon name="lucideKeyRound" />
+        <span>{{ t('auth.login.action') }}</span>
+      </button>
+    }
+    @case ('loading') {
+      <button hlmBtn class="w-full" variant="inverted" size="xl" [disabled]="true">
+        <hlm-spinner [aria-label]="t('ui.loading')" />
+        <span>{{ t('auth.login.busy') }}</span>
+      </button>
+    }
+    @case ('error') {
+      <button hlmBtn class="w-full" variant="inverted" size="xl" (click)="login()">
+        <ng-icon name="lucideRefreshCw" data-icon="inline-end" />
+        <span>{{ t('auth.login.retry') }}</span>
+      </button>
+    }
   }
-  @case ('loading') {
-    <button hlmBtn class="w-full" variant="inverted" size="xl" [disabled]="true">
-      <hlm-spinner />
-      <span>Login in...</span>
-    </button>
-  }
-  @case ('error') {
-    <button hlmBtn class="w-full" variant="inverted" size="xl" (click)="login()">
-      <ng-icon name="lucideRefreshCw" data-icon="inline-end" />
-      <span>{{ currentState.message }} Retry?</span>
-    </button>
-  }
-}
+</ng-container>

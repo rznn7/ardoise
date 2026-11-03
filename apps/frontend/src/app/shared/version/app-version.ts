@@ -1,24 +1,26 @@
-import { Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
+import { marker } from '@jsverse/transloco-keys-manager/marker';
+import { dateFormat } from 'src/app/shared/i18n/intl-cache';
+import { LanguageService } from 'src/app/shared/i18n/language.service';
+import { type Translator } from 'src/app/shared/i18n/translation-key';
 
 import { VERSION_URL } from './version-watcher';
 
-const DEV_LABEL = 'Version dev';
 const SHORT_SHA_LENGTH = 7;
+const COMMIT_DAY: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' };
 
-const commitDay = new Intl.DateTimeFormat('en-GB', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-});
-
-export function versionLabel(body: unknown): string {
-  if (typeof body !== 'object' || body === null) return DEV_LABEL;
+export function versionLabel(body: unknown, tr: Translator): string {
+  const dev = tr.translate(marker('settings.version.dev'));
+  if (typeof body !== 'object' || body === null) return dev;
   const sha = 'sha' in body ? body.sha : undefined;
   const date = 'date' in body ? body.date : undefined;
-  if (typeof sha !== 'string' || sha === 'dev' || typeof date !== 'string') return DEV_LABEL;
+  if (typeof sha !== 'string' || sha === 'dev' || typeof date !== 'string') return dev;
   const day = new Date(date);
-  if (Number.isNaN(day.getTime())) return DEV_LABEL;
-  return `Version ${sha.slice(0, SHORT_SHA_LENGTH)} · ${commitDay.format(day)}`;
+  if (Number.isNaN(day.getTime())) return dev;
+  return tr.translate(marker('settings.version.build'), {
+    sha: sha.slice(0, SHORT_SHA_LENGTH),
+    day: dateFormat(tr.locale, COMMIT_DAY).format(day),
+  });
 }
 
 async function fetchVersion(): Promise<unknown> {
@@ -32,13 +34,14 @@ async function fetchVersion(): Promise<unknown> {
 
 @Injectable({ providedIn: 'root' })
 export class AppVersion {
-  private readonly labelState = signal(DEV_LABEL);
+  private readonly language = inject(LanguageService);
+  private readonly body = signal<unknown>(null);
 
-  readonly label = this.labelState.asReadonly();
+  readonly label = computed(() => versionLabel(this.body(), this.language.translator()));
 
   constructor() {
     void fetchVersion().then((body) => {
-      this.labelState.set(versionLabel(body));
+      this.body.set(body);
     });
   }
 }

@@ -1,4 +1,5 @@
 import { type GroupMember } from '@ardoise/shared';
+import { translatorFor } from 'src/test-providers';
 import { describe, expect, it } from 'vitest';
 
 import { involvesMe, settlementLabel } from './settlement-label';
@@ -10,20 +11,45 @@ const members = [member(1, 10, 'Léa'), member(2, 20, 'Tom'), member(3, 30, 'Max
 
 describe('settlementLabel', () => {
   it('speaks to me when I paid', () => {
-    expect(settlementLabel({ fromMemberId: 3, toMemberId: 1 }, members, 30)).toBe(
-      'You paid Léa back',
-    );
+    expect(
+      settlementLabel({ fromMemberId: 3, toMemberId: 1 }, members, 30, translatorFor('en')),
+    ).toBe('You paid Léa back');
   });
 
   it('speaks to me when I was paid', () => {
-    expect(settlementLabel({ fromMemberId: 2, toMemberId: 3 }, members, 30)).toBe(
-      'Tom paid you back',
+    expect(
+      settlementLabel({ fromMemberId: 2, toMemberId: 3 }, members, 30, translatorFor('en')),
+    ).toBe('Tom paid you back');
+  });
+
+  it('names both sides between others', () => {
+    expect(
+      settlementLabel({ fromMemberId: 2, toMemberId: 1 }, members, 30, translatorFor('en')),
+    ).toBe('Tom paid Léa back');
+  });
+});
+
+describe('settlementLabel in French', () => {
+  const fr = () => translatorFor('fr');
+
+  it('speaks to me with vous', () => {
+    expect(settlementLabel({ fromMemberId: 3, toMemberId: 1 }, members, 30, fr())).toBe(
+      'Vous avez remboursé Léa',
+    );
+    expect(settlementLabel({ fromMemberId: 2, toMemberId: 3 }, members, 30, fr())).toBe(
+      'Tom vous a remboursé',
     );
   });
 
   it('names both sides between others', () => {
-    expect(settlementLabel({ fromMemberId: 2, toMemberId: 1 }, members, 30)).toBe(
-      'Tom paid Léa back',
+    expect(settlementLabel({ fromMemberId: 2, toMemberId: 1 }, members, 30, fr())).toBe(
+      'Tom a remboursé Léa',
+    );
+  });
+
+  it('names a departed member as someone', () => {
+    expect(settlementLabel({ fromMemberId: 9, toMemberId: 1 }, members, 30, fr())).toBe(
+      'Quelqu’un a remboursé Léa',
     );
   });
 });

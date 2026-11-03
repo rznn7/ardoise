@@ -3,10 +3,11 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { type MeResponse } from '@ardoise/shared';
-import { screen, waitFor } from '@testing-library/angular';
+import { screen, waitFor, within } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { NEVER, type Observable, of, throwError } from 'rxjs';
 import { AuthService } from 'src/app/auth/auth.service';
+import { LANGUAGE_STORAGE_KEY } from 'src/app/shared/i18n/language.service';
 import { type ThemePreference, ThemeService } from 'src/app/shared/theme/theme.service';
 import { AppVersion } from 'src/app/shared/version/app-version';
 
@@ -50,11 +51,37 @@ describe('Settings', () => {
   it('shows the theme choice and applies it at once', async () => {
     const { setPreference } = await setup();
 
-    expect(screen.getByRole('button', { name: 'System', pressed: true })).toBeTruthy();
-    await userEvent.click(screen.getByRole('button', { name: 'Dark' }));
+    const theme = within(screen.getByRole('group', { name: 'Theme' }));
+    expect(theme.getByRole('button', { name: 'System', pressed: true })).toBeTruthy();
+    await userEvent.click(theme.getByRole('button', { name: 'Dark' }));
 
     expect(setPreference).toHaveBeenCalledWith('dark');
-    expect(screen.getByRole('button', { name: 'Dark', pressed: true })).toBeTruthy();
+    expect(theme.getByRole('button', { name: 'Dark', pressed: true })).toBeTruthy();
+  });
+
+  it('offers the languages in their own names and switches at once', async () => {
+    await setup();
+
+    const language = within(screen.getByRole('group', { name: 'Language' }));
+    expect(language.getByRole('button', { name: 'System', pressed: true })).toBeTruthy();
+    expect(language.getByRole('button', { name: 'English' })).toBeTruthy();
+    await userEvent.click(language.getByRole('button', { name: 'Français' }));
+
+    expect(await screen.findByRole('heading', { name: 'Réglages' })).toBeTruthy();
+    const langue = within(screen.getByRole('group', { name: 'Langue' }));
+    expect(langue.getByRole('button', { name: 'Français', pressed: true })).toBeTruthy();
+    expect(langue.getByRole('button', { name: 'Système' })).toBeTruthy();
+    expect(localStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe('fr');
+  });
+
+  it('names the sheet close button in French', async () => {
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, 'fr');
+    await setup();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Se déconnecter' }));
+    const dialog = await screen.findByRole('dialog');
+
+    expect(within(dialog).getByRole('button', { name: 'Fermer' })).toBeTruthy();
   });
 
   it('asks before signing out', async () => {

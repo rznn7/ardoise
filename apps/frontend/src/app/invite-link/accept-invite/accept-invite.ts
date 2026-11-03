@@ -13,6 +13,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { USER_NAME_MAX_LENGTH } from '@ardoise/shared';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { provideIcons } from '@ng-icons/core';
 import {
   lucideCircleCheck,
@@ -53,6 +54,7 @@ const SUCCESS_DISPLAY_MS = 800;
   selector: 'app-accept-invite',
   templateUrl: './accept-invite.html',
   imports: [
+    TranslocoDirective,
     MobileShellImports,
     HeroScreen,
     AppTextImports,

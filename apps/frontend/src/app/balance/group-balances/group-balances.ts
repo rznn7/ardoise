@@ -1,9 +1,10 @@
-import { Component, computed, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
 import {
   type CreateSettlementBody,
   type GroupMember,
   type SettlementResponse,
 } from '@ardoise/shared';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { provideIcons } from '@ng-icons/core';
 import { lucideChevronRight, lucideCircleCheck } from '@ng-icons/lucide';
 import { BrnSheetImports } from '@spartan-ng/brain/sheet';
@@ -19,6 +20,7 @@ import {
 } from 'src/app/balance/balance-rows';
 import { type BalancesState } from 'src/app/balance/balance-store';
 import { dayLabel } from 'src/app/payment/day-label';
+import { LanguageService } from 'src/app/shared/i18n/language.service';
 import { type More } from 'src/app/shared/paged-list';
 import { BalanceBar } from 'src/app/shared/ui/balance-bar/balance-bar';
 import { BalanceIndicator } from 'src/app/shared/ui/balance-indicator/balance-indicator';
@@ -35,12 +37,17 @@ export interface RepaymentToRecord {
 }
 
 type Selection =
+  | { readonly kind: 'confirm'; readonly fromMemberId: number; readonly toMemberId: number }
+  | { readonly kind: 'undo'; readonly id: number };
+
+type SelectedRow =
   | { readonly kind: 'confirm'; readonly row: RepaymentRow }
   | { readonly kind: 'undo'; readonly row: DoneRow };
 
 @Component({
   selector: 'app-group-balances',
   imports: [
+    TranslocoDirective,
     LoadMore,
     BalanceBar,
     BalanceIndicator,
@@ -58,6 +65,7 @@ type Selection =
   templateUrl: './group-balances.html',
 })
 export class GroupBalances {
+  private readonly language = inject(LanguageService);
   readonly state = input.required<BalancesState>();
   readonly members = input.required<readonly GroupMember[]>();
   readonly meUserId = input.required<number>();
@@ -76,10 +84,24 @@ export class GroupBalances {
 
   protected readonly selection = signal<Selection | null>(null);
 
+  protected readonly selected = linkedSignal<
+    { selection: Selection | null; row: SelectedRow | null },
+    SelectedRow | null
+  >({
+    source: () => ({ selection: this.selection(), row: this.resolve(this.selection()) }),
+    computation: ({ selection, row }, previous) =>
+      row ?? (previous?.source.selection === selection ? previous.value : null),
+  });
+
   protected readonly memberLines = computed(() => {
     const state = this.state();
     if (state.status !== 'loaded') return [];
-    return memberRows(state.balances.balances, this.members(), this.meUserId());
+    return memberRows(
+      state.balances.balances,
+      this.members(),
+      this.meUserId(),
+      this.language.translator(),
+    );
   });
 
   protected readonly repayments = computed(() => {
@@ -90,15 +112,16 @@ export class GroupBalances {
       this.members(),
       this.meUserId(),
       this.pendingSettlements(),
+      this.language.translator(),
     );
   });
 
   protected readonly done = computed(() =>
-    doneRows(this.settlements(), this.members(), this.meUserId()),
+    doneRows(this.settlements(), this.members(), this.meUserId(), this.language.translator()),
   );
 
   protected dayOf(row: DoneRow): string {
-    return dayLabel(new Date(row.settledAt), new Date());
+    return dayLabel(new Date(row.settledAt), new Date(), this.language.translator());
   }
 
   protected confirm(row: RepaymentRow): void {
@@ -107,5 +130,19 @@ export class GroupBalances {
       toMemberId: row.toMemberId,
       amount: row.amount,
     });
+  }
+
+  private resolve(selection: Selection | null): SelectedRow | null {
+    if (selection?.kind === 'confirm') {
+      const row = this.repayments().find(
+        (r) => r.fromMemberId === selection.fromMemberId && r.toMemberId === selection.toMemberId,
+      );
+      return row ? { kind: 'confirm', row } : null;
+    }
+    if (selection?.kind === 'undo') {
+      const row = this.done().find((r) => r.id === selection.id);
+      return row ? { kind: 'undo', row } : null;
+    }
+    return null;
   }
 }

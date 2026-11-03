@@ -1,6 +1,8 @@
 import { Component, effect, inject, input, signal, untracked } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { type AdminOverview } from '@ardoise/shared';
+import { TranslocoDirective } from '@jsverse/transloco';
+import { marker } from '@jsverse/transloco-keys-manager/marker';
 import { provideIcons } from '@ng-icons/core';
 import { lucideChevronLeft, lucideChevronRight } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
@@ -8,6 +10,7 @@ import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmToggleGroupImports } from '@spartan-ng/helm/toggle-group';
 import { AdminApiService } from 'src/app/admin/admin-api.service';
 import { groupsLabel, signedInLabel } from 'src/app/admin/admin-dates';
+import { LanguageService } from 'src/app/shared/i18n/language.service';
 import { injectGoBack } from 'src/app/shared/navigation/back';
 import { ListRowImports } from 'src/app/shared/ui/list-row/list-row';
 import { MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
@@ -26,6 +29,7 @@ const toTab = (value: string | undefined): AdminTab => (value === 'groups' ? 'gr
 @Component({
   selector: 'app-admin-overview',
   imports: [
+    TranslocoDirective,
     RouterLink,
     MobileShellImports,
     ListRowImports,
@@ -42,6 +46,7 @@ export class AdminOverviewPage {
   private readonly api = inject(AdminApiService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly language = inject(LanguageService);
   protected readonly goBack = injectGoBack();
 
   readonly tab = input<AdminTab, string | undefined>('users', { transform: toTab });
@@ -58,13 +63,14 @@ export class AdminOverviewPage {
   }
 
   protected userMeta(user: AdminOverview['users'][number]): string {
-    return `${groupsLabel(user.groupCount)} · ${signedInLabel(user.lastSignInAt, user.createdAt, new Date())}`;
+    const tr = this.language.translator();
+    return `${groupsLabel(user.groupCount, tr)} · ${signedInLabel(user.lastSignInAt, user.createdAt, new Date(), tr)}`;
   }
 
   protected groupMeta(group: AdminOverview['groups'][number]): string {
-    const members = group.memberCount === 1 ? '1 member' : `${String(group.memberCount)} members`;
-    const payments =
-      group.paymentCount === 1 ? '1 payment' : `${String(group.paymentCount)} payments`;
+    const { translate } = this.language.translator();
+    const members = translate(marker('admin.members'), { count: group.memberCount });
+    const payments = translate(marker('admin.dates.payments'), { count: group.paymentCount });
     return `${members} · ${payments} · ${group.currencyCode}`;
   }
 

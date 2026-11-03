@@ -71,6 +71,25 @@ Applies to feature templates: everything in `src/app/**` outside `src/app/shared
 - No arbitrary values (`[...]`), no component `.css` files, no inline styles.
 - Tokens live in `src/styles.css` (light and `.dark`).
 
+## Copy
+
+The app speaks English and French (`src/i18n/en.json`, `fr.json`). English is the reference. French
+uses vous, in a sober tone. Plurals and variables go through ICU (`{count, plural, one {# groupe} other
+{# groupes}}`), never assembled from fragments. The same words everywhere:
+
+| English | Français |
+|---|---|
+| group | groupe |
+| member | membre |
+| payment | paiement |
+| repayment | remboursement |
+| balance | solde |
+| share (split part) | part |
+| invite link | lien d'invitation |
+| passkey | clé d'accès |
+| settled up | à jour |
+| Settings | Réglages |
+
 ## Backdrops
 
 Generated light rays with heavy grain, VoidZero-inspired.
@@ -137,3 +156,8 @@ With the frontend running (`pnpm dev:front`), `pnpm --filter @ardoise/e2e screen
 | 2026-10-27 | Admin user meta | "Joined 19 Sep" only, no sign-in or passkey count | The full line read as too much |
 | 2026-10-27 | Long lists | Next page loads on its own at the bottom (`load-more`: spinner, then "Couldn't load more" + Retry on failure), no button, nothing at the end | The owner picked automatic loading |
 | 2026-10-27 | Pull to refresh | `pull-to-refresh` on the shell's scroll area, spinner that follows the pull, group page only | No native gesture in an installed PWA; a way to see others' changes before real-time |
+| 2026-11-03 | Language picker | Settings, under Theme: System / English / Français, native names, only "System" translated; per device | The owner's friends read French, the open-source project reads English |
+| 2026-11-03 | Decimal separator | Amount and percent fields show a point in English and a comma in French, accept both | Matches what each language reads; typing either never fails |
+| 2026-11-03 | French tone | Vous, sober; typographic apostrophe (’) | "Le vouvoiement fera plus sobre"; ICU treats ' as an escape |
+| 2026-11-03 | Formats | Dates and amounts use the device's variant of the active language (en-US → "Nov 3", "$12.00"; en-GB → "3 Nov", "US$12.00"), falling back to en-GB / fr-FR; no format override | Language and region are separate, as on the OS; the owner picked device-derived formats without a setting |
+

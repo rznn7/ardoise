@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { type ExpenseGroupSummary } from '@ardoise/shared';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { provideIcons } from '@ng-icons/core';
 import { lucidePlus, lucideSettings, lucideShield } from '@ng-icons/lucide';
 import { BrnSheetImports } from '@spartan-ng/brain/sheet';
@@ -29,6 +30,7 @@ type HomeState =
 @Component({
   selector: 'app-home',
   imports: [
+    TranslocoDirective,
     MobileShellImports,
     HlmIconImports,
     PageStateImports,

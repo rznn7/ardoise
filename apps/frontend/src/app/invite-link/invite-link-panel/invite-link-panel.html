@@ -1,31 +1,37 @@
-@let panel = state();
-@if (panel.status === 'error') {
-  <p appError>We couldn't generate an invite link. Try again.</p>
-  <button hlmBtn size="xl" type="button" variant="outline" (click)="createLink()">
-    Retry link
-  </button>
-} @else {
-  @let url = panel.status === 'ready' ? panel.url : '';
-  <div hlmField>
-    <label hlmFieldLabel for="invite-link">Invite link</label>
-    <input hlmInput id="invite-link" readonly [value]="url" />
-  </div>
-  <button hlmBtn size="xl" type="button" [disabled]="!url" (click)="copyLink(url)">
-    <ng-icon hlm size="sm" [name]="copied() ? 'lucideCheck' : 'lucideCopy'" />
-    <span [attr.role]="copied() ? 'status' : null">{{ copied() ? 'Copied' : 'Copy' }}</span>
-  </button>
-  <button
-    hlmBtn
-    size="xl"
-    type="button"
-    variant="outline"
-    [disabled]="!url"
-    (click)="shareLink(url)"
-  >
-    Share
-  </button>
-  @if (sharedViaCopy()) {
-    <p appMeta role="status" aria-live="polite">Link copied — paste it to share</p>
+<ng-container *transloco="let t">
+  @let panel = state();
+  @if (panel.status === 'error') {
+    <p appError>{{ t('invite.panel.failed') }}</p>
+    <button hlmBtn size="xl" type="button" variant="outline" (click)="createLink()">
+      {{ t('invite.panel.retry') }}
+    </button>
+  } @else {
+    @let url = panel.status === 'ready' ? panel.url : '';
+    <div hlmField>
+      <label hlmFieldLabel for="invite-link">{{ t('invite.panel.label') }}</label>
+      <input hlmInput id="invite-link" readonly [value]="url" />
+    </div>
+    <button hlmBtn size="xl" type="button" [disabled]="!url" (click)="copyLink(url)">
+      <ng-icon hlm size="sm" [name]="copied() ? 'lucideCheck' : 'lucideCopy'" />
+      <span [attr.role]="copied() ? 'status' : null">{{
+        copied() ? t('invite.panel.copied') : t('invite.panel.copy')
+      }}</span>
+    </button>
+    <button
+      hlmBtn
+      size="xl"
+      type="button"
+      variant="outline"
+      [disabled]="!url"
+      (click)="shareLink(url)"
+    >
+      {{ t('invite.panel.share') }}
+    </button>
+    @if (sharedViaCopy()) {
+      <p appMeta role="status" aria-live="polite">{{ t('invite.panel.sharedViaCopy') }}</p>
+    }
+    <button hlmBtn size="xl" type="button" variant="ghost" (click)="done.emit()">
+      {{ t('invite.panel.done') }}
+    </button>
   }
-  <button hlmBtn size="xl" type="button" variant="ghost" (click)="done.emit()">Done</button>
-}
+</ng-container>

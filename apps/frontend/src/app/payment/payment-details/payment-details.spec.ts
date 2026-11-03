@@ -28,6 +28,7 @@ import { withHistoryPageIds } from 'src/app/shared/navigation/back';
 import { openFirstPage } from 'src/app/shared/navigation/first-page.testing';
 import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
 import { ToastService } from 'src/app/shared/toast.service';
+import { translatorFor } from 'src/test-providers';
 
 import { PaymentDetails } from './payment-details';
 
@@ -158,7 +159,9 @@ describe('PaymentDetails', () => {
 
     expect(screen.getByText('€24.50').closest('[appFigure]')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Groceries' })).toBeTruthy();
-    expect(screen.getByText(paymentMeta(PAYMENT, MEMBERS, ME.id))).toBeTruthy();
+    expect(
+      screen.getByText(paymentMeta(PAYMENT, MEMBERS, ME.id, translatorFor('en'))),
+    ).toBeTruthy();
   });
 
   it('lists every member under Shares, with — for members outside the payment', async () => {
@@ -200,6 +203,7 @@ describe('PaymentDetails', () => {
           },
           MEMBERS,
           ME.id,
+          translatorFor('en'),
         ),
       ),
     ).toBeTruthy();

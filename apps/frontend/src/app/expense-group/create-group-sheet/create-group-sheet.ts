@@ -1,5 +1,6 @@
 import { Component, inject, output, signal } from '@angular/core';
 import { type ExpenseGroupSummary } from '@ardoise/shared';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmFieldImports } from '@spartan-ng/helm/field';
 import { HlmInputImports } from '@spartan-ng/helm/input';
@@ -15,6 +16,7 @@ type SheetState =
 @Component({
   selector: 'app-create-group-sheet',
   imports: [
+    TranslocoDirective,
     HlmButtonImports,
     HlmSheetImports,
     HlmFieldImports,

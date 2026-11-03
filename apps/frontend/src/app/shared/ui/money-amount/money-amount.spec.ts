@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/angular';
+import { LANGUAGE_STORAGE_KEY } from 'src/app/shared/i18n/language.service';
 
 import { MoneyAmount } from './money-amount';
 
@@ -42,6 +43,12 @@ describe('MoneyAmount', () => {
   it('formats GBP with its symbol', async () => {
     await renderAmount(4250, 'GBP');
     expect(screen.getByText('£42.50')).toBeTruthy();
+  });
+
+  it('follows the French way of writing amounts', async () => {
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, 'fr');
+    const host = await renderAmount(123456, 'EUR', true);
+    expect(host.textContent).toMatch(/^\+1\s234,56\s€$/u);
   });
 
   it('uses tabular figures', async () => {

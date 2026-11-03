@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { USER_NAME_MAX_LENGTH } from '@ardoise/shared';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { provideIcons } from '@ng-icons/core';
 import { lucideChevronLeft, lucideChevronRight } from '@ng-icons/lucide';
 import { BrnSheetImports } from '@spartan-ng/brain/sheet';
@@ -12,6 +13,8 @@ import { HlmSheetImports } from '@spartan-ng/helm/sheet';
 import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
 import { HlmToggleGroupImports } from '@spartan-ng/helm/toggle-group';
 import { AuthService } from 'src/app/auth/auth.service';
+import { LanguageService } from 'src/app/shared/i18n/language.service';
+import { type LanguagePreference, LANGUAGES } from 'src/app/shared/i18n/languages';
 import { injectGoBack } from 'src/app/shared/navigation/back';
 import { type ThemePreference, ThemeService } from 'src/app/shared/theme/theme.service';
 import { ListRowImports } from 'src/app/shared/ui/list-row/list-row';
@@ -26,6 +29,7 @@ type RequestState = 'idle' | 'busy' | 'failed';
   selector: 'app-settings',
   templateUrl: './settings.html',
   imports: [
+    TranslocoDirective,
     MobileShellImports,
     AppTextImports,
     ListRowImports,
@@ -45,6 +49,8 @@ export class Settings {
   private readonly goBack = injectGoBack();
   protected readonly theme = inject(ThemeService);
   protected readonly version = inject(AppVersion);
+  protected readonly language = inject(LanguageService);
+  protected readonly languages = LANGUAGES;
 
   protected readonly nameMaxLength = USER_NAME_MAX_LENGTH;
   protected readonly name = signal<string | null>(null);
@@ -95,6 +101,13 @@ export class Settings {
   ): void {
     const preference = typeof value === 'string' ? value : value?.[0];
     if (preference) this.theme.setPreference(preference);
+  }
+
+  protected selectLanguage(
+    value: LanguagePreference | readonly LanguagePreference[] | null | undefined,
+  ): void {
+    const preference = typeof value === 'string' ? value : value?.[0];
+    if (preference) void this.language.setPreference(preference);
   }
 
   protected resetSignOut(): void {

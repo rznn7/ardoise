@@ -86,10 +86,16 @@ A settlement overlays the balance calculation; it never mutates payments.
   with confirmation, running version; optional name when joining as a newcomer
   (`superpowers/specs/2026-11-03-personal-settings-design.md`).
 
-## Translation (en / fr)
-- [ ] **app in English and French** — every screen's copy in both languages, a language choice in
+## Translation (done)
+- [x] **app in English and French** — every screen's copy in both languages, a language choice in
   personal settings (following the device by default), dates and amounts formatted for the chosen
-  language.
+  language (`superpowers/specs/2026-11-03-translation-design.md`).
+
+## Amount entry
+- [ ] **cash-register entry and inline math** — digits fill from the right (`1`, `2`, `3` → `1,23`), as
+  an A/B fork against today's free entry; arithmetic in the amount field (`12,50+8` → `20,50`). The
+  owner sees such fields in Tricount on iOS: check whether a web page can get that keyboard, or
+  whether it needs an in-app keypad.
 
 ## Admin
 - [x] **admin overview** — read-only overview of users and groups, user and group details,
@@ -112,6 +118,8 @@ A settlement overlays the balance calculation; it never mutates payments.
 - [ ] **pull to refresh on touch** — on a phone the whole screen moves with the finger instead of the
   pull indicator alone; the refresh gesture does not work as intended. Missed in the feed pagination
   review.
+- [ ] **horizontal scroll on payment edit** — on a touch screen, the payment edit screen can scroll
+  sideways. Reported by the owner during the translation slice.
 - [x] **PWA** — manifest, app icon, standalone mode under a translucent status bar, reload onto a new
   deploy. iOS keyboard handling landed with payments.
 - [ ] **multi-device passkey** — lift the v1 single-passkey non-goal.

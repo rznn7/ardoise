@@ -1,3 +1,4 @@
+import { TestBed } from '@angular/core/testing';
 import {
   type CreateSettlementBody,
   type GroupBalancesResponse,
@@ -7,6 +8,7 @@ import {
 import { render, screen, within } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { type BalancesState } from 'src/app/balance/balance-store';
+import { LanguageService } from 'src/app/shared/i18n/language.service';
 
 import { GroupBalances } from './group-balances';
 
@@ -77,7 +79,7 @@ async function renderBalances(
   const record =
     vi.fn<(body: { fromMemberId: number; toMemberId: number; amount: number }) => void>();
   const undo = vi.fn<(id: number) => void>();
-  await render(GroupBalances, {
+  const { fixture } = await render(GroupBalances, {
     inputs: {
       state,
       members: MEMBERS,
@@ -90,7 +92,7 @@ async function renderBalances(
     },
     on: { retry, record, undo },
   });
-  return { retry, record, undo };
+  return { retry, record, undo, fixture };
 }
 
 describe('GroupBalances', () => {
@@ -154,6 +156,17 @@ describe('GroupBalances', () => {
       expect(record).toHaveBeenCalledWith({ fromMemberId: 11, toMemberId: 12, amount: 3000 });
     });
 
+    it('rewords an open repayment sheet when the language changes', async () => {
+      await renderBalances(MIXED);
+
+      await userEvent.click(screen.getByRole('button', { name: /you pay léa/i }));
+      const sheet = await screen.findByRole('dialog');
+      await TestBed.inject(LanguageService).setPreference('fr');
+
+      expect(await within(sheet).findByText('Vous devez à Léa')).toBeTruthy();
+      expect(within(sheet).getByRole('button', { name: 'J’ai remboursé Léa' })).toBeTruthy();
+    });
+
     it('closes the sheet without recording on Not yet', async () => {
       const { record } = await renderBalances(MIXED);
 
@@ -209,6 +222,20 @@ describe('GroupBalances', () => {
       await userEvent.click(within(sheet).getByRole('button', { name: 'Undo repayment' }));
 
       expect(undo).toHaveBeenCalledWith(5);
+    });
+
+    it('keeps the sheet worded while the undone repayment leaves the list', async () => {
+      const { fixture } = await renderBalances(MIXED, true, {
+        settlements: [settlement(5, 13, 11)],
+      });
+
+      await userEvent.click(screen.getByRole('button', { name: /tom paid you back/i }));
+      const sheet = await screen.findByRole('dialog');
+      fixture.componentRef.setInput('settlements', []);
+      fixture.detectChanges();
+
+      expect(within(sheet).getByText(/Tom paid you back/)).toBeTruthy();
+      expect(within(sheet).getByText('€15.00')).toBeTruthy();
     });
 
     it('keeps the repayment on Keep it', async () => {
