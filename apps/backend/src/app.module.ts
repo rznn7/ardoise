@@ -21,6 +21,7 @@ import { PaymentExceptionFilter } from './shared/http/payment-exception.filter';
 import { SessionExceptionFilter } from './shared/http/session-exception.filter';
 import { SettlementExceptionFilter } from './shared/http/settlement-exception.filter';
 import { UserModule } from './user/infrastructure/user.module';
+import { UserHttpModule } from './user/infrastructure/user-http.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { UserModule } from './user/infrastructure/user.module';
     RealtimeModule,
     SettlementModule,
     UserModule,
+    UserHttpModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: SessionExceptionFilter },

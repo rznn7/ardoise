@@ -5,7 +5,7 @@ import {
   DATABASE_CONNECTION,
 } from 'src/shared/database/database.module';
 import { users } from 'src/shared/database/schema';
-import { User } from 'src/user/domain/user';
+import { User, UserNotFound } from 'src/user/domain/user';
 import { UserRepository } from 'src/user/domain/user-repository';
 
 @Injectable()
@@ -34,6 +34,17 @@ export class UserRepositoryDrizzle implements UserRepository {
     const [row] = await this.database.insert(users).values(input).returning();
 
     if (!row) throw new Error('User insert returned no row');
+    return this.toDomain(row);
+  }
+
+  async rename(id: number, name: string): Promise<User> {
+    const [row] = await this.database
+      .update(users)
+      .set({ name })
+      .where(eq(users.id, id))
+      .returning();
+
+    if (!row) throw new UserNotFound();
     return this.toDomain(row);
   }
 
