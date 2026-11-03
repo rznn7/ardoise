@@ -31,12 +31,13 @@ group. Choose the theme, set my name, sign out, see which version of the app I'm
 - Syncing the theme across devices. It stays in localStorage, per device, as today.
 - Asking for the name when an existing user joins a new group, or when logging in.
 - Account deletion, passkey management, avatars.
+- Pushing a rename live to other members. Real-time stays for what changes money or who you can
+  split with. A rename shows on the next load of the group or pull to refresh (owner agreed).
 
 ## Anti-goals
 
 - Signing out with a single stray tap.
 - A name saved with surrounding spaces, or an empty name.
-- Other members still seeing my old name until they reload.
 
 ## Screens
 
@@ -110,23 +111,13 @@ Tap count for joining as a new user: 1 → 2 taps plus optional typing, before t
 
 - Contract in `@ardoise/shared`: `userNameSchema = z.string().trim().min(1).max(50)`, reused by the
   rename body and by registration. `PATCH /me` with `{ name }`, returns the updated `MeResponse`.
-- `application/rename-user.use-case.ts`: thin conductor. Updates the name of the session's user, then
-  publishes a realtime event for each group the user is a member of. A single write, so there is no unit of work.
-  The fan-out is in the use case, not in the domain. Who must hear about a rename is orchestration,
-  not a business rule about users.
+- `application/rename-user.use-case.ts`: thin conductor. Updates the name of the session's user and
+  returns it. A single write, so there is no unit of work.
 - Validation lives in the Zod contract and nowhere else: a name is any trimmed string of length 1 to 50,
   and there is no invariant beyond that for a domain function to protect.
 - `UserRepository` gains `rename(id, name)`. The controller sits next to `GET /me`, in the auth
   controller, if that is where `/me` lives. Otherwise it goes in a `user` controller. That is the
   builder's call, as long as the use case stays in `user/application`.
-
-### Realtime
-
-- New group event `member.renamed { groupId, userId }`, published once per group of the renamed user.
-- The group page refetches members on it, as it does on `member.joined`. Home ignores it, because home
-  shows no member names.
-- Feeds and details resolve names through the member list, so they follow once the list is refetched.
-  If a screen holds names elsewhere, the builder wires it the same way.
 
 ### Registration
 
@@ -139,8 +130,7 @@ Tap count for joining as a new user: 1 → 2 taps plus optional typing, before t
 Following `docs/testing.md`:
 
 - **Backend e2e** (`test/`): rename succeeds and `GET /me` returns the new name; the name is trimmed;
-  blank and over-50 names are rejected with 400 and nothing changed; unauthenticated gets 401;
-  members of each of my groups receive `member.renamed`. Registration with a name stores it, and
+  blank and over-50 names are rejected with 400 and nothing changed; unauthenticated gets 401. Registration with a name stores it, and
   without one still gives `user-…`.
 - **Frontend specs**: name sheet (Save disabled on empty or unchanged, error keeps value, success closes
   and updates the row), sign-out sheet error, version footer (`dev` fallback, sha shortening),
@@ -160,12 +150,12 @@ Following `docs/testing.md`:
 - Theme: System / Light / Dark, System by default.
 - The name is global (`User.name`), not per group.
 - Name can be typed when joining as a new user, optional, default stays `user-<uuid>`.
+- No real-time push for a rename.
 
 ## My calls
 
 - Max length 50, trimmed.
 - Theme stays per device.
 - Gear icon visible to every user, placed after the admin shield.
-- `member.renamed` fanned out per group, rather than a new user-scoped event type.
 - `Version dev` when `/version.json` is missing or says `dev`.
 - The accept-invite name step replaces the two buttons in place, rather than opening a sheet.
