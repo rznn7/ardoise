@@ -73,8 +73,10 @@ in personal settings, dates and amounts formatted for the chosen language.
   contributor adding a language only drops a file.
 - `en.json` is the reference.
 - Loaded with a Transloco loader through dynamic `import()` of the JSON, so each language is its own lazy
-  chunk. The app has no service worker. A chunk that fails to load after a deploy is already handled by
-  the chunk-failure recovery in `version-watcher.ts`.
+  chunk. The app has no service worker. A translation chunk that fails to load is not recovered:
+  `version-watcher.ts` only reloads on router navigation errors and on a visible-again sha change.
+  The window is narrow (switching language after a deploy, before the tab was hidden and shown
+  again); hardening it is left for later.
 
 ### Robustness (typing)
 

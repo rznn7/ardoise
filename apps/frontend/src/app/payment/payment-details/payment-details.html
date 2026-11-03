@@ -116,7 +116,7 @@
       }
     </app-mobile-shell>
 
-    <hlm-sheet-content *brnSheetContent>
+    <hlm-sheet-content *brnSheetContent [closeLabel]="t('ui.close')">
       @if (details.status === 'loaded') {
         <div hlmSheetHeader>
           <h3 hlmSheetTitle>

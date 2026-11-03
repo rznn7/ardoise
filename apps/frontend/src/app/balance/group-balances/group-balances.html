@@ -167,7 +167,7 @@
       }
     }
 
-    <hlm-sheet-content *brnSheetContent>
+    <hlm-sheet-content *brnSheetContent [closeLabel]="t('ui.close')">
       @let open = selected();
       @if (open?.kind === 'confirm' && open.row; as row) {
         <div class="flex flex-col items-center gap-2 p-4 pt-8">

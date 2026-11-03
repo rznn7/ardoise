@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
 import {
   type CreateSettlementBody,
   type GroupMember,
@@ -84,19 +84,13 @@ export class GroupBalances {
 
   protected readonly selection = signal<Selection | null>(null);
 
-  protected readonly selected = computed((): SelectedRow | null => {
-    const selection = this.selection();
-    if (selection?.kind === 'confirm') {
-      const row = this.repayments().find(
-        (r) => r.fromMemberId === selection.fromMemberId && r.toMemberId === selection.toMemberId,
-      );
-      return row ? { kind: 'confirm', row } : null;
-    }
-    if (selection?.kind === 'undo') {
-      const row = this.done().find((r) => r.id === selection.id);
-      return row ? { kind: 'undo', row } : null;
-    }
-    return null;
+  protected readonly selected = linkedSignal<
+    { selection: Selection | null; row: SelectedRow | null },
+    SelectedRow | null
+  >({
+    source: () => ({ selection: this.selection(), row: this.resolve(this.selection()) }),
+    computation: ({ selection, row }, previous) =>
+      row ?? (previous?.source.selection === selection ? previous.value : null),
   });
 
   protected readonly memberLines = computed(() => {
@@ -136,5 +130,19 @@ export class GroupBalances {
       toMemberId: row.toMemberId,
       amount: row.amount,
     });
+  }
+
+  private resolve(selection: Selection | null): SelectedRow | null {
+    if (selection?.kind === 'confirm') {
+      const row = this.repayments().find(
+        (r) => r.fromMemberId === selection.fromMemberId && r.toMemberId === selection.toMemberId,
+      );
+      return row ? { kind: 'confirm', row } : null;
+    }
+    if (selection?.kind === 'undo') {
+      const row = this.done().find((r) => r.id === selection.id);
+      return row ? { kind: 'undo', row } : null;
+    }
+    return null;
   }
 }

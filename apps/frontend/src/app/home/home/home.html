@@ -91,7 +91,7 @@
       </button>
     </app-mobile-shell>
 
-    <hlm-sheet-content *brnSheetContent>
+    <hlm-sheet-content *brnSheetContent [closeLabel]="t('ui.close')">
       <app-create-group-sheet (created)="refresh()" (closed)="sheet.close()" />
     </hlm-sheet-content>
   </hlm-sheet>

@@ -255,7 +255,7 @@
       }
     </app-mobile-shell>
 
-    <hlm-sheet-content *brnSheetContent>
+    <hlm-sheet-content *brnSheetContent [closeLabel]="t('ui.close')">
       <div hlmSheetHeader>
         <h3 hlmSheetTitle>{{ inviting() ? t('group.invite') : t('group.sheetTitle') }}</h3>
       </div>

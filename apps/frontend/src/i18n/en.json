@@ -270,7 +270,8 @@
       "more": "More shares for {name}"
     },
     "refreshing": "Refreshing",
-    "pullToRefresh": "Pull to refresh"
+    "pullToRefresh": "Pull to refresh",
+    "close": "Close"
   },
   "home": {
     "admin": "Admin",

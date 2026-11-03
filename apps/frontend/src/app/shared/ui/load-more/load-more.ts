@@ -32,7 +32,7 @@ import { AppTextImports } from 'src/app/shared/ui/text/text';
             class="flex justify-center py-6"
             [attr.aria-label]="t('ui.loadingMore')"
           >
-            <hlm-spinner />
+            <hlm-spinner aria-hidden="true" />
           </div>
         }
         @case ('error') {

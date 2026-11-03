@@ -37,7 +37,7 @@
               </button>
             </div>
 
-            <hlm-sheet-content *brnSheetContent>
+            <hlm-sheet-content *brnSheetContent [closeLabel]="t('ui.close')">
               <form
                 class="flex flex-col"
                 (submit)="saveName($event, nameSheet.close.bind(nameSheet))"
@@ -143,7 +143,7 @@
       </div>
     </app-mobile-shell>
 
-    <hlm-sheet-content *brnSheetContent>
+    <hlm-sheet-content *brnSheetContent [closeLabel]="t('ui.close')">
       <div hlmSheetHeader>
         <h3 hlmSheetTitle>{{ t('settings.signOut.title') }}</h3>
         <p hlmSheetDescription>{{ t('settings.signOut.description') }}</p>

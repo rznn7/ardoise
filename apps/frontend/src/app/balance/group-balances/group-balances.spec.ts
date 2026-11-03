@@ -79,7 +79,7 @@ async function renderBalances(
   const record =
     vi.fn<(body: { fromMemberId: number; toMemberId: number; amount: number }) => void>();
   const undo = vi.fn<(id: number) => void>();
-  await render(GroupBalances, {
+  const { fixture } = await render(GroupBalances, {
     inputs: {
       state,
       members: MEMBERS,
@@ -92,7 +92,7 @@ async function renderBalances(
     },
     on: { retry, record, undo },
   });
-  return { retry, record, undo };
+  return { retry, record, undo, fixture };
 }
 
 describe('GroupBalances', () => {
@@ -222,6 +222,20 @@ describe('GroupBalances', () => {
       await userEvent.click(within(sheet).getByRole('button', { name: 'Undo repayment' }));
 
       expect(undo).toHaveBeenCalledWith(5);
+    });
+
+    it('keeps the sheet worded while the undone repayment leaves the list', async () => {
+      const { fixture } = await renderBalances(MIXED, true, {
+        settlements: [settlement(5, 13, 11)],
+      });
+
+      await userEvent.click(screen.getByRole('button', { name: /tom paid you back/i }));
+      const sheet = await screen.findByRole('dialog');
+      fixture.componentRef.setInput('settlements', []);
+      fixture.detectChanges();
+
+      expect(within(sheet).getByText(/Tom paid you back/)).toBeTruthy();
+      expect(within(sheet).getByText('€15.00')).toBeTruthy();
     });
 
     it('keeps the repayment on Keep it', async () => {

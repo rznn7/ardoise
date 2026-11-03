@@ -34,7 +34,7 @@ import { HlmSheetClose } from './hlm-sheet-close';
 
     @if (showCloseButton()) {
       <button hlmBtn variant="ghost" size="icon-sm" class="absolute end-4 top-4" hlmSheetClose>
-        <span class="sr-only">Close</span>
+        <span class="sr-only">{{ closeLabel() }}</span>
         <ng-icon name="lucideX" />
       </button>
     }
@@ -47,6 +47,7 @@ export class HlmSheetContent {
   private readonly _renderer = inject(Renderer2);
   private readonly _element = inject(ElementRef);
 
+  public readonly closeLabel = input<string>('Close');
   public readonly showCloseButton = input<boolean, BooleanInput>(true, {
     transform: booleanAttribute,
   });

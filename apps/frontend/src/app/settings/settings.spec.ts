@@ -74,6 +74,16 @@ describe('Settings', () => {
     expect(localStorage.getItem(LANGUAGE_STORAGE_KEY)).toBe('fr');
   });
 
+  it('names the sheet close button in French', async () => {
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, 'fr');
+    await setup();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Se déconnecter' }));
+    const dialog = await screen.findByRole('dialog');
+
+    expect(within(dialog).getByRole('button', { name: 'Fermer' })).toBeTruthy();
+  });
+
   it('asks before signing out', async () => {
     const { logout } = await setup();
 

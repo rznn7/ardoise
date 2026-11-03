@@ -7,7 +7,7 @@
       @switch (currentState) {
         @case ('loading') {
           <div class="flex justify-center py-10">
-            <hlm-spinner />
+            <hlm-spinner [aria-label]="t('ui.loading')" />
           </div>
         }
 

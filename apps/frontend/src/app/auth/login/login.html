@@ -10,7 +10,7 @@
     }
     @case ('loading') {
       <button hlmBtn class="w-full" variant="inverted" size="xl" [disabled]="true">
-        <hlm-spinner />
+        <hlm-spinner [aria-label]="t('ui.loading')" />
         <span>{{ t('auth.login.busy') }}</span>
       </button>
     }

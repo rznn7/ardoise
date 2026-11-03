@@ -16,7 +16,7 @@ export const REFRESHING_HEIGHT = 56;
           [attr.aria-label]="refreshing() ? t('ui.refreshing') : t('ui.pullToRefresh')"
           [style.height.px]="height()"
         >
-          <hlm-spinner />
+          <hlm-spinner aria-hidden="true" />
         </div>
       }
     </ng-container>

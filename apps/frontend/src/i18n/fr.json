@@ -270,7 +270,8 @@
       "more": "Plus de parts pour {name}"
     },
     "refreshing": "Actualisation",
-    "pullToRefresh": "Tirer pour actualiser"
+    "pullToRefresh": "Tirer pour actualiser",
+    "close": "Fermer"
   },
   "home": {
     "admin": "Administration",

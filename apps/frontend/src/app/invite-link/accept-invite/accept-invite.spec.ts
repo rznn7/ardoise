@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import {
   type ConsumeInviteLinkResponse,
@@ -7,11 +8,12 @@ import {
 } from '@ardoise/shared';
 import { render, screen, waitFor } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
-import { type Observable, of, throwError } from 'rxjs';
+import { NEVER, type Observable, of, throwError } from 'rxjs';
 import { AuthApiService } from 'src/app/auth/auth-api.service';
 import { LastGroupService } from 'src/app/expense-group/last-group.service';
 import { AcceptInviteFlow } from 'src/app/invite-link/accept-invite-flow.service';
 import { InviteLinkApiService } from 'src/app/invite-link/invite-link-api.service';
+import { LANGUAGE_STORAGE_KEY, LanguageService } from 'src/app/shared/i18n/language.service';
 import { describe, expect, it, vi } from 'vitest';
 
 import { AcceptInvite } from './accept-invite';
@@ -373,6 +375,24 @@ describe(AcceptInvite.name, () => {
     expect(await screen.findByText(/couldn't load/i)).toBeTruthy();
     expect(screen.getByRole('button', { name: /retry/i })).toBeTruthy();
     expect(screen.queryByText(/no longer valid/i)).toBeNull();
+  });
+
+  it('announces loading in French on a French device', async () => {
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, 'fr');
+    await render(AcceptInvite, {
+      inputs: { token: 'x' },
+      providers: [
+        {
+          provide: InviteLinkApiService,
+          useValue: { preview: vi.fn().mockReturnValue(NEVER) },
+        },
+        { provide: AuthApiService, useValue: {} },
+      ],
+    });
+
+    await TestBed.inject(LanguageService).ready();
+
+    expect(await screen.findByRole('status', { name: 'Chargement' })).toBeTruthy();
   });
 
   it('non-401 me() falls back to logged-out', async () => {
