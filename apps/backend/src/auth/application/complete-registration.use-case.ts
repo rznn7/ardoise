@@ -39,6 +39,7 @@ export class CompleteRegistrationUseCase {
   async execute(input: {
     stateId: string;
     attestation: RegistrationResponseJSON;
+    name?: string;
   }): Promise<{ token: string }> {
     const state = await this.registrationStates.findByStateId(input.stateId);
     if (!state) throw new RegistrationStateNotFound();
@@ -55,7 +56,7 @@ export class CompleteRegistrationUseCase {
 
     const { token, joined } = await this.uow.run(async (repos) => {
       const user = await repos.users.create({
-        name: `user-${crypto.randomUUID()}`,
+        name: input.name ?? `user-${crypto.randomUUID()}`,
         webauthnUserId: state.webauthnUserId,
       });
       await repos.passkeys.create({

@@ -2,14 +2,7 @@ import { z } from 'zod';
 
 import { meResponseSchema } from './auth.js';
 import { type Endpoint } from './http.js';
-
-export const USER_NAME_MAX_LENGTH = 50;
-
-export const userNameSchema = z
-  .string()
-  .trim()
-  .min(1)
-  .max(USER_NAME_MAX_LENGTH);
+import { userNameSchema } from './user-name.js';
 
 export const renameUserRequestSchema = z.object({ name: userNameSchema });
 export type RenameUserRequest = z.infer<typeof renameUserRequestSchema>;

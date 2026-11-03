@@ -12,5 +12,6 @@ export * from './contracts/payment-share.js';
 export * from './contracts/realtime.js';
 export * from './contracts/settlement.js';
 export * from './contracts/user.js';
+export * from './contracts/user-name.js';
 export * from './split/apportion.js';
 export * from './split/compute-payment-shares.js';

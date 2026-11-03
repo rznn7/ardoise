@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { type Endpoint } from './http.js';
+import { userNameSchema } from './user-name.js';
 
 export const beginRegistrationRequestSchema = z.object({
   inviteToken: z.string().min(1),
@@ -20,6 +21,7 @@ export type BeginRegistrationResponse = z.infer<
 export const completeRegistrationRequestSchema = z.object({
   stateId: z.string(),
   attestation: z.unknown(),
+  name: userNameSchema.optional(),
 });
 export type CompleteRegistrationRequest = z.infer<
   typeof completeRegistrationRequestSchema

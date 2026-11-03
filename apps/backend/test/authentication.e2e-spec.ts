@@ -108,6 +108,56 @@ describe('Authentication', () => {
       expect(consumedInvite.burned_at).not.toBeNull();
     });
 
+    const completeRegistration = async (
+      name: string | undefined,
+      expectedStatus: number,
+    ) => {
+      const { id: groupId } = await seedGroup(pgClient);
+      await seedInviteLink(pgClient, { groupId, token: 'named-token' });
+      const begin = await request(app.getHttpServer())
+        .post('/auth/register/begin')
+        .send({ inviteToken: 'named-token' })
+        .expect(200);
+      await request(app.getHttpServer())
+        .post('/auth/register/complete')
+        .send({
+          stateId: (begin.body as BeginRegistrationResponse).stateId,
+          attestation: {},
+          ...(name === undefined ? {} : { name }),
+        })
+        .expect(expectedStatus);
+    };
+
+    const userNames = async () =>
+      (
+        await pgClient.query<{ name: string }>(`SELECT name FROM users`)
+      ).rows.map((row) => row.name);
+
+    it('registers with my name', async () => {
+      // WHEN
+      await completeRegistration('  Ana  ', 204);
+
+      // THEN
+      expect(await userNames()).toEqual(['Ana']);
+    });
+
+    it('registers without a name', async () => {
+      // WHEN
+      await completeRegistration(undefined, 204);
+
+      // THEN
+      const [name] = await userNames();
+      expect(name).toMatch(/^user-[0-9a-f-]{36}$/);
+    });
+
+    it('refuses a blank name at registration', async () => {
+      // WHEN
+      await completeRegistration('  ', 400);
+
+      // THEN
+      expect(await userNames()).toEqual([]);
+    });
+
     it('rejects an invalid invite token', async () => {
       await request(app.getHttpServer())
         .post('/auth/register/begin')
