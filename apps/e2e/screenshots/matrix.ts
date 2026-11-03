@@ -85,6 +85,12 @@ const visible = (text: string | RegExp) => async (page: Page) => {
   await expect(page.getByText(text).first()).toBeVisible();
 };
 
+const openNameSheet = async (page: Page): Promise<void> => {
+  await expect(page.getByText('Version a1b2c3d')).toBeVisible();
+  await page.getByRole('button', { name: /^Name/ }).click();
+  await expect(page.getByRole('dialog')).toContainText('Your name');
+};
+
 const loadingStatus = async (page: Page): Promise<void> => {
   await expect(
     page.getByRole('status', { name: 'Loading' }).first(),
@@ -188,6 +194,57 @@ export const CELLS: ScreenshotCell[] = [
       }),
     },
     ready: visible('New here? Join with a passkey'),
+  },
+  {
+    route: 'join',
+    state: 'name-step',
+    path: '/join?token=demo',
+    mocks: { ...loggedOut, [PREVIEW]: json({ groupName: 'Lisbon trip' }) },
+    ready: async (page) => {
+      await page
+        .getByRole('button', { name: 'New here? Join with a passkey' })
+        .click();
+      await page.getByLabel('Your name').fill('Ana');
+    },
+  },
+  {
+    route: 'settings',
+    state: 'default',
+    path: '/settings',
+    mocks: loggedIn,
+    ready: visible('Version a1b2c3d'),
+  },
+  {
+    route: 'settings',
+    state: 'name-sheet',
+    path: '/settings',
+    mocks: loggedIn,
+    ready: openNameSheet,
+  },
+  {
+    route: 'settings',
+    state: 'name-sheet-error',
+    path: '/settings',
+    mocks: { ...loggedIn, 'PATCH /users/me': status(500) },
+    ready: async (page) => {
+      await openNameSheet(page);
+      await page.getByRole('textbox', { name: 'Your name' }).fill('Ana');
+      await page.getByRole('button', { name: 'Save' }).click();
+      await expect(
+        page.getByText("Couldn't save your name. Try again."),
+      ).toBeVisible();
+    },
+  },
+  {
+    route: 'settings',
+    state: 'sign-out-sheet',
+    path: '/settings',
+    mocks: loggedIn,
+    ready: async (page) => {
+      await expect(page.getByText('Version a1b2c3d')).toBeVisible();
+      await page.getByRole('button', { name: 'Sign out' }).click();
+      await expect(page.getByRole('dialog')).toContainText('Sign out?');
+    },
   },
   {
     route: 'join',

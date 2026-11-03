@@ -17,6 +17,7 @@ async function main() {
 
     console.log('\n✅ Dev DB seeded.\n');
     console.log(`  Real accounts kept: ${report.realAccountCount}`);
+    console.log('    (they keep their user-… name until renamed in Settings)');
     console.log(`  Trip to Lisbon (EUR), ${you} moderator, owed money`);
     console.log(`    Members:  ${you}, Bob, Carol, Dédé (nickname of David)`);
     console.log(

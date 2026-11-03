@@ -10,6 +10,7 @@ test('a member creates a group and a friend joins it from the shared link', asyn
   await alice
     .getByRole('button', { name: 'New here? Join with a passkey' })
     .click();
+  await alice.getByRole('button', { name: 'Create passkey' }).click();
   await expect(alice).toHaveURL(/\/home$/);
 
   await alice.getByRole('button', { name: 'Create a group' }).click();
@@ -25,6 +26,7 @@ test('a member creates a group and a friend joins it from the shared link', asyn
   await bob
     .getByRole('button', { name: 'New here? Join with a passkey' })
     .click();
+  await bob.getByRole('button', { name: 'Create passkey' }).click();
   await expect(bob).toHaveURL(/\/home$/);
   await expect(bob.getByText('Flatshare')).toBeVisible();
 

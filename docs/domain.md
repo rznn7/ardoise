@@ -8,6 +8,8 @@ id, name, role (user | admin), webauthnUserId (unique), createdAt
 ```
 - `role = 'admin'` is the **app-level** admin (platform staff). Distinct from group moderators.
 - No password, no email. Identity is proven by passkey possession.
+- `name` is global, seen in every group where the member has no nickname. Trimmed, 1 to 50
+  characters. Chosen when joining as a newcomer or later in Settings; `user-<uuid>` when left empty.
 
 ### Passkey *(WebAuthn credential bound to a User)*
 ```

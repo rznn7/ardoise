@@ -81,10 +81,10 @@ A settlement overlays the balance calculation; it never mutates payments.
 - [x] **live subscription (frontend)** — EventSource subscription + reactive refresh
   (`superpowers/specs/2026-10-28-realtime-design.md`).
 
-## Personal settings
-- [ ] **settings page (frontend)** — personal settings screen; first entry is the theme
-  selector (system / light / dark) on top of the existing `ThemeService`.
-- [ ] **logout control (frontend)** — the auth flow supports logout; no UI exposes it yet.
+## Personal settings (done)
+- [x] **settings page** — reached from home: global name, theme (system / light / dark), sign out
+  with confirmation, running version; optional name when joining as a newcomer
+  (`superpowers/specs/2026-11-03-personal-settings-design.md`).
 
 ## Admin
 - [x] **admin overview** — read-only overview of users and groups, user and group details,

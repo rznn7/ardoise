@@ -1,22 +1,24 @@
 import { seedGroupWithInvite } from './fixtures/db';
+import { joinWithNewPasskey } from './fixtures/group';
 import { expect, test } from './fixtures/test';
 
-test('a member logs out and back in with the same passkey and finds their groups', async ({
+test('a member signs out from settings and back in with the same passkey', async ({
   passkeyPage: page,
 }) => {
   const { token } = await seedGroupWithInvite('Lisbon trip');
-  await page.goto(`/join?token=${token}`);
-  await page
-    .getByRole('button', { name: 'New here? Join with a passkey' })
-    .click();
-  await expect(page).toHaveURL(/\/home$/);
+  await joinWithNewPasskey(page, token);
 
-  const logout = await page.request.post('/api/auth/logout');
-  expect(logout.ok()).toBe(true);
+  await page.getByRole('link', { name: 'Settings' }).click();
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  const confirm = page.getByRole('dialog');
+  await expect(confirm).toContainText('Sign out?');
+  await confirm.getByRole('button', { name: 'Sign out' }).click();
+  await expect(page).toHaveURL(/\/login$/);
 
-  await page.goto('/login');
+  await page.goto('/home');
+  await expect(page).toHaveURL(/\/login$/);
+
   await page.getByRole('button', { name: 'Login with passkey' }).click();
-
   await expect(page).toHaveURL(/\/home$/);
   await expect(page.getByText('Lisbon trip')).toBeVisible();
 });
