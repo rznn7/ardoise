@@ -23,6 +23,7 @@
 - The default payment title is translated and formatted at creation, then stored as is.
 - In TS, every key goes through a call to a function named `translate` (that is what keys-manager extracts) and is typed `TranslationKey`.
 - Template rules from `CLAUDE.md` still apply: no new arbitrary values, no type-scale classes. When French copy overflows, shorten the copy before touching the layout.
+- One translation file per language, no Transloco scopes: keys are namespaced by feature folder (`admin.*`, `payment.*`), so splitting into scopes later is mechanical.
 - Commit messages: one line, no body, no trailers.
 
 ## Review Focus
