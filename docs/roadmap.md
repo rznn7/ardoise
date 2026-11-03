@@ -86,6 +86,11 @@ A settlement overlays the balance calculation; it never mutates payments.
   with confirmation, running version; optional name when joining as a newcomer
   (`superpowers/specs/2026-11-03-personal-settings-design.md`).
 
+## Translation (en / fr)
+- [ ] **app in English and French** — every screen's copy in both languages, a language choice in
+  personal settings (following the device by default), dates and amounts formatted for the chosen
+  language.
+
 ## Admin
 - [x] **admin overview** — read-only overview of users and groups, user and group details,
   revoke invite links and sessions (`superpowers/specs/2026-10-27-admin-overview-design.md`).
