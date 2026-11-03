@@ -1,4 +1,4 @@
-import { Component, computed, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import {
   type CreateSettlementBody,
   type GroupMember,
@@ -19,6 +19,7 @@ import {
 } from 'src/app/balance/balance-rows';
 import { type BalancesState } from 'src/app/balance/balance-store';
 import { dayLabel } from 'src/app/payment/day-label';
+import { LanguageService } from 'src/app/shared/i18n/language.service';
 import { type More } from 'src/app/shared/paged-list';
 import { BalanceBar } from 'src/app/shared/ui/balance-bar/balance-bar';
 import { BalanceIndicator } from 'src/app/shared/ui/balance-indicator/balance-indicator';
@@ -58,6 +59,7 @@ type Selection =
   templateUrl: './group-balances.html',
 })
 export class GroupBalances {
+  private readonly language = inject(LanguageService);
   readonly state = input.required<BalancesState>();
   readonly members = input.required<readonly GroupMember[]>();
   readonly meUserId = input.required<number>();
@@ -79,7 +81,12 @@ export class GroupBalances {
   protected readonly memberLines = computed(() => {
     const state = this.state();
     if (state.status !== 'loaded') return [];
-    return memberRows(state.balances.balances, this.members(), this.meUserId());
+    return memberRows(
+      state.balances.balances,
+      this.members(),
+      this.meUserId(),
+      this.language.translator(),
+    );
   });
 
   protected readonly repayments = computed(() => {
@@ -90,15 +97,16 @@ export class GroupBalances {
       this.members(),
       this.meUserId(),
       this.pendingSettlements(),
+      this.language.translator(),
     );
   });
 
   protected readonly done = computed(() =>
-    doneRows(this.settlements(), this.members(), this.meUserId()),
+    doneRows(this.settlements(), this.members(), this.meUserId(), this.language.translator()),
   );
 
   protected dayOf(row: DoneRow): string {
-    return dayLabel(new Date(row.settledAt), new Date());
+    return dayLabel(new Date(row.settledAt), new Date(), this.language.translator());
   }
 
   protected confirm(row: RepaymentRow): void {

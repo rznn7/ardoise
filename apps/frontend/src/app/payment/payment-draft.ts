@@ -11,6 +11,7 @@ import {
   type SplitType,
   type UpdatePaymentBody,
 } from '@ardoise/shared';
+import { LanguageService } from 'src/app/shared/i18n/language.service';
 
 import {
   defaultTitle,
@@ -52,6 +53,7 @@ const textsOf = (
 @Injectable({ providedIn: 'root' })
 export class PaymentDraft {
   private readonly now = inject(NOW);
+  private readonly language = inject(LanguageService);
   private readonly started = signal(false);
   private storedPaidAt: string | null = null;
   private storedDate: string | null = null;
@@ -128,7 +130,7 @@ export class PaymentDraft {
     const date = this.date();
     return {
       payerMemberId: this.payerMemberId() ?? 0,
-      title: this.title().trim() || defaultTitle(this.dateOrNow(date)),
+      title: this.title().trim() || defaultTitle(this.dateOrNow(date), this.language.translator()),
       paidAt: this.paidAtOf(date),
       fullAmount: this.amountCents() ?? 0,
       splitType: type,
@@ -164,7 +166,8 @@ export class PaymentDraft {
     this.groupId.set(payment.groupId);
     this.paymentId.set(payment.id);
     this.members.set(members);
-    this.amountText.set(formatAmountInput(payment.fullAmount));
+    const { locale } = this.language.translator();
+    this.amountText.set(formatAmountInput(payment.fullAmount, locale));
     this.title.set(payment.title);
     this.payerMemberId.set(payment.payerMemberId);
     this.splitTypeState.set(payment.splitType);
@@ -182,10 +185,10 @@ export class PaymentDraft {
         : allWeightsOne(members),
     );
     if (payment.splitType === 'percent') {
-      this.percentTexts.set(textsOf(shares, formatPercentInput));
+      this.percentTexts.set(textsOf(shares, (value) => formatPercentInput(value, locale)));
     }
     if (payment.splitType === 'exact') {
-      this.exactTexts.set(textsOf(shares, formatAmountInput));
+      this.exactTexts.set(textsOf(shares, (value) => formatAmountInput(value, locale)));
     }
     this.storedPaidAt = payment.paidAt;
     this.storedDate = toDateText(new Date(payment.paidAt));

@@ -95,7 +95,7 @@ describe('SettlementDetails', () => {
 
     expect(screen.getByRole('heading', { name: 'You paid Léa back' })).toBeTruthy();
     expect(screen.getByText('€30.00')).toBeTruthy();
-    expect(screen.getByText(`Repayment · ${shortDay(REPAYMENT.settledAt)}`)).toBeTruthy();
+    expect(screen.getByText(`Repayment · ${shortDay(REPAYMENT.settledAt, 'en-GB')}`)).toBeTruthy();
   });
 
   it('hides Undo from a member who is neither side', async () => {

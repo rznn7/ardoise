@@ -1,6 +1,9 @@
 import { type GroupMember, type SettlementResponse } from '@ardoise/shared';
+import { translatorFor } from 'src/test-providers';
 
 import { doneRows, memberRows, repaymentRows } from './balance-rows';
+
+const en = () => translatorFor('en');
 
 const member = (id: number, userId: number, name: string): GroupMember => ({
   id,
@@ -29,13 +32,14 @@ describe('memberRows', () => {
       ],
       MEMBERS,
       ME,
+      en(),
     );
 
     expect(rows.map((row) => row.name)).toEqual(['Léa', 'Max', 'Tom', 'You']);
   });
 
   it('names my row You and flags it', () => {
-    const [mine] = memberRows([{ memberId: 11, amount: 0 }], MEMBERS, ME);
+    const [mine] = memberRows([{ memberId: 11, amount: 0 }], MEMBERS, ME, en());
 
     expect(mine).toMatchObject({ memberId: 11, name: 'You', isMe: true });
   });
@@ -49,6 +53,7 @@ describe('memberRows', () => {
       ],
       MEMBERS,
       ME,
+      en(),
     );
 
     expect(rows.map((row) => row.ratio)).toEqual([0.75, 0.25, -1]);
@@ -62,6 +67,7 @@ describe('memberRows', () => {
       ],
       MEMBERS,
       ME,
+      en(),
     );
 
     expect(rows.map((row) => row.ratio)).toEqual([0, 0]);
@@ -79,9 +85,30 @@ describe('repaymentRows', () => {
       MEMBERS,
       ME,
       [],
+      en(),
     );
 
     expect(rows.map((row) => row.label)).toEqual(['You pay Léa', 'Tom pays you', 'Tom pays Léa']);
+  });
+
+  it('words each transfer in French with vous', () => {
+    const rows = repaymentRows(
+      [
+        { fromMemberId: 11, toMemberId: 12, amount: 3000 },
+        { fromMemberId: 13, toMemberId: 11, amount: 1200 },
+        { fromMemberId: 13, toMemberId: 12, amount: 5820 },
+      ],
+      MEMBERS,
+      ME,
+      [],
+      translatorFor('fr'),
+    );
+
+    expect(rows.map((row) => [row.label, row.confirmLabel])).toEqual([
+      ['Vous devez à Léa', 'J’ai remboursé Léa'],
+      ['Tom vous doit', 'Tom m’a remboursé'],
+      ['Tom doit à Léa', null],
+    ]);
   });
 
   it('puts my repayments first, then the largest amounts', () => {
@@ -95,6 +122,7 @@ describe('repaymentRows', () => {
       MEMBERS,
       ME,
       [],
+      en(),
     );
 
     expect(rows.map((row) => [row.label, row.mine])).toEqual([
@@ -115,6 +143,7 @@ describe('repaymentRows', () => {
       MEMBERS,
       ME,
       [],
+      en(),
     );
 
     expect(rows.map((row) => row.confirmLabel)).toEqual([
@@ -133,6 +162,7 @@ describe('repaymentRows', () => {
       MEMBERS,
       ME,
       [{ groupId: 7, fromMemberId: 11, toMemberId: 12, amount: 3000 }],
+      en(),
     );
 
     expect(rows.map((row) => [row.label, row.pending])).toEqual([
@@ -168,6 +198,7 @@ describe('doneRows', () => {
       ],
       MEMBERS,
       ME,
+      en(),
     );
 
     expect(rows.map((row) => [row.id, row.label, row.amount, row.mine])).toEqual([

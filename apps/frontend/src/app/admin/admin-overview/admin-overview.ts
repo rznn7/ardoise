@@ -8,6 +8,7 @@ import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmToggleGroupImports } from '@spartan-ng/helm/toggle-group';
 import { AdminApiService } from 'src/app/admin/admin-api.service';
 import { groupsLabel, signedInLabel } from 'src/app/admin/admin-dates';
+import { LanguageService } from 'src/app/shared/i18n/language.service';
 import { injectGoBack } from 'src/app/shared/navigation/back';
 import { ListRowImports } from 'src/app/shared/ui/list-row/list-row';
 import { MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
@@ -42,6 +43,7 @@ export class AdminOverviewPage {
   private readonly api = inject(AdminApiService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly language = inject(LanguageService);
   protected readonly goBack = injectGoBack();
 
   readonly tab = input<AdminTab, string | undefined>('users', { transform: toTab });
@@ -58,7 +60,8 @@ export class AdminOverviewPage {
   }
 
   protected userMeta(user: AdminOverview['users'][number]): string {
-    return `${groupsLabel(user.groupCount)} · ${signedInLabel(user.lastSignInAt, user.createdAt, new Date())}`;
+    const tr = this.language.translator();
+    return `${groupsLabel(user.groupCount, tr)} · ${signedInLabel(user.lastSignInAt, user.createdAt, new Date(), tr)}`;
   }
 
   protected groupMeta(group: AdminOverview['groups'][number]): string {

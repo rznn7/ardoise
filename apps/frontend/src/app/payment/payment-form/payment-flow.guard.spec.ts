@@ -178,7 +178,7 @@ describe('paymentFlowGuard', () => {
     expect(router.url).toBe('/group/7/payments/5/edit/options');
     expect(draft.mode()).toBe('edit');
     expect(draft.paymentId()).toBe(5);
-    expect(draft.amountText()).toBe('42,50');
+    expect(draft.amountText()).toBe('42.50');
     expect(draft.myMemberId()).toBe(12);
     expect(draft.group()).toEqual(GROUP);
   });

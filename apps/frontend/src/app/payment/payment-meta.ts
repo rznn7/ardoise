@@ -1,22 +1,30 @@
 import { type GroupMember, type PaymentResponse, type SplitType } from '@ardoise/shared';
+import { marker } from '@jsverse/transloco-keys-manager/marker';
+import { type TranslationKey, type Translator } from 'src/app/shared/i18n/translation-key';
 
 import { shortDay } from './day-label';
 
-const SPLIT_LABELS: Readonly<Record<SplitType, string>> = {
-  equal: 'Equally',
-  shares: 'By shares',
-  percent: 'By percentage',
-  exact: 'Exact amounts',
+export const SPLIT_LABEL_KEYS: Readonly<Record<SplitType, TranslationKey>> = {
+  equal: marker('payment.split.equal'),
+  shares: marker('payment.split.shares'),
+  percent: marker('payment.split.percent'),
+  exact: marker('payment.split.exact'),
 };
 
 export function paymentMeta(
   payment: Pick<PaymentResponse, 'payerMemberId' | 'paidAt' | 'splitType'>,
   members: readonly GroupMember[],
   meUserId: number,
+  tr: Translator,
 ): string {
   const payer = members.find((member) => member.id === payment.payerMemberId);
-  const payerName = payer?.userId === meUserId ? 'you' : (payer?.name ?? 'someone');
-  return [`Paid by ${payerName}`, shortDay(payment.paidAt), SPLIT_LABELS[payment.splitType]].join(
-    ' · ',
-  );
+  const name =
+    payer?.userId === meUserId
+      ? tr.translate(marker('payment.meta.you'))
+      : (payer?.name ?? tr.translate(marker('payment.meta.someone')));
+  return [
+    tr.translate(marker('payment.meta.paidBy'), { name }),
+    shortDay(payment.paidAt, tr.locale),
+    tr.translate(SPLIT_LABEL_KEYS[payment.splitType]),
+  ].join(' · ');
 }

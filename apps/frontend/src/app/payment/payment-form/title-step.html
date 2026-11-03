@@ -33,7 +33,7 @@
         hlmInput
         id="payment-title"
         [maxLength]="maxLength"
-        [placeholder]="placeholder"
+        [placeholder]="placeholder()"
         [value]="draft.title()"
         (input)="draft.title.set(titleInput.value)"
       />

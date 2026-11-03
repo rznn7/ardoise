@@ -1,4 +1,52 @@
 {
+  "common": {
+    "today": "Aujourd’hui",
+    "yesterday": "Hier",
+    "someone": "Quelqu’un",
+    "you": "Vous"
+  },
+  "admin": {
+    "dates": {
+      "today": "aujourd’hui",
+      "yesterday": "hier",
+      "daysAgo": "il y a {count} jours",
+      "onDate": "le {date}",
+      "joined": "inscrit {when}",
+      "signedIn": "connecté {when}",
+      "expiresToday": "expire aujourd’hui",
+      "expiresTomorrow": "expire demain",
+      "expiresInDays": "expire dans {count} jours",
+      "groups": "{count, plural, =0 {Aucun groupe} one {# groupe} other {# groupes}}",
+      "payments": "{count, plural, one {# paiement} other {# paiements}}",
+      "groupMeta": "{currency} · créé le {date} · {payments} · {spent} dépensés"
+    }
+  },
+  "balance": {
+    "rows": {
+      "youPay": "Vous devez à {name}",
+      "iPaid": "J’ai remboursé {name}",
+      "paysYou": "{name} vous doit",
+      "paidMe": "{name} m’a remboursé",
+      "pays": "{from} doit à {to}"
+    }
+  },
+  "payment": {
+    "defaultTitle": "Paiement, {date}",
+    "meta": {
+      "paidBy": "Payé par {name}",
+      "you": "vous",
+      "someone": "quelqu’un"
+    },
+    "split": {
+      "equal": "Équitable",
+      "shares": "Par parts",
+      "percent": "En pourcentage",
+      "exact": "Montants exacts"
+    },
+    "form": {
+      "percentTotal": "{entered} sur {target} %"
+    }
+  },
   "settings": {
     "language": {
       "title": "Langue",
@@ -30,6 +78,13 @@
       "failed": "Impossible de vous déconnecter. Réessayez.",
       "busy": "Déconnexion…",
       "cancel": "Annuler"
+    }
+  },
+  "settlement": {
+    "label": {
+      "youPaid": "Vous avez remboursé {name}",
+      "paidYou": "{name} vous a remboursé",
+      "paid": "{from} a remboursé {to}"
     }
   }
 }

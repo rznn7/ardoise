@@ -8,9 +8,9 @@
     "test": "ng test --watch=false",
     "test:watch": "ng test --watch",
     "test:cov": "ng test --watch=false --coverage",
-    "lint": "eslint src scripts && tsx scripts/check-component-css.ts && tsx scripts/check-unused-translations.ts && pnpm i18n:check",
+    "lint": "eslint src scripts && tsx scripts/check-component-css.ts && pnpm i18n:check",
     "backdrops": "tsx scripts/backdrops/generate.mts",
-    "i18n:check": "transloco-keys-manager find"
+    "i18n:check": "transloco-validator src/i18n/en.json src/i18n/fr.json && transloco-keys-manager find --emit-error-on-extra-keys"
   },
   "private": true,
   "dependencies": {
@@ -24,6 +24,7 @@
     "@ardoise/shared": "workspace:*",
     "@fontsource-variable/figtree": "5.3.0",
     "@jsverse/transloco": "8.4.0",
+    "@jsverse/transloco-keys-manager": "8.1.1",
     "@jsverse/transloco-messageformat": "8.4.0",
     "@ng-icons/core": "^36.1.0",
     "@ng-icons/lucide": "^36.1.0",
@@ -42,7 +43,7 @@
     "@angular/cli": "^22.2.4",
     "@angular/compiler-cli": "^22.2.3",
     "@eslint/js": "catalog:",
-    "@jsverse/transloco-keys-manager": "8.1.1",
+    "@jsverse/transloco-validator": "8.4.0",
     "@messageformat/core": "^3.4.1",
     "@napi-rs/canvas": "1.0.13",
     "@spartan-ng/cli": "1.8.2",

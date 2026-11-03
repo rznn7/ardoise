@@ -1,3 +1,4 @@
+import { translatorFor } from 'src/test-providers';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -61,18 +62,32 @@ describe('parsePercent', () => {
 });
 
 describe('formatting', () => {
-  it('formats cents for an input', () => {
-    expect(formatAmountInput(2450)).toBe('24,50');
-    expect(formatAmountInput(5)).toBe('0,05');
+  it('formats cents for an English input with a point', () => {
+    expect(formatAmountInput(2450, 'en-GB')).toBe('24.50');
+    expect(formatAmountInput(5, 'en-GB')).toBe('0.05');
+  });
+
+  it('formats cents for a French input with a comma and no grouping', () => {
+    expect(formatAmountInput(2450, 'fr-FR')).toBe('24,50');
+    expect(formatAmountInput(123456, 'fr-FR')).toBe('1234,56');
+    expect(formatAmountInput(123456, 'en-GB')).toBe('1234.56');
+  });
+
+  it('reads back what it formats in either language', () => {
+    expect(parseAmount(formatAmountInput(2450, 'en-GB'))).toBe(2450);
+    expect(parseAmount(formatAmountInput(2450, 'fr-FR'))).toBe(2450);
+    expect(parsePercent(formatPercentInput(1050, 'fr-FR'))).toBe(1050);
   });
 
   it('formats basis points for an input', () => {
-    expect(formatPercentInput(5000)).toBe('50');
-    expect(formatPercentInput(3333)).toBe('33,33');
-    expect(formatPercentInput(1050)).toBe('10,5');
+    expect(formatPercentInput(5000, 'en-GB')).toBe('50');
+    expect(formatPercentInput(3333, 'en-GB')).toBe('33.33');
+    expect(formatPercentInput(1050, 'en-GB')).toBe('10.5');
+    expect(formatPercentInput(1050, 'fr-FR')).toBe('10,5');
   });
 
-  it('builds the default title', () => {
-    expect(defaultTitle(new Date(2026, 9, 26))).toBe('Payment, 26 Oct');
+  it('builds the default title in the creator language', () => {
+    expect(defaultTitle(new Date(2026, 9, 26), translatorFor('en'))).toBe('Payment, 26 Oct');
+    expect(defaultTitle(new Date(2026, 10, 3), translatorFor('fr'))).toBe('Paiement, 3 nov.');
   });
 });

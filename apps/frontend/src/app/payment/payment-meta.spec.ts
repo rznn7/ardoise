@@ -1,4 +1,5 @@
 import { type GroupMember } from '@ardoise/shared';
+import { translatorFor } from 'src/test-providers';
 import { describe, expect, it } from 'vitest';
 
 import { paymentMeta } from './payment-meta';
@@ -16,19 +17,31 @@ const payment = {
 
 describe('paymentMeta', () => {
   it('says who paid, when, and how it is split', () => {
-    expect(paymentMeta(payment, members, 1)).toBe('Paid by Léa · Sun 25 Oct · Equally');
+    expect(paymentMeta(payment, members, 1, translatorFor('en'))).toBe(
+      'Paid by Léa · Sun 25 Oct · Equally',
+    );
   });
 
   it('says you when the current user paid', () => {
-    expect(paymentMeta({ ...payment, payerMemberId: 11 }, members, 1)).toBe(
+    expect(paymentMeta({ ...payment, payerMemberId: 11 }, members, 1, translatorFor('en'))).toBe(
       'Paid by you · Sun 25 Oct · Equally',
     );
   });
 
   it('says someone when the payer is not a member any more', () => {
-    expect(paymentMeta({ ...payment, payerMemberId: 99 }, members, 1)).toBe(
+    expect(paymentMeta({ ...payment, payerMemberId: 99 }, members, 1, translatorFor('en'))).toBe(
       'Paid by someone · Sun 25 Oct · Equally',
     );
+  });
+
+  it('speaks French', () => {
+    const fr = translatorFor('fr');
+    expect(paymentMeta({ ...payment, payerMemberId: 11 }, members, 1, fr)).toBe(
+      'Payé par vous · dim. 25 oct. · Équitable',
+    );
+    expect(
+      paymentMeta({ ...payment, payerMemberId: 99, splitType: 'percent' }, members, 1, fr),
+    ).toBe('Payé par quelqu’un · dim. 25 oct. · En pourcentage');
   });
 
   it.each([
@@ -36,7 +49,7 @@ describe('paymentMeta', () => {
     ['percent', 'By percentage'],
     ['exact', 'Exact amounts'],
   ] as const)('labels a %s split as %s', (splitType, label) => {
-    expect(paymentMeta({ ...payment, splitType }, members, 1)).toBe(
+    expect(paymentMeta({ ...payment, splitType }, members, 1, translatorFor('en'))).toBe(
       `Paid by Léa · Sun 25 Oct · ${label}`,
     );
   });

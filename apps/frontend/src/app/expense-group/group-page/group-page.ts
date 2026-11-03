@@ -39,6 +39,7 @@ import { MemberApiService } from 'src/app/member/member-api.service';
 import { dayLabel } from 'src/app/payment/day-label';
 import { DoneStore } from 'src/app/settlement/done-store';
 import { settlementLabel } from 'src/app/settlement/settlement-label';
+import { LanguageService } from 'src/app/shared/i18n/language.service';
 import { injectGoBack } from 'src/app/shared/navigation/back';
 import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
 import { ToastService } from 'src/app/shared/toast.service';
@@ -118,6 +119,7 @@ export class GroupPage {
   private readonly shell = viewChild(MobileShell);
   private readonly toast = inject(ToastService);
   private readonly realtime = inject(RealtimeService);
+  private readonly language = inject(LanguageService);
   private latestMembersFetch = 0;
 
   readonly goBack = injectGoBack();
@@ -218,10 +220,11 @@ export class GroupPage {
     const feed = this.feed();
     if (feed.status !== 'loaded') return [];
     const today = new Date();
+    const tr = this.language.translator();
     const days: FeedDay[] = [];
     for (const row of feed.rows) {
       const date = row.kind === 'payment' ? row.payment.paidAt : row.settlement.settledAt;
-      const label = dayLabel(new Date(date), today);
+      const label = dayLabel(new Date(date), today, tr);
       const current = days.at(-1);
       if (current?.label === label) current.rows.push(row);
       else days.push({ label, rows: [row] });
@@ -246,7 +249,7 @@ export class GroupPage {
   readonly repaymentLabel = (row: FeedRow & { kind: 'settlement' }): string => {
     const state = this.groupState();
     if (state.status !== 'loaded') return '';
-    return settlementLabel(row.settlement, state.members, state.me.id);
+    return settlementLabel(row.settlement, state.members, state.me.id, this.language.translator());
   };
 
   constructor() {

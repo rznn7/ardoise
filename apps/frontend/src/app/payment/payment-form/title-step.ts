@@ -14,6 +14,7 @@ import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmInputImports } from '@spartan-ng/helm/input';
 import { defaultTitle } from 'src/app/payment/money-input';
 import { NOW, PaymentDraft } from 'src/app/payment/payment-draft';
+import { LanguageService } from 'src/app/shared/i18n/language.service';
 import { injectGoBack } from 'src/app/shared/navigation/back';
 import { GroupChip } from 'src/app/shared/ui/group-chip/group-chip';
 import { MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
@@ -42,7 +43,11 @@ export class TitleStep {
   private readonly goBack = injectGoBack();
   private readonly titleInput = viewChild.required<ElementRef<HTMLInputElement>>('titleInput');
 
-  protected readonly placeholder = defaultTitle(inject(NOW)());
+  private readonly language = inject(LanguageService);
+  private readonly now = inject(NOW)();
+  protected readonly placeholder = computed(() =>
+    defaultTitle(this.now, this.language.translator()),
+  );
   protected readonly maxLength = TITLE_MAX_LENGTH;
   protected readonly editing = computed(() => this.draft.mode() === 'edit');
 

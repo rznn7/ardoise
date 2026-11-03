@@ -1,4 +1,52 @@
 {
+  "common": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "someone": "Someone",
+    "you": "You"
+  },
+  "admin": {
+    "dates": {
+      "today": "today",
+      "yesterday": "yesterday",
+      "daysAgo": "{count} days ago",
+      "onDate": "{date}",
+      "joined": "joined {when}",
+      "signedIn": "signed in {when}",
+      "expiresToday": "expires today",
+      "expiresTomorrow": "expires tomorrow",
+      "expiresInDays": "expires in {count} days",
+      "groups": "{count, plural, =0 {No group} one {# group} other {# groups}}",
+      "payments": "{count, plural, one {# payment} other {# payments}}",
+      "groupMeta": "{currency} · created {date} · {payments} · {spent} spent"
+    }
+  },
+  "balance": {
+    "rows": {
+      "youPay": "You pay {name}",
+      "iPaid": "I paid {name} back",
+      "paysYou": "{name} pays you",
+      "paidMe": "{name} paid me back",
+      "pays": "{from} pays {to}"
+    }
+  },
+  "payment": {
+    "defaultTitle": "Payment, {date}",
+    "meta": {
+      "paidBy": "Paid by {name}",
+      "you": "you",
+      "someone": "someone"
+    },
+    "split": {
+      "equal": "Equally",
+      "shares": "By shares",
+      "percent": "By percentage",
+      "exact": "Exact amounts"
+    },
+    "form": {
+      "percentTotal": "{entered} of {target} %"
+    }
+  },
   "settings": {
     "language": {
       "title": "Language",
@@ -30,6 +78,13 @@
       "failed": "Couldn't sign out. Try again.",
       "busy": "Signing out…",
       "cancel": "Cancel"
+    }
+  },
+  "settlement": {
+    "label": {
+      "youPaid": "You paid {name} back",
+      "paidYou": "{name} paid you back",
+      "paid": "{from} paid {to} back"
     }
   }
 }

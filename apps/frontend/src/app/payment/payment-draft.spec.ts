@@ -243,7 +243,7 @@ describe('PaymentDraft', () => {
     it('round-trips a percent payment', () => {
       expect(draft.mode()).toBe('edit');
       expect(draft.paymentId()).toBe(9);
-      expect(draft.amountText()).toBe('24,50');
+      expect(draft.amountText()).toBe('24.50');
       expect(draft.title()).toBe('Taxi');
       expect(draft.payerMemberId()).toBe(2);
       expect(draft.date()).toBe('2026-10-20');
@@ -289,7 +289,7 @@ describe('PaymentDraft', () => {
         ],
         members,
       );
-      expect(draft.exactTexts().get(1)).toBe('18,50');
+      expect(draft.exactTexts().get(1)).toBe('18.50');
       expect(draft.valid()).toBe(true);
     });
   });

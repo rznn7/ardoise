@@ -19,6 +19,7 @@ import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
 import { AdminApiService } from 'src/app/admin/admin-api.service';
 import { expiresIn, groupMeta, shortDate } from 'src/app/admin/admin-dates';
+import { LanguageService } from 'src/app/shared/i18n/language.service';
 import { injectGoBack } from 'src/app/shared/navigation/back';
 import { ToastService } from 'src/app/shared/toast.service';
 import { BalanceIndicator } from 'src/app/shared/ui/balance-indicator/balance-indicator';
@@ -57,6 +58,7 @@ const capitalised = (text: string): string => text.charAt(0).toUpperCase() + tex
 export class AdminGroupPage {
   private readonly api = inject(AdminApiService);
   private readonly toast = inject(ToastService);
+  private readonly language = inject(LanguageService);
   protected readonly goBack = injectGoBack();
 
   readonly groupId = input.required({ transform: numberAttribute });
@@ -68,7 +70,7 @@ export class AdminGroupPage {
   protected readonly meta = computed(() => {
     const state = this.state();
     if (state.status !== 'loaded') return '';
-    return groupMeta(state.detail.group);
+    return groupMeta(state.detail.group, this.language.translator());
   });
 
   protected readonly links = computed((): AdminInviteLink[] => {
@@ -101,13 +103,13 @@ export class AdminGroupPage {
   protected linkMeta(link: AdminInviteLink): string {
     switch (link.status) {
       case 'active':
-        return capitalised(expiresIn(link.expiresAt, new Date()));
+        return capitalised(expiresIn(link.expiresAt, new Date(), this.language.translator()));
       case 'used':
-        return `Used by ${link.burnedByName ?? 'someone'} · ${shortDate(link.burnedAt ?? link.createdAt)}`;
+        return `Used by ${link.burnedByName ?? 'someone'} · ${shortDate(link.burnedAt ?? link.createdAt, this.language.translator().locale)}`;
       case 'expired':
-        return `Expired ${shortDate(link.expiresAt)}`;
+        return `Expired ${shortDate(link.expiresAt, this.language.translator().locale)}`;
       case 'revoked':
-        return `Revoked ${shortDate(link.revokedAt ?? link.createdAt)}`;
+        return `Revoked ${shortDate(link.revokedAt ?? link.createdAt, this.language.translator().locale)}`;
     }
   }
 

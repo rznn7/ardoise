@@ -35,6 +35,7 @@ import { MemberApiService } from 'src/app/member/member-api.service';
 import { PaymentApiService } from 'src/app/payment/payment-api.service';
 import { PaymentDraft } from 'src/app/payment/payment-draft';
 import { paymentMeta } from 'src/app/payment/payment-meta';
+import { LanguageService } from 'src/app/shared/i18n/language.service';
 import { injectGoBack } from 'src/app/shared/navigation/back';
 import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
 import { ToastService } from 'src/app/shared/toast.service';
@@ -132,6 +133,7 @@ export class PaymentDetails {
   private readonly router = inject(Router);
   private readonly goBack = injectGoBack();
   private readonly toast = inject(ToastService);
+  private readonly language = inject(LanguageService);
   private leaving = false;
 
   readonly groupId = input.required({ transform: numberAttribute });
@@ -157,7 +159,7 @@ export class PaymentDetails {
   protected readonly meta = computed(() => {
     const state = this.state();
     if (state.status !== 'loaded') return '';
-    return paymentMeta(state.payment, state.members, state.me.id);
+    return paymentMeta(state.payment, state.members, state.me.id, this.language.translator());
   });
 
   protected readonly shareRows = computed((): readonly ShareRow[] => {

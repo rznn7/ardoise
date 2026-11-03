@@ -19,6 +19,7 @@ import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
 import { AdminApiService } from 'src/app/admin/admin-api.service';
 import { expiresIn, shortDate } from 'src/app/admin/admin-dates';
+import { LanguageService } from 'src/app/shared/i18n/language.service';
 import { injectGoBack } from 'src/app/shared/navigation/back';
 import { ToastService } from 'src/app/shared/toast.service';
 import { BalanceIndicator } from 'src/app/shared/ui/balance-indicator/balance-indicator';
@@ -55,6 +56,7 @@ type AdminSession = AdminUser['sessions'][number];
 export class AdminUserPage {
   private readonly api = inject(AdminApiService);
   private readonly toast = inject(ToastService);
+  private readonly language = inject(LanguageService);
   protected readonly goBack = injectGoBack();
 
   readonly userId = input.required({ transform: numberAttribute });
@@ -65,7 +67,9 @@ export class AdminUserPage {
 
   protected readonly meta = computed(() => {
     const state = this.state();
-    return state.status === 'loaded' ? `Joined ${shortDate(state.detail.user.createdAt)}` : '';
+    return state.status === 'loaded'
+      ? `Joined ${shortDate(state.detail.user.createdAt, this.language.translator().locale)}`
+      : '';
   });
 
   protected readonly sessions = computed(() => {
@@ -90,7 +94,8 @@ export class AdminUserPage {
   }
 
   protected sessionMeta(session: AdminSession): string {
-    return `Signed in ${shortDate(session.issuedAt)} · ${expiresIn(session.expiresAt, new Date())}`;
+    const tr = this.language.translator();
+    return `Signed in ${shortDate(session.issuedAt, tr.locale)} · ${expiresIn(session.expiresAt, new Date(), tr)}`;
   }
 
   protected retry(): void {
