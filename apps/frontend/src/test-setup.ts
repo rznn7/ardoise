@@ -1,4 +1,4 @@
-import { vi } from 'vitest';
+import { beforeEach, vi } from 'vitest';
 
 class InertIntersectionObserver {
   readonly observe = vi.fn();
@@ -20,3 +20,8 @@ class InertEventSource {
 }
 
 Object.assign(globalThis, { EventSource: InertEventSource });
+
+beforeEach(() => {
+  localStorage.clear();
+  document.documentElement.lang = 'en';
+});

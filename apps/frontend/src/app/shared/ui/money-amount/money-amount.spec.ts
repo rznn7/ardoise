@@ -9,10 +9,6 @@ async function renderAmount(cents: number, currency = 'EUR', signed = false): Pr
 }
 
 describe('MoneyAmount', () => {
-  beforeEach(() => {
-    localStorage.clear();
-  });
-
   it('formats cents as currency', async () => {
     await renderAmount(4250);
     expect(screen.getByText('€42.50')).toBeTruthy();

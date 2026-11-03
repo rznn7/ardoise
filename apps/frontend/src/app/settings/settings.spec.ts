@@ -48,10 +48,6 @@ async function setup({
 }
 
 describe('Settings', () => {
-  beforeEach(() => {
-    localStorage.clear();
-  });
-
   it('shows the theme choice and applies it at once', async () => {
     const { setPreference } = await setup();
 

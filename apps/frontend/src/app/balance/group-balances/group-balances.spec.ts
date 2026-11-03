@@ -1,3 +1,4 @@
+import { TestBed } from '@angular/core/testing';
 import {
   type CreateSettlementBody,
   type GroupBalancesResponse,
@@ -7,6 +8,7 @@ import {
 import { render, screen, within } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
 import { type BalancesState } from 'src/app/balance/balance-store';
+import { LanguageService } from 'src/app/shared/i18n/language.service';
 
 import { GroupBalances } from './group-balances';
 
@@ -152,6 +154,17 @@ describe('GroupBalances', () => {
       await userEvent.click(within(sheet).getByRole('button', { name: 'I paid Léa back' }));
 
       expect(record).toHaveBeenCalledWith({ fromMemberId: 11, toMemberId: 12, amount: 3000 });
+    });
+
+    it('rewords an open repayment sheet when the language changes', async () => {
+      await renderBalances(MIXED);
+
+      await userEvent.click(screen.getByRole('button', { name: /you pay léa/i }));
+      const sheet = await screen.findByRole('dialog');
+      await TestBed.inject(LanguageService).setPreference('fr');
+
+      expect(await within(sheet).findByText('Vous devez à Léa')).toBeTruthy();
+      expect(within(sheet).getByRole('button', { name: 'J’ai remboursé Léa' })).toBeTruthy();
     });
 
     it('closes the sheet without recording on Not yet', async () => {

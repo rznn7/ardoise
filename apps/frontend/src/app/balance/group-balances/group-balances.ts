@@ -37,6 +37,10 @@ export interface RepaymentToRecord {
 }
 
 type Selection =
+  | { readonly kind: 'confirm'; readonly fromMemberId: number; readonly toMemberId: number }
+  | { readonly kind: 'undo'; readonly id: number };
+
+type SelectedRow =
   | { readonly kind: 'confirm'; readonly row: RepaymentRow }
   | { readonly kind: 'undo'; readonly row: DoneRow };
 
@@ -79,6 +83,21 @@ export class GroupBalances {
   readonly undo = output<number>();
 
   protected readonly selection = signal<Selection | null>(null);
+
+  protected readonly selected = computed((): SelectedRow | null => {
+    const selection = this.selection();
+    if (selection?.kind === 'confirm') {
+      const row = this.repayments().find(
+        (r) => r.fromMemberId === selection.fromMemberId && r.toMemberId === selection.toMemberId,
+      );
+      return row ? { kind: 'confirm', row } : null;
+    }
+    if (selection?.kind === 'undo') {
+      const row = this.done().find((r) => r.id === selection.id);
+      return row ? { kind: 'undo', row } : null;
+    }
+    return null;
+  });
 
   protected readonly memberLines = computed(() => {
     const state = this.state();

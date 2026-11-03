@@ -55,7 +55,13 @@
                           hlmSheetTrigger
                           side="bottom"
                           type="button"
-                          (click)="selection.set({ kind: 'confirm', row })"
+                          (click)="
+                            selection.set({
+                              kind: 'confirm',
+                              fromMemberId: row.fromMemberId,
+                              toMemberId: row.toMemberId,
+                            })
+                          "
                         >
                           <app-list-row>
                             <span appListRowTitle>{{ row.label }}</span>
@@ -99,7 +105,7 @@
                             hlmSheetTrigger
                             side="bottom"
                             type="button"
-                            (click)="selection.set({ kind: 'undo', row })"
+                            (click)="selection.set({ kind: 'undo', id: row.id })"
                           >
                             <app-list-row>
                               <ng-icon
@@ -162,8 +168,8 @@
     }
 
     <hlm-sheet-content *brnSheetContent>
-      @let selected = selection();
-      @if (selected?.kind === 'confirm' && selected.row; as row) {
+      @let open = selected();
+      @if (open?.kind === 'confirm' && open.row; as row) {
         <div class="flex flex-col items-center gap-2 p-4 pt-8">
           <p appMeta hlmSheetTitle>{{ row.label }}</p>
           <app-money-amount appFigure [cents]="row.amount" [currency]="currency()" />
@@ -177,7 +183,7 @@
           </button>
         </div>
       }
-      @if (selected?.kind === 'undo' && selected.row; as row) {
+      @if (open?.kind === 'undo' && open.row; as row) {
         <div class="flex flex-col items-center gap-2 p-4 pt-8">
           <p appMeta hlmSheetTitle>{{ row.label }} · {{ dayOf(row) }}</p>
           <app-money-amount appFigure [cents]="row.amount" [currency]="currency()" />
