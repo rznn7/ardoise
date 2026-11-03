@@ -104,6 +104,9 @@ A settlement overlays the balance calculation; it never mutates payments.
     the edge (#18).
 - [ ] **route-change focus** — after each navigation, move focus to the page heading so screen
   readers and keyboard users land on the new screen (#19).
+- [ ] **pull to refresh on touch** — on a phone the whole screen moves with the finger instead of the
+  pull indicator alone; the refresh gesture does not work as intended. Missed in the feed pagination
+  review.
 - [x] **PWA** — manifest, app icon, standalone mode under a translucent status bar, reload onto a new
   deploy. iOS keyboard handling landed with payments.
 - [ ] **multi-device passkey** — lift the v1 single-passkey non-goal.
