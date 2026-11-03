@@ -5,7 +5,7 @@
     "types": []
   },
   "include": ["src/**/*.ts", "libs/ui/**/src/**/*.ts"],
-  "exclude": ["src/**/*.spec.ts", "src/test-setup.ts"],
+  "exclude": ["src/**/*.spec.ts", "src/test-setup.ts", "src/test-providers.ts"],
   "angularCompilerOptions": {
     "extendedDiagnostics": {
       "checks": {

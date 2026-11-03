@@ -71,6 +71,25 @@ Applies to feature templates: everything in `src/app/**` outside `src/app/shared
 - No arbitrary values (`[...]`), no component `.css` files, no inline styles.
 - Tokens live in `src/styles.css` (light and `.dark`).
 
+## Copy
+
+The app speaks English and French (`src/i18n/en.json`, `fr.json`). English is the reference. French
+uses vous, in a sober tone. Plurals and variables go through ICU (`{count, plural, one {# groupe} other
+{# groupes}}`), never assembled from fragments. The same words everywhere:
+
+| English | Français |
+|---|---|
+| group | groupe |
+| member | membre |
+| payment | paiement |
+| repayment | remboursement |
+| balance | solde |
+| share (split part) | part |
+| invite link | lien d'invitation |
+| passkey | clé d'accès |
+| settled up | à jour |
+| Settings | Réglages |
+
 ## Backdrops
 
 Generated light rays with heavy grain, VoidZero-inspired.

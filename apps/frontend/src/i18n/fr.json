@@ -1,0 +1,13 @@
+{
+  "common": {
+    "today": "Aujourd’hui",
+    "yesterday": "Hier",
+    "someone": "Quelqu’un"
+  },
+  "settings": {
+    "language": {
+      "title": "Langue",
+      "system": "Système"
+    }
+  }
+}

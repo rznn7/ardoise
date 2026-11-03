@@ -1,0 +1,13 @@
+{
+  "common": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "someone": "Someone"
+  },
+  "settings": {
+    "language": {
+      "title": "Language",
+      "system": "System"
+    }
+  }
+}
