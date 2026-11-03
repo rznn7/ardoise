@@ -10,6 +10,7 @@ import {
   type CreateSettlementBody,
   type ExpenseGroupSummary,
   type GroupBalancesResponse,
+  type GroupEvent,
   type GroupMember,
   type MeResponse,
   type PaymentResponse,
@@ -29,6 +30,7 @@ import { type DoneState, DoneStore } from 'src/app/settlement/done-store';
 import { ClipboardService } from 'src/app/shared/clipboard.service';
 import { withHistoryPageIds } from 'src/app/shared/navigation/back';
 import { openFirstPage } from 'src/app/shared/navigation/first-page.testing';
+import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
 import { ShareService } from 'src/app/shared/share.service';
 import { ToastService } from 'src/app/shared/toast.service';
 import { LoadMore } from 'src/app/shared/ui/load-more/load-more';
@@ -139,6 +141,9 @@ interface Setup {
   feedRefresh: WritableSignal<'idle' | 'loading' | 'error'>;
   loadDone: ReturnType<typeof vi.fn<(groupId: number) => void>>;
   toastError: ReturnType<typeof vi.fn<(message: string) => void>>;
+  events: Subject<GroupEvent>;
+  resynced: Subject<void>;
+  listMembers: ReturnType<typeof vi.fn<() => Observable<GroupMember[]>>>;
 }
 
 const settlementsOf = (row: FeedRow) => (row.kind === 'settlement' ? [row.settlement] : []);
@@ -162,10 +167,12 @@ async function setup({
   url = '/group/7',
   from,
   doneState = doneOf(feedState),
+  listMembers = vi.fn<() => Observable<GroupMember[]>>().mockReturnValue(of(members)),
 }: {
   members?: GroupMember[];
   feedState?: FeedState;
   doneState?: DoneState;
+  listMembers?: Setup['listMembers'];
   findOne?: Setup['findOne'];
   balances?: GroupBalancesResponse | Observable<GroupBalancesResponse>;
   url?: string;
@@ -186,6 +193,8 @@ async function setup({
   const feedRefresh = signal<'idle' | 'loading' | 'error'>('idle');
   const loadDone = vi.fn<(groupId: number) => void>();
   const toastError = vi.fn<(message: string) => void>();
+  const events = new Subject<GroupEvent>();
+  const resynced = new Subject<void>();
   TestBed.configureTestingModule({
     providers: [
       provideRouter(
@@ -200,7 +209,8 @@ async function setup({
         withHistoryPageIds(),
       ),
       { provide: ExpenseGroupApiService, useValue: { findOne } },
-      { provide: MemberApiService, useValue: { listByGroup: () => of(members) } },
+      { provide: MemberApiService, useValue: { listByGroup: listMembers } },
+      { provide: RealtimeService, useValue: { events, resynced } },
       { provide: AuthApiService, useValue: { me: () => of(ME) } },
       {
         provide: FeedStore,
@@ -267,6 +277,9 @@ async function setup({
     feedRefresh,
     loadDone,
     toastError,
+    events,
+    resynced,
+    listMembers,
   };
 }
 
@@ -291,6 +304,50 @@ describe('GroupPage', () => {
 
     expect(screen.getByRole('heading', { name: 'Lisbon trip' })).toBeTruthy();
     expect(screen.getByText('You, Léa, Tom')).toBeTruthy();
+  });
+
+  describe('live members', () => {
+    const joined = (userId: number, groupId = 7): GroupEvent => ({
+      type: 'member.joined',
+      groupId,
+      userId,
+    });
+
+    it('lists a member who joined the group', async () => {
+      const { events, listMembers } = await setup();
+      listMembers.mockReturnValue(of([...MEMBERS, member(14, 4, 'Zoé')]));
+
+      events.next(joined(4));
+
+      expect(await screen.findByText('You, Léa, Tom, Zoé')).toBeTruthy();
+    });
+
+    it('ignores a member who joined another group', async () => {
+      const { events, listMembers } = await setup();
+
+      events.next(joined(4, 8));
+
+      expect(listMembers).toHaveBeenCalledTimes(1);
+    });
+
+    it('refetches the members when the connection resyncs', async () => {
+      const { resynced, listMembers } = await setup();
+      listMembers.mockReturnValue(of([...MEMBERS, member(14, 4, 'Zoé')]));
+
+      resynced.next();
+
+      expect(await screen.findByText('You, Léa, Tom, Zoé')).toBeTruthy();
+    });
+
+    it('keeps the shown members when the refetch fails', async () => {
+      const { events, listMembers } = await setup();
+      listMembers.mockReturnValue(throwError(() => new Error('offline')));
+
+      events.next(joined(4));
+
+      expect(listMembers).toHaveBeenCalledTimes(2);
+      expect(screen.getByText('You, Léa, Tom')).toBeTruthy();
+    });
   });
 
   it('says Just you so far when the current user is alone', async () => {

@@ -21,6 +21,7 @@ import { UndoSettlementUseCase } from 'src/settlement/application/undo-settlemen
 import { toSettlementResponse } from 'src/settlement/infrastructure/settlement.mapper';
 import { CurrentUser } from 'src/shared/http/current-user.decorator';
 import { type SessionUser } from 'src/shared/http/express';
+import { OpId } from 'src/shared/http/op-id.decorator';
 import { Route } from 'src/shared/http/route.decorator';
 import { ZodValidationPipe } from 'src/shared/http/zod-validation.pipe';
 
@@ -69,10 +70,12 @@ export class SettlementController {
     @Body(new ZodValidationPipe(settlementApi.create.body))
     body: CreateSettlementRequest,
     @CurrentUser() user: SessionUser,
+    @OpId() opId: string | undefined,
   ): Promise<SettlementResponse> {
     const settlement = await this.recordSettlement.execute({
       ...body,
       userId: user.id,
+      opId,
     });
     return toSettlementResponse(settlement);
   }
@@ -81,7 +84,12 @@ export class SettlementController {
   async delete(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: SessionUser,
+    @OpId() opId: string | undefined,
   ): Promise<void> {
-    await this.undoSettlement.execute({ userId: user.id, settlementId: id });
+    await this.undoSettlement.execute({
+      userId: user.id,
+      settlementId: id,
+      opId,
+    });
   }
 }

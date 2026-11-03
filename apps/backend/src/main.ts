@@ -4,7 +4,9 @@ import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    forceCloseConnections: true,
+  });
   app.use(cookieParser());
   app.enableShutdownHooks();
   await app.listen(process.env['PORT'] ?? 3000);

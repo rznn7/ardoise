@@ -45,7 +45,9 @@ export async function setupTestApp(opts?: {
   if (opts?.overrides) builder = opts.overrides(builder);
 
   const moduleFixture = await builder.compile();
-  const app: INestApplication<App> = moduleFixture.createNestApplication();
+  const app: INestApplication<App> = moduleFixture.createNestApplication({
+    forceCloseConnections: true,
+  });
   app.use(cookieParser());
   await app.init();
 

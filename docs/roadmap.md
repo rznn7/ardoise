@@ -74,11 +74,12 @@ A settlement overlays the balance calculation; it never mutates payments.
   cursor, loaded automatically at the bottom; going back from details keeps your place; pull to
   refresh on the group page (`superpowers/specs/2026-10-27-feed-pagination-design.md`).
 
-## Real-time SSE
-- [ ] **SSE stream infra (backend)** — per-group `@Sse` endpoint, connection management,
-  event emitter.
-- [ ] **domain event wiring (backend)** — push on payment / settlement / member change.
-- [ ] **live subscription (frontend)** — EventSource subscription + reactive refresh.
+## Real-time SSE (done)
+- [x] **SSE stream infra (backend)** — one `@Sse` stream per user covering all their groups, connection
+  management, event emitter.
+- [x] **domain event wiring (backend)** — push on payment / settlement / member change.
+- [x] **live subscription (frontend)** — EventSource subscription + reactive refresh
+  (`superpowers/specs/2026-10-28-realtime-design.md`).
 
 ## Personal settings
 - [ ] **settings page (frontend)** — personal settings screen; first entry is the theme

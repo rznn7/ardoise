@@ -10,3 +10,13 @@ class InertIntersectionObserver {
 if (!('IntersectionObserver' in globalThis)) {
   Object.assign(globalThis, { IntersectionObserver: InertIntersectionObserver });
 }
+
+class InertEventSource {
+  static readonly CLOSED = 2;
+  readyState = 0;
+  onmessage = null;
+  onerror = null;
+  readonly close = vi.fn();
+}
+
+Object.assign(globalThis, { EventSource: InertEventSource });

@@ -2,6 +2,8 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { type SettlementResponse } from '@ardoise/shared';
+import { Subject } from 'rxjs';
+import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { type DoneState, DoneStore } from './done-store';
@@ -23,10 +25,16 @@ const ids = (state: DoneState) =>
 describe(DoneStore.name, () => {
   let store: DoneStore;
   let http: HttpTestingController;
+  let resynced: Subject<void>;
 
   beforeEach(() => {
+    resynced = new Subject<void>();
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: RealtimeService, useValue: { events: new Subject(), resynced } },
+      ],
     });
     store = TestBed.inject(DoneStore);
     http = TestBed.inject(HttpTestingController);
@@ -88,5 +96,63 @@ describe(DoneStore.name, () => {
     store.hide(2);
     store.removed(7, 2);
     expect(ids(store.done(7)())).toEqual([3]);
+  });
+
+  it('keeps a removal made during the first fetch', async () => {
+    store.loadFirst(7);
+    await settle();
+    const first = http.expectOne('/api/expense-groups/7/settlements');
+
+    store.removed(7, 3);
+    first.flush({
+      items: [settlement(3, '2026-10-20T10:00:00.000Z'), settlement(2, '2026-10-10T10:00:00.000Z')],
+      nextCursor: null,
+    });
+    await settle();
+    http.expectOne('/api/expense-groups/7/settlements').flush({
+      items: [settlement(2, '2026-10-10T10:00:00.000Z')],
+      nextCursor: null,
+    });
+    await settle();
+
+    expect(ids(store.done(7)())).toEqual([2]);
+  });
+
+  it('reloads when the connection resyncs during the first fetch', async () => {
+    store.loadFirst(7);
+    await settle();
+
+    resynced.next();
+    await settle();
+
+    const open = http
+      .match('/api/expense-groups/7/settlements')
+      .filter((request) => !request.cancelled);
+    expect(open).toHaveLength(1);
+  });
+
+  it('walks back to the loaded depth when the connection resyncs', async () => {
+    await loadDone('c1');
+    store.loadMore();
+    await settle();
+    http
+      .expectOne('/api/expense-groups/7/settlements?cursor=c1')
+      .flush({ items: [settlement(1, '2026-10-01T10:00:00.000Z')], nextCursor: null });
+    await settle();
+
+    resynced.next();
+    await settle();
+    http.expectOne('/api/expense-groups/7/settlements').flush({
+      items: [settlement(4, '2026-10-26T10:00:00.000Z'), settlement(3, '2026-10-20T10:00:00.000Z')],
+      nextCursor: 'c9',
+    });
+    await settle();
+    http.expectOne('/api/expense-groups/7/settlements?cursor=c9').flush({
+      items: [settlement(2, '2026-10-10T10:00:00.000Z'), settlement(1, '2026-10-01T10:00:00.000Z')],
+      nextCursor: null,
+    });
+    await settle();
+
+    expect(ids(store.done(7)())).toEqual([4, 3, 2, 1]);
   });
 });

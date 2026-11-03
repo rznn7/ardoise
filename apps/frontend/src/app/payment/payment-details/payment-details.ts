@@ -9,6 +9,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import {
   computePaymentShares,
@@ -35,6 +36,8 @@ import { PaymentApiService } from 'src/app/payment/payment-api.service';
 import { PaymentDraft } from 'src/app/payment/payment-draft';
 import { paymentMeta } from 'src/app/payment/payment-meta';
 import { injectGoBack } from 'src/app/shared/navigation/back';
+import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
+import { ToastService } from 'src/app/shared/toast.service';
 import { GroupChip } from 'src/app/shared/ui/group-chip/group-chip';
 import { ListRowImports } from 'src/app/shared/ui/list-row/list-row';
 import { MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
@@ -128,6 +131,8 @@ export class PaymentDetails {
   private readonly draft = inject(PaymentDraft);
   private readonly router = inject(Router);
   private readonly goBack = injectGoBack();
+  private readonly toast = inject(ToastService);
+  private leaving = false;
 
   readonly groupId = input.required({ transform: numberAttribute });
   readonly paymentId = input.required({ transform: numberAttribute });
@@ -178,6 +183,24 @@ export class PaymentDetails {
       });
     });
 
+    const realtime = inject(RealtimeService);
+    realtime.resynced.pipe(takeUntilDestroyed()).subscribe(() => {
+      this.load(this.groupId(), this.paymentId(), { leaveWhenGone: true });
+    });
+    realtime.events.pipe(takeUntilDestroyed()).subscribe((event) => {
+      if (event.type === 'payment.saved' && event.payment.id === this.paymentId()) {
+        this.confirmedUpdate.set(null);
+        const saved = event.payment;
+        this.fetched.update((state) =>
+          state.status === 'loaded' ? { ...state, payment: saved } : state,
+        );
+        this.load(this.groupId(), this.paymentId());
+      }
+      if (event.type === 'payment.deleted' && event.id === this.paymentId()) {
+        this.leaveBecauseDeleted();
+      }
+    });
+
     let hadPendingUpdate = false;
     effect(() => {
       const pending = this.pendingUpdate() !== null;
@@ -207,11 +230,23 @@ export class PaymentDetails {
   }
 
   protected confirmDelete(): void {
+    this.leaving = true;
     this.store.remove(this.groupId(), this.paymentId());
     this.goBack(this.groupUrl());
   }
 
-  private load(groupId: number, paymentId: number): void {
+  private leaveBecauseDeleted(): void {
+    if (this.leaving) return;
+    this.leaving = true;
+    this.toast.message('This payment was deleted');
+    this.goBack(this.groupUrl());
+  }
+
+  private load(
+    groupId: number,
+    paymentId: number,
+    options?: { readonly leaveWhenGone?: boolean },
+  ): void {
     const loadId = ++this.latestLoad;
     const revalidating = this.fetched().status === 'loaded';
     if (!revalidating) this.fetched.set({ status: 'loading' });
@@ -229,6 +264,10 @@ export class PaymentDetails {
       },
       error: (error: unknown) => {
         if (loadId !== this.latestLoad) return;
+        if (options?.leaveWhenGone && isNotAccessible(error)) {
+          this.leaveBecauseDeleted();
+          return;
+        }
         if (revalidating && !isNotAccessible(error)) return;
         this.fetched.set({ status: isNotAccessible(error) ? 'not-found' : 'error' });
       },

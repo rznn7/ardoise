@@ -5,10 +5,13 @@ import {
   type CreatePaymentBody,
   type CreateSettlementBody,
   type FeedItem,
+  type GroupEvent,
   type PaymentResponse,
   type SettlementResponse,
 } from '@ardoise/shared';
+import { Subject } from 'rxjs';
 import { DoneStore } from 'src/app/settlement/done-store';
+import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
 import { ToastService } from 'src/app/shared/toast.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -53,14 +56,19 @@ describe(FeedStore.name, () => {
   let store: FeedStore;
   let http: HttpTestingController;
   const error = vi.fn<(message: string) => void>();
+  let events: Subject<GroupEvent>;
+  let resynced: Subject<void>;
 
   beforeEach(() => {
     error.mockClear();
+    events = new Subject<GroupEvent>();
+    resynced = new Subject<void>();
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: ToastService, useValue: { error } },
+        { provide: RealtimeService, useValue: { events, resynced } },
       ],
     });
     store = TestBed.inject(FeedStore);
@@ -478,6 +486,423 @@ describe(FeedStore.name, () => {
         .flush({ items: items(older, payment(9, '2026-09-01T10:00:00.000Z')), nextCursor: null });
       await settle();
       expect(loadedIds()).toEqual([3, 2, 1, 9]);
+    });
+  });
+
+  describe('live events', () => {
+    const saved = (p: PaymentResponse, opId: string | null = null): GroupEvent => ({
+      type: 'payment.saved',
+      groupId: 7,
+      opId,
+      payment: p,
+    });
+    const deleted = (id: number): GroupEvent => ({
+      type: 'payment.deleted',
+      groupId: 7,
+      opId: null,
+      id,
+    });
+    const theirs = payment(10, '2026-10-10T10:00:00.000Z');
+
+    it('inserts a payment from someone else at its date', async () => {
+      await loadFeed();
+
+      events.next(saved(theirs));
+
+      expect(loadedIds()).toEqual([3, 10, 2, 1]);
+    });
+
+    it('replaces a payment with the same id', async () => {
+      await loadFeed();
+      events.next(saved(theirs));
+
+      events.next(saved({ ...theirs, title: 'Renamed' }));
+
+      expect(paymentRows(store.feed(7)()).filter((p) => p.id === 10)).toEqual([
+        { ...theirs, title: 'Renamed', pending: false },
+      ]);
+    });
+
+    it('does not show a payment older than the loaded boundary', async () => {
+      store.loadFirst(7);
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed')
+        .flush({ items: items(newest, newer), nextCursor: 'more' });
+      await settle();
+
+      events.next(saved(payment(11, '2026-09-01T10:00:00.000Z')));
+
+      expect(loadedIds()).toEqual([3, 2]);
+    });
+
+    it('hides a payment edited to a date past the boundary', async () => {
+      store.loadFirst(7);
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed')
+        .flush({ items: items(newest, newer), nextCursor: 'more' });
+      await settle();
+
+      events.next(saved({ ...newer, paidAt: '2026-09-01T10:00:00.000Z' }));
+
+      expect(loadedIds()).toEqual([3]);
+    });
+
+    it('removes a deleted payment', async () => {
+      await loadFeed();
+
+      events.next(deleted(2));
+
+      expect(loadedIds()).toEqual([3, 1]);
+    });
+
+    it('keeps a payment removed when a late save arrives after its deletion', async () => {
+      await loadFeed();
+      events.next(deleted(2));
+
+      events.next(saved(newer));
+
+      expect(loadedIds()).toEqual([3, 1]);
+    });
+
+    it('keeps a payment removed after the own delete succeeded', async () => {
+      await loadFeed();
+      store.remove(7, 2);
+      http.expectOne({ method: 'DELETE', url: '/api/payments/2' }).flush(null);
+
+      events.next(saved(newer));
+
+      expect(loadedIds()).toEqual([3, 1]);
+    });
+
+    it('does not remember an own edit whose response arrives after an event on the same payment', async () => {
+      await loadFeed();
+      const { groupId: _groupId, ...updateBody } = { ...body, title: 'Mine' };
+      store.update(7, 2, updateBody);
+      const request = http.expectOne({ method: 'PUT', url: '/api/payments/2' });
+
+      events.next(saved({ ...newer, title: 'Theirs' }, request.request.headers.get('x-op-id')));
+      request.flush({ payment: { ...newer, title: 'Mine' }, shares: [] });
+
+      expect(store.confirmedUpdate(2)).toBeNull();
+    });
+
+    it('forgets a remembered own edit when someone else saves the payment', async () => {
+      await loadFeed();
+      const { groupId: _groupId, ...updateBody } = { ...body, title: 'Mine' };
+      store.update(7, 2, updateBody);
+      http.expectOne({ method: 'PUT', url: '/api/payments/2' }).flush({
+        payment: { ...newer, title: 'Mine' },
+        shares: [],
+      });
+      await settle();
+      expect(store.confirmedUpdate(2)).toEqual(updateBody);
+
+      events.next(saved({ ...newer, title: 'Theirs' }));
+
+      expect(store.confirmedUpdate(2)).toBeNull();
+    });
+
+    it('walks back to the loaded depth when the connection resyncs', async () => {
+      store.loadFirst(7);
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed')
+        .flush({ items: items(newest, newer), nextCursor: 'more' });
+      await settle();
+      store.loadMore();
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed?cursor=more')
+        .flush({ items: items(older), nextCursor: null });
+      await settle();
+
+      resynced.next();
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed')
+        .flush({ items: items(newest, theirs), nextCursor: 'p2' });
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed?cursor=p2')
+        .flush({ items: items(newer, older), nextCursor: null });
+      await settle();
+
+      expect(loadedIds()).toEqual([3, 10, 2, 1]);
+    });
+
+    it('keeps an event that lands between two pages of the resync walk', async () => {
+      store.loadFirst(7);
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed')
+        .flush({ items: items(newest, newer), nextCursor: 'more' });
+      await settle();
+
+      resynced.next();
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed')
+        .flush({ items: items(newest), nextCursor: 'p2' });
+      await settle();
+      const second = http.expectOne('/api/expense-groups/7/feed?cursor=p2');
+      events.next(saved(theirs));
+      second.flush({ items: items(newer), nextCursor: null });
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed?cursor=p2')
+        .flush({ items: items(newer), nextCursor: null });
+      await settle();
+      expect(loadedIds()).toContain(10);
+
+      http
+        .expectOne('/api/expense-groups/7/feed')
+        .flush({ items: items(newest, theirs), nextCursor: 'p2' });
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed?cursor=p2')
+        .flush({ items: items(newer), nextCursor: null });
+      await settle();
+
+      expect(loadedIds()).toEqual([3, 10, 2]);
+    });
+
+    it('does not bring back a deleted payment the walk still returns', async () => {
+      await loadFeed();
+      resynced.next();
+      await settle();
+      const request = http.expectOne('/api/expense-groups/7/feed');
+
+      store.remove(7, 2);
+      http.expectOne({ method: 'DELETE', url: '/api/payments/2' }).flush(null);
+      request.flush({ items: items(older, newest, newer), nextCursor: null });
+      await settle();
+      http
+        .match('/api/expense-groups/7/feed')
+        .filter((r) => !r.cancelled)
+        .forEach((r) => {
+          r.flush({ items: items(older, newest, newer), nextCursor: null });
+        });
+      await settle();
+
+      expect(loadedIds()).toEqual([3, 1]);
+    });
+
+    it('shows one row when the event of an own create arrives before the response', async () => {
+      await loadFeed();
+      store.create(body);
+      const request = http.expectOne({ method: 'POST', url: '/api/payments' });
+      const confirmed = payment(20, body.paidAt);
+
+      events.next(saved(confirmed, request.request.headers.get('x-op-id')));
+
+      expect(paymentRows(store.feed(7)()).filter((p) => p.id < 0 || p.id === 20)).toEqual([
+        { ...confirmed, pending: false },
+      ]);
+
+      request.flush({ payment: confirmed });
+
+      expect(paymentRows(store.feed(7)()).filter((p) => p.id < 0 || p.id === 20)).toEqual([
+        { ...confirmed, pending: false },
+      ]);
+    });
+
+    it('keeps an event that arrives during the first fetch', async () => {
+      store.loadFirst(7);
+      await settle();
+      const first = http.expectOne('/api/expense-groups/7/feed');
+
+      events.next(saved(theirs));
+      first.flush({ items: items(older, newest, newer), nextCursor: null });
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed')
+        .flush({ items: items(older, newest, newer, theirs), nextCursor: null });
+      await settle();
+
+      expect(loadedIds()).toEqual([3, 10, 2, 1]);
+    });
+
+    it('keeps the pending update overlay when the row is saved by an event', async () => {
+      await loadFeed();
+      const update = {
+        payerMemberId: 1,
+        title: 'Mine',
+        paidAt: newer.paidAt,
+        fullAmount: 1,
+        splitType: 'equal' as const,
+        participants: [{ memberId: 1, inputValue: 0 }],
+      };
+      store.update(7, 2, update);
+
+      events.next(saved({ ...newer, title: 'Theirs' }));
+
+      expect(paymentRows(store.feed(7)()).find((p) => p.id === 2)?.title).toBe('Mine');
+    });
+
+    it('reloads the first page when the connection resyncs', async () => {
+      await loadFeed();
+
+      resynced.next();
+      await settle();
+
+      http.expectOne('/api/expense-groups/7/feed');
+    });
+
+    it('ignores a payment of a group whose pages are not kept', async () => {
+      await loadFeed();
+
+      events.next({ ...saved(theirs), groupId: 8 });
+
+      expect(loadedIds()).toEqual([3, 2, 1]);
+    });
+
+    it('keeps a payment removed when its own create resolves after its deletion', async () => {
+      await loadFeed();
+      store.create(body);
+      const request = http.expectOne({ method: 'POST', url: '/api/payments' });
+      const confirmed = payment(20, body.paidAt);
+
+      events.next(deleted(20));
+      request.flush({ payment: confirmed });
+
+      expect(loadedIds()).toEqual([3, 2, 1]);
+    });
+
+    it('drops the pending row and shows nothing for an own save already deleted', async () => {
+      await loadFeed();
+      store.create(body);
+      const request = http.expectOne({ method: 'POST', url: '/api/payments' });
+      const confirmed = payment(20, body.paidAt);
+
+      events.next(deleted(20));
+      events.next(saved(confirmed, request.request.headers.get('x-op-id')));
+
+      expect(loadedIds()).toEqual([3, 2, 1]);
+    });
+
+    it('keeps newer values when an own update resolves after a newer save', async () => {
+      await loadFeed();
+      const update = {
+        payerMemberId: 1,
+        title: 'Mine',
+        paidAt: newer.paidAt,
+        fullAmount: 1,
+        splitType: 'equal' as const,
+        participants: [{ memberId: 1, inputValue: 0 }],
+      };
+      store.update(7, 2, update);
+      const request = http.expectOne({ method: 'PUT', url: '/api/payments/2' });
+
+      events.next(saved({ ...newer, title: 'Mine' }, request.request.headers.get('x-op-id')));
+      events.next(saved({ ...newer, title: 'Newer' }));
+      request.flush({ payment: { ...newer, title: 'Mine' } });
+
+      expect(paymentRows(store.feed(7)()).find((p) => p.id === 2)?.title).toBe('Newer');
+    });
+
+    it('shows one repayment in the feed and Done when its event precedes the response', async () => {
+      await loadFeed();
+      const done = TestBed.inject(DoneStore);
+      const added = vi.spyOn(done, 'added');
+      store.recordSettlement({ groupId: 7, fromMemberId: 2, toMemberId: 1, amount: 3000 });
+      const request = http.expectOne({ method: 'POST', url: '/api/settlements' });
+      const confirmed: SettlementResponse = {
+        id: 5,
+        groupId: 7,
+        fromMemberId: 2,
+        toMemberId: 1,
+        amount: 3000,
+        settledAt: '2026-10-28T10:00:00.000Z',
+        createdByMemberId: 1,
+        createdAt: '2026-10-28T10:00:00.000Z',
+      };
+
+      events.next({
+        type: 'settlement.saved',
+        groupId: 7,
+        opId: request.request.headers.get('x-op-id'),
+        settlement: confirmed,
+      });
+      request.flush(confirmed);
+
+      const state = store.feed(7)();
+      expect(
+        state.status === 'loaded' ? state.rows.filter((r) => r.kind === 'settlement') : [],
+      ).toHaveLength(1);
+      expect(added).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps an event that arrives during a loadMore', async () => {
+      store.loadFirst(7);
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed')
+        .flush({ items: items(newest, newer), nextCursor: 'more' });
+      await settle();
+      store.loadMore();
+      await settle();
+      const second = http.expectOne('/api/expense-groups/7/feed?cursor=more');
+
+      events.next(saved(payment(10, '2026-10-10T10:00:00.000Z')));
+      second.flush({ items: items(older), nextCursor: null });
+      await settle();
+      http
+        .expectOne('/api/expense-groups/7/feed?cursor=more')
+        .flush({ items: items(older), nextCursor: null });
+      await settle();
+
+      expect(loadedIds()).toEqual([3, 10, 2, 1]);
+    });
+
+    it('reloads when the connection resyncs during the first fetch', async () => {
+      store.loadFirst(7);
+      await settle();
+
+      resynced.next();
+      await settle();
+
+      const open = http.match('/api/expense-groups/7/feed').filter((request) => !request.cancelled);
+      expect(open).toHaveLength(1);
+    });
+
+    it('does not count an event as an own settled mutation', async () => {
+      await loadFeed();
+      const version = store.settledVersion(7);
+
+      events.next(saved(theirs));
+
+      expect(version()).toBe(0);
+    });
+
+    it('shows a repayment from someone else and removes it when undone', async () => {
+      await loadFeed();
+      const repaid: SettlementResponse = {
+        id: 4,
+        groupId: 7,
+        fromMemberId: 2,
+        toMemberId: 1,
+        amount: 3000,
+        settledAt: '2026-10-06T10:00:00.000Z',
+        createdByMemberId: 2,
+        createdAt: '2026-10-06T10:00:00.000Z',
+      };
+      const done = TestBed.inject(DoneStore);
+      const added = vi.spyOn(done, 'added');
+      const removed = vi.spyOn(done, 'removed');
+
+      events.next({ type: 'settlement.saved', groupId: 7, opId: null, settlement: repaid });
+      const rows = () => {
+        const state = store.feed(7)();
+        return state.status === 'loaded' ? state.rows.filter((r) => r.kind === 'settlement') : [];
+      };
+      expect(rows()).toHaveLength(1);
+      expect(added).toHaveBeenCalledWith(7, repaid);
+
+      events.next({ type: 'settlement.deleted', groupId: 7, opId: null, id: 4 });
+      expect(rows()).toHaveLength(0);
+      expect(removed).toHaveBeenCalledWith(7, 4);
     });
   });
 

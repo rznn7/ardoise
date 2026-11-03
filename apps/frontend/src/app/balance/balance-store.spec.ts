@@ -1,8 +1,10 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { type GroupBalancesResponse } from '@ardoise/shared';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { type GroupBalancesResponse, type GroupEvent } from '@ardoise/shared';
+import { Subject } from 'rxjs';
+import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BalanceStore } from './balance-store';
 
@@ -27,10 +29,18 @@ const URL = '/api/expense-groups/7/balances';
 describe(BalanceStore.name, () => {
   let store: BalanceStore;
   let http: HttpTestingController;
+  let events: Subject<GroupEvent>;
+  let resynced: Subject<void>;
 
   beforeEach(() => {
+    events = new Subject<GroupEvent>();
+    resynced = new Subject<void>();
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: RealtimeService, useValue: { events, resynced } },
+      ],
     });
     store = TestBed.inject(BalanceStore);
     http = TestBed.inject(HttpTestingController);
@@ -105,5 +115,48 @@ describe(BalanceStore.name, () => {
     http.expectOne(URL).flush(null, { status: 500, statusText: 'Server Error' });
 
     expect(store.refreshing(7)()).toBe(false);
+  });
+
+  describe('live events', () => {
+    const groupCreated = (groupId: number): GroupEvent => ({ type: 'group.created', groupId });
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('reloads once for a burst of events', () => {
+      store.load(7);
+      http.expectOne(URL).flush(owing);
+
+      events.next(groupCreated(7));
+      vi.advanceTimersByTime(50);
+      events.next(groupCreated(7));
+      vi.advanceTimersByTime(50);
+      events.next(groupCreated(7));
+      vi.advanceTimersByTime(300);
+
+      http.expectOne(URL).flush(settled);
+      expect(store.balances(7)()).toEqual({ status: 'loaded', balances: settled });
+    });
+
+    it('ignores events about a group it has no balances for', () => {
+      events.next(groupCreated(9));
+      vi.advanceTimersByTime(1000);
+
+      http.expectNone('/api/expense-groups/9/balances');
+    });
+
+    it('reloads every group it has when the connection resyncs', () => {
+      store.load(7);
+      http.expectOne(URL).flush(owing);
+
+      resynced.next();
+
+      http.expectOne(URL);
+    });
   });
 });

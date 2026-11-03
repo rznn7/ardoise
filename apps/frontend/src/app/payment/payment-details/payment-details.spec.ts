@@ -6,6 +6,7 @@ import { provideRouter, Router, withComponentInputBinding } from '@angular/route
 import { RouterTestingHarness } from '@angular/router/testing';
 import {
   type ExpenseGroupSummary,
+  type GroupEvent,
   type GroupMember,
   type MeResponse,
   type PaymentResponse,
@@ -25,6 +26,8 @@ import { PaymentDraft } from 'src/app/payment/payment-draft';
 import { paymentMeta } from 'src/app/payment/payment-meta';
 import { withHistoryPageIds } from 'src/app/shared/navigation/back';
 import { openFirstPage } from 'src/app/shared/navigation/first-page.testing';
+import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
+import { ToastService } from 'src/app/shared/toast.service';
 
 import { PaymentDetails } from './payment-details';
 
@@ -72,6 +75,9 @@ interface Setup {
   clear: ReturnType<typeof vi.fn<() => void>>;
   router: Router;
   harness: RouterTestingHarness;
+  events: Subject<GroupEvent>;
+  resynced: Subject<void>;
+  message: ReturnType<typeof vi.fn<(text: string) => void>>;
 }
 
 async function setup({
@@ -92,6 +98,9 @@ async function setup({
     confirmed = body;
   };
   const clear = vi.fn<() => void>();
+  const events = new Subject<GroupEvent>();
+  const resynced = new Subject<void>();
+  const message = vi.fn<(text: string) => void>();
   TestBed.configureTestingModule({
     providers: [
       provideRouter(
@@ -112,6 +121,8 @@ async function setup({
         useValue: { remove, pendingUpdate: () => pending, confirmedUpdate: () => confirmed },
       },
       { provide: PaymentDraft, useValue: { clear } },
+      { provide: RealtimeService, useValue: { events, resynced } },
+      { provide: ToastService, useValue: { message } },
     ],
   });
   const harness = await RouterTestingHarness.create();
@@ -122,7 +133,18 @@ async function setup({
     await openFirstPage(harness, '/group/7/payments/5');
   }
   harness.detectChanges();
-  return { findOne, remove, pending, confirm, clear, router: TestBed.inject(Router), harness };
+  return {
+    findOne,
+    remove,
+    pending,
+    confirm,
+    clear,
+    router: TestBed.inject(Router),
+    harness,
+    events,
+    resynced,
+    message,
+  };
 }
 
 const failingWith = (status: number): FindOne =>
@@ -400,5 +422,109 @@ describe('payment details route', () => {
     const details = await harness.navigateByUrl('/group/7/payments/5', PaymentDetails);
 
     expect(details).toBeInstanceOf(PaymentDetails);
+  });
+
+  describe('live changes', () => {
+    it('shows their values, not my confirmed edit, when someone else saves and the refetch fails', async () => {
+      const edited: UpdatePaymentBody = {
+        payerMemberId: 11,
+        title: 'Mine',
+        paidAt: PAYMENT.paidAt,
+        fullAmount: 3000,
+        splitType: 'equal',
+        participants: [{ memberId: 11 }, { memberId: 12 }],
+      };
+      const { findOne, pending, confirm, harness, events } = await setup({ pendingBody: edited });
+      confirm(edited);
+      findOne.mockReturnValue(new Subject<PaymentResponse>());
+      pending.set(null);
+      harness.detectChanges();
+      expect(screen.getByRole('heading', { name: 'Mine' })).toBeTruthy();
+
+      findOne.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+      events.next({
+        type: 'payment.saved',
+        groupId: 7,
+        opId: null,
+        payment: { ...PAYMENT, title: 'Theirs' },
+      });
+      harness.detectChanges();
+
+      expect(screen.getByRole('heading', { name: 'Theirs' })).toBeTruthy();
+    });
+
+    it('shows the new title when someone else edits the payment', async () => {
+      const findOne = vi
+        .fn<(id: number) => Observable<PaymentResponse>>()
+        .mockReturnValueOnce(of(PAYMENT))
+        .mockReturnValue(of({ ...PAYMENT, title: 'Market' }));
+      const { events } = await setup({ findOne });
+
+      events.next({
+        type: 'payment.saved',
+        groupId: 7,
+        opId: null,
+        payment: { ...PAYMENT, title: 'Market' },
+      });
+
+      expect(await screen.findByRole('heading', { name: 'Market' })).toBeTruthy();
+    });
+
+    it('ignores the edit of another payment', async () => {
+      const { events, findOne } = await setup();
+
+      events.next({
+        type: 'payment.saved',
+        groupId: 7,
+        opId: null,
+        payment: { ...PAYMENT, id: 6 },
+      });
+
+      expect(findOne).toHaveBeenCalledTimes(1);
+    });
+
+    it('leaves with a message when someone else deletes the payment', async () => {
+      const { events, message, router } = await setup();
+
+      events.next({ type: 'payment.deleted', groupId: 7, opId: null, id: 5 });
+
+      expect(message).toHaveBeenCalledWith('This payment was deleted');
+      await waitFor(() => {
+        expect(router.url).toBe('/group/7');
+      });
+    });
+
+    it('reloads the payment on resync without a skeleton', async () => {
+      const { resynced, findOne } = await setup();
+
+      resynced.next();
+
+      expect(findOne).toHaveBeenCalledTimes(2);
+      expect(screen.queryByRole('status', { name: 'Loading' })).toBeNull();
+    });
+
+    it('leaves with a message when the payment is gone after a resync', async () => {
+      const { resynced, findOne, message, router } = await setup();
+      findOne.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+
+      resynced.next();
+
+      expect(message).toHaveBeenCalledWith('This payment was deleted');
+      await waitFor(() => {
+        expect(router.url).toBe('/group/7');
+      });
+    });
+
+    it('says nothing about a payment I deleted myself', async () => {
+      const { events, message, router } = await setup();
+      vi.spyOn(router, 'navigateByUrl').mockReturnValue(new Promise(() => undefined));
+
+      await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+      const dialog = await screen.findByRole('dialog');
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Delete' }));
+      events.next({ type: 'payment.deleted', groupId: 7, opId: 'mine', id: 5 });
+
+      expect(message).not.toHaveBeenCalled();
+    });
   });
 });

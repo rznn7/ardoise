@@ -15,6 +15,10 @@ import {
 } from 'src/auth/domain/registration-state-repository';
 import { UNIT_OF_WORK, type UnitOfWork } from 'src/auth/domain/unit-of-work';
 import { consumeInviteLink } from 'src/invite-link/domain/consume-invite-link';
+import {
+  REALTIME_PUBLISHER,
+  type RealtimePublisher,
+} from 'src/realtime/domain/realtime-publisher';
 import { Session, SESSION_TTL_MS } from 'src/session/domain/session';
 import {
   TOKEN_GENERATOR,
@@ -29,6 +33,7 @@ export class CompleteRegistrationUseCase {
     @Inject(TOKEN_GENERATOR) private readonly tokenGenerator: TokenGenerator,
     @Inject(REGISTRATION_STATE_REPOSITORY)
     private readonly registrationStates: RegistrationStateRepository,
+    @Inject(REALTIME_PUBLISHER) private readonly realtime: RealtimePublisher,
   ) {}
 
   async execute(input: {
@@ -48,7 +53,7 @@ export class CompleteRegistrationUseCase {
         attestation: input.attestation,
       });
 
-    return this.uow.run(async (repos) => {
+    const { token, joined } = await this.uow.run(async (repos) => {
       const user = await repos.users.create({
         name: `user-${crypto.randomUUID()}`,
         webauthnUserId: state.webauthnUserId,
@@ -59,7 +64,7 @@ export class CompleteRegistrationUseCase {
         publicKey,
         counter,
       });
-      await consumeInviteLink(repos, {
+      const joined = await consumeInviteLink(repos, {
         token: state.inviteToken,
         userId: user.id,
       });
@@ -69,7 +74,16 @@ export class CompleteRegistrationUseCase {
       const session = Session.issue(token, user.id, now, SESSION_TTL_MS);
       await repos.sessions.save(session);
 
-      return { token };
+      return { token, joined: { ...joined, userId: user.id } };
     });
+
+    if (!joined.alreadyMember) {
+      await this.realtime.groupChanged({
+        type: 'member.joined',
+        groupId: joined.groupId,
+        userId: joined.userId,
+      });
+    }
+    return { token };
   }
 }

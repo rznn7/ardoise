@@ -22,13 +22,17 @@ type QueryArg<E extends Endpoint> = E extends { query: z.ZodType }
   ? { query?: z.input<E['query']> }
   : object;
 
+interface HeadersArg {
+  headers?: Record<string, string>;
+}
+
 type RequestArg<E extends Endpoint> = ParamsArg<E> & BodyArg<E> & QueryArg<E>;
 
 type Res<E extends Endpoint> = E extends { res: z.ZodType } ? z.infer<E['res']> : void;
 
 type ClientMethod<E extends Endpoint> = keyof RequestArg<E> extends never
-  ? () => Observable<Res<E>>
-  : (req: RequestArg<E>) => Observable<Res<E>>;
+  ? (req?: HeadersArg) => Observable<Res<E>>
+  : (req: RequestArg<E> & HeadersArg) => Observable<Res<E>>;
 
 export type ApiClient<T extends Record<string, Endpoint>> = {
   [K in keyof T]: ClientMethod<T[K]>;
@@ -61,6 +65,7 @@ export const createApiClient = <T extends Record<string, Endpoint>>(
       params?: Record<string, string | number>;
       body?: unknown;
       query?: Record<string, string | number | boolean | undefined>;
+      headers?: Record<string, string>;
     }): Observable<unknown> => {
       const response = config.http.request(
         endpoint.method,
@@ -68,6 +73,7 @@ export const createApiClient = <T extends Record<string, Endpoint>>(
         {
           body: req?.body,
           ...(req?.query ? { params: toQuery(req.query) } : {}),
+          ...(req?.headers ? { headers: req.headers } : {}),
           withCredentials: true,
         },
       );

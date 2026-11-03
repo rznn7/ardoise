@@ -5,6 +5,7 @@ import { provideRouter, Router, withComponentInputBinding } from '@angular/route
 import { RouterTestingHarness } from '@angular/router/testing';
 import {
   type ExpenseGroupSummary,
+  type GroupEvent,
   type GroupMember,
   type MeResponse,
   type SettlementResponse,
@@ -20,6 +21,8 @@ import { shortDay } from 'src/app/payment/day-label';
 import { SettlementApiService } from 'src/app/settlement/settlement-api.service';
 import { withHistoryPageIds } from 'src/app/shared/navigation/back';
 import { openFirstPage } from 'src/app/shared/navigation/first-page.testing';
+import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
+import { ToastService } from 'src/app/shared/toast.service';
 
 import { SettlementDetails } from './settlement-details';
 
@@ -58,6 +61,9 @@ async function setup({
   findOne = vi.fn<(id: number) => Observable<SettlementResponse>>().mockReturnValue(of(REPAYMENT)),
 }: { findOne?: FindOne } = {}) {
   const undoSettlement = vi.fn<(groupId: number, id: number) => void>();
+  const events = new Subject<GroupEvent>();
+  const resynced = new Subject<void>();
+  const message = vi.fn<(text: string) => void>();
   TestBed.configureTestingModule({
     providers: [
       provideRouter(
@@ -73,12 +79,14 @@ async function setup({
       { provide: ExpenseGroupApiService, useValue: { findOne: () => of(GROUP) } },
       { provide: AuthApiService, useValue: { me: () => of(ME) } },
       { provide: FeedStore, useValue: { undoSettlement } },
+      { provide: RealtimeService, useValue: { events, resynced } },
+      { provide: ToastService, useValue: { message } },
     ],
   });
   const harness = await RouterTestingHarness.create();
   await openFirstPage(harness, '/group/7/settlements/9');
   harness.detectChanges();
-  return { undoSettlement, findOne };
+  return { undoSettlement, findOne, events, resynced, message, router: TestBed.inject(Router) };
 }
 
 describe('SettlementDetails', () => {
@@ -157,5 +165,59 @@ describe('SettlementDetails', () => {
     });
 
     expect(screen.getByRole('status', { name: 'Loading' })).toBeTruthy();
+  });
+
+  describe('live changes', () => {
+    it('leaves with a message when someone else undoes the repayment', async () => {
+      const { events, message, router } = await setup();
+
+      events.next({ type: 'settlement.deleted', groupId: 7, opId: null, id: 9 });
+
+      expect(message).toHaveBeenCalledWith('This repayment was undone');
+      await waitFor(() => {
+        expect(router.url).toBe('/group/7');
+      });
+    });
+
+    it('reloads the repayment on resync without a skeleton', async () => {
+      const { resynced, findOne } = await setup();
+
+      resynced.next();
+
+      expect(findOne).toHaveBeenCalledTimes(2);
+      expect(screen.queryByRole('status', { name: 'Loading' })).toBeNull();
+    });
+
+    it('leaves with a message when the repayment is gone after a resync', async () => {
+      const { resynced, findOne, message, router } = await setup();
+      findOne.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+
+      resynced.next();
+
+      expect(message).toHaveBeenCalledWith('This repayment was undone');
+      await waitFor(() => {
+        expect(router.url).toBe('/group/7');
+      });
+    });
+
+    it('ignores the undo of another repayment', async () => {
+      const { events, message } = await setup();
+
+      events.next({ type: 'settlement.deleted', groupId: 7, opId: null, id: 10 });
+
+      expect(message).not.toHaveBeenCalled();
+    });
+
+    it('says nothing about a repayment I undid myself', async () => {
+      const { events, message, router } = await setup();
+      vi.spyOn(router, 'navigateByUrl').mockReturnValue(new Promise(() => undefined));
+
+      await userEvent.click(screen.getByRole('button', { name: 'Undo repayment' }));
+      const sheet = await screen.findByRole('dialog');
+      await userEvent.click(within(sheet).getByRole('button', { name: 'Undo repayment' }));
+      events.next({ type: 'settlement.deleted', groupId: 7, opId: 'mine', id: 9 });
+
+      expect(message).not.toHaveBeenCalled();
+    });
   });
 });

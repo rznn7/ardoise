@@ -13,6 +13,7 @@ import {
   map,
   type Observable,
   shareReplay,
+  Subject,
   switchMap,
   tap,
   throwError,
@@ -23,7 +24,10 @@ import { AuthApiService } from './auth-api.service';
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly authApi = inject(AuthApiService);
+  private readonly signedOutSubject = new Subject<void>();
   private cachedUser: Observable<MeResponse> | null = null;
+
+  readonly signedOut: Observable<void> = this.signedOutSubject.asObservable();
 
   currentUser(): Observable<MeResponse> {
     this.cachedUser ??= defer(() => this.authApi.me()).pipe(
@@ -56,8 +60,14 @@ export class AuthService {
     return this.authApi.logout().pipe(
       tap(() => {
         this.forgetUser();
+        this.signedOutSubject.next();
       }),
     );
+  }
+
+  revalidate(): Observable<MeResponse> {
+    this.forgetUser();
+    return this.currentUser();
   }
 
   login(): Observable<void> {

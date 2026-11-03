@@ -1,9 +1,11 @@
 import { computed, inject, Injectable, type Signal, signal, untracked } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   type CreatePaymentBody,
   type CreateSettlementBody,
   type FeedItem,
   type FeedPage,
+  type GroupEvent,
   type PaymentResponse,
   type SettlementResponse,
   type UpdatePaymentBody,
@@ -13,6 +15,7 @@ import { PaymentApiService } from 'src/app/payment/payment-api.service';
 import { DoneStore } from 'src/app/settlement/done-store';
 import { SettlementApiService } from 'src/app/settlement/settlement-api.service';
 import { type More, PagedList } from 'src/app/shared/paged-list';
+import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
 import { ToastService } from 'src/app/shared/toast.service';
 
 import { FeedApiService } from './feed-api.service';
@@ -35,15 +38,15 @@ interface PendingSettlement {
   readonly row: FeedRow;
 }
 
-const dateOf = (row: FeedRow): number =>
+const dateOf = (row: FeedItem): number =>
   Date.parse(row.kind === 'payment' ? row.payment.paidAt : row.settlement.settledAt);
 
-const idOf = (row: FeedRow): number =>
+const idOf = (row: FeedItem): number =>
   row.kind === 'payment' ? row.payment.id : row.settlement.id;
 
-const kindRank = (row: FeedRow): number => (row.kind === 'payment' ? 0 : 1);
+const kindRank = (row: FeedItem): number => (row.kind === 'payment' ? 0 : 1);
 
-const newestFirst = (a: FeedRow, b: FeedRow): number =>
+const newestFirst = (a: FeedItem, b: FeedItem): number =>
   dateOf(b) - dateOf(a) || kindRank(a) - kindRank(b) || idOf(b) - idOf(a);
 
 const keyOf = (item: FeedItem): string =>
@@ -56,6 +59,13 @@ const isPayment = (item: FeedItem, id: number): boolean =>
 
 const isSettlement = (item: FeedItem, id: number): boolean =>
   item.kind === 'settlement' && item.settlement.id === id;
+
+const withoutKey = <V>(map: ReadonlyMap<number, V>, key: number): ReadonlyMap<number, V> => {
+  if (!map.has(key)) return map;
+  const next = new Map(map);
+  next.delete(key);
+  return next;
+};
 
 const withUpdate = (payment: PaymentResponse, body: UpdatePaymentBody): PaymentResponse => ({
   ...payment,
@@ -76,6 +86,11 @@ export class FeedStore {
   private readonly pages = new PagedList<FeedItem>(
     (groupId, cursor) => this.fetchSettled(groupId, cursor),
     keyOf,
+    newestFirst,
+    {
+      version: (groupId) => this.settledCount(groupId),
+      accept: (item) => !this.tombstones.has(keyOf(item)),
+    },
   );
   private readonly creating = signal<ReadonlyMap<number, FeedRow>>(new Map());
   private readonly recording = signal<ReadonlyMap<number, PendingSettlement>>(new Map());
@@ -84,7 +99,22 @@ export class FeedStore {
   private readonly updating = signal<ReadonlyMap<number, UpdatePaymentBody>>(new Map());
   private readonly confirmedUpdates = new Map<number, UpdatePaymentBody>();
   private readonly settledMutations = signal<ReadonlyMap<number, number>>(new Map());
+  private readonly pendingByOpId = new Map<string, number | null>();
+  private readonly appliedOps = new Set<string>();
+  private readonly eventCounts = new Map<number, number>();
+  private readonly tombstones = new Set<string>();
   private nextTemporaryId = -1;
+
+  constructor() {
+    const realtime = inject(RealtimeService);
+    realtime.events.pipe(takeUntilDestroyed()).subscribe((event) => {
+      this.apply(event);
+    });
+    realtime.resynced.pipe(takeUntilDestroyed()).subscribe(() => {
+      const groupId = this.pages.activeGroupId();
+      if (groupId !== null) this.pages.resync(groupId);
+    });
+  }
 
   feed(groupId: number): Signal<FeedState> {
     return computed(() => this.feedOf(groupId));
@@ -146,8 +176,11 @@ export class FeedStore {
         createdAt: new Date().toISOString(),
       },
     };
+    const opId = crypto.randomUUID();
+    this.pendingByOpId.set(opId, temporaryId);
     this.creating.update((rows) => new Map(rows).set(temporaryId, pendingRow));
     const settle = (): void => {
+      this.forgetOp(opId);
       this.creating.update((rows) => {
         const next = new Map(rows);
         next.delete(temporaryId);
@@ -156,9 +189,9 @@ export class FeedStore {
       this.markSettled(body.groupId);
     };
 
-    this.paymentApi.create(body).subscribe({
+    this.paymentApi.create(body, opId).subscribe({
       next: ({ payment }) => {
-        this.upsert(body.groupId, { kind: 'payment', payment });
+        this.acceptOwn(body.groupId, opId, { kind: 'payment', payment });
         settle();
       },
       error: () => {
@@ -169,8 +202,11 @@ export class FeedStore {
   }
 
   update(groupId: number, id: number, body: UpdatePaymentBody): void {
+    const opId = crypto.randomUUID();
+    this.pendingByOpId.set(opId, null);
     this.updating.update((updates) => new Map(updates).set(id, body));
     const settle = (): void => {
+      this.forgetOp(opId);
       this.updating.update((updates) => {
         if (updates.get(id) !== body) return updates;
         const next = new Map(updates);
@@ -180,10 +216,11 @@ export class FeedStore {
       this.markSettled(groupId);
     };
 
-    this.paymentApi.update(id, body).subscribe({
+    this.paymentApi.update(id, body, opId).subscribe({
       next: ({ payment }) => {
-        this.confirmedUpdates.set(id, body);
-        this.upsert(groupId, { kind: 'payment', payment });
+        if (this.acceptOwn(groupId, opId, { kind: 'payment', payment })) {
+          this.confirmedUpdates.set(id, body);
+        }
         settle();
       },
       error: () => {
@@ -205,8 +242,9 @@ export class FeedStore {
       this.markSettled(groupId);
     };
 
-    this.paymentApi.delete(id).subscribe({
+    this.paymentApi.delete(id, crypto.randomUUID()).subscribe({
       next: () => {
+        this.tombstones.add(`payment:${String(id)}`);
         this.pages.patch(groupId, (items) => items.filter((item) => !isPayment(item, id)));
         settle();
       },
@@ -234,8 +272,11 @@ export class FeedStore {
         createdAt: now,
       },
     };
+    const opId = crypto.randomUUID();
+    this.pendingByOpId.set(opId, temporaryId);
     this.recording.update((pending) => new Map(pending).set(temporaryId, { body, row }));
     const settle = (): void => {
+      this.forgetOp(opId);
       this.recording.update((pending) => {
         const next = new Map(pending);
         next.delete(temporaryId);
@@ -244,10 +285,9 @@ export class FeedStore {
       this.markSettled(body.groupId);
     };
 
-    this.settlementApi.create(body).subscribe({
+    this.settlementApi.create(body, opId).subscribe({
       next: (settlement) => {
-        this.upsert(body.groupId, { kind: 'settlement', settlement });
-        this.done.added(body.groupId, settlement);
+        this.acceptOwn(body.groupId, opId, { kind: 'settlement', settlement });
         settle();
       },
       error: () => {
@@ -269,8 +309,9 @@ export class FeedStore {
       this.markSettled(groupId);
     };
 
-    this.settlementApi.delete(id).subscribe({
+    this.settlementApi.delete(id, crypto.randomUUID()).subscribe({
       next: () => {
+        this.tombstones.add(`settlement:${String(id)}`);
         this.pages.patch(groupId, (items) => items.filter((item) => !isSettlement(item, id)));
         this.done.removed(groupId, id);
         settle();
@@ -309,9 +350,75 @@ export class FeedStore {
       status: 'loaded',
       more: state.more,
       rows: [...rows, ...pending]
-        .filter((row) => !boundary || newestFirst(row, { ...boundary, pending: false }) <= 0)
+        .filter((row) => !boundary || newestFirst(row, boundary) <= 0)
         .sort(newestFirst),
     };
+  }
+
+  private apply(event: GroupEvent): void {
+    switch (event.type) {
+      case 'payment.saved':
+        this.applySaved(event.groupId, event.opId, { kind: 'payment', payment: event.payment });
+        break;
+      case 'settlement.saved':
+        this.applySaved(event.groupId, event.opId, {
+          kind: 'settlement',
+          settlement: event.settlement,
+        });
+        break;
+      case 'payment.deleted':
+        this.tombstones.add(`payment:${String(event.id)}`);
+        this.pages.patch(event.groupId, (items) =>
+          items.filter((item) => !isPayment(item, event.id)),
+        );
+        this.markEvent(event.groupId);
+        break;
+      case 'settlement.deleted':
+        this.tombstones.add(`settlement:${String(event.id)}`);
+        this.pages.patch(event.groupId, (items) =>
+          items.filter((item) => !isSettlement(item, event.id)),
+        );
+        this.done.removed(event.groupId, event.id);
+        this.markEvent(event.groupId);
+        break;
+      default:
+        break;
+    }
+  }
+
+  private applySaved(groupId: number, opId: string | null, item: FeedItem): void {
+    if (item.kind === 'payment') {
+      this.confirmedUpdates.delete(item.payment.id);
+    }
+    if (opId !== null && this.pendingByOpId.has(opId)) {
+      this.appliedOps.add(opId);
+      const temporaryId = this.pendingByOpId.get(opId);
+      if (temporaryId !== undefined && temporaryId !== null) this.dropPending(temporaryId);
+    }
+    this.put(groupId, item);
+    this.markEvent(groupId);
+  }
+
+  private acceptOwn(groupId: number, opId: string, item: FeedItem): boolean {
+    if (this.appliedOps.has(opId)) return false;
+    this.put(groupId, item);
+    return true;
+  }
+
+  private put(groupId: number, item: FeedItem): void {
+    if (this.tombstones.has(keyOf(item))) return;
+    this.upsert(groupId, item);
+    if (item.kind === 'settlement') this.done.added(groupId, item.settlement);
+  }
+
+  private forgetOp(opId: string): void {
+    this.pendingByOpId.delete(opId);
+    this.appliedOps.delete(opId);
+  }
+
+  private dropPending(temporaryId: number): void {
+    this.creating.update((rows) => withoutKey(rows, temporaryId));
+    this.recording.update((rows) => withoutKey(rows, temporaryId));
   }
 
   private upsert(groupId: number, item: FeedItem): void {
@@ -336,7 +443,13 @@ export class FeedStore {
   }
 
   private settledCount(groupId: number): number {
-    return untracked(() => this.settledMutations().get(groupId) ?? 0);
+    return untracked(
+      () => (this.settledMutations().get(groupId) ?? 0) + (this.eventCounts.get(groupId) ?? 0),
+    );
+  }
+
+  private markEvent(groupId: number): void {
+    this.eventCounts.set(groupId, (this.eventCounts.get(groupId) ?? 0) + 1);
   }
 
   private markSettled(groupId: number): void {

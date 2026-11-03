@@ -13,6 +13,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { type ExpenseGroupSummary, type GroupMember, type MeResponse } from '@ardoise/shared';
 import { provideIcons } from '@ng-icons/core';
@@ -39,6 +40,7 @@ import { dayLabel } from 'src/app/payment/day-label';
 import { DoneStore } from 'src/app/settlement/done-store';
 import { settlementLabel } from 'src/app/settlement/settlement-label';
 import { injectGoBack } from 'src/app/shared/navigation/back';
+import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
 import { ToastService } from 'src/app/shared/toast.service';
 import { BalanceIndicator } from 'src/app/shared/ui/balance-indicator/balance-indicator';
 import { GroupHero } from 'src/app/shared/ui/group-hero/group-hero';
@@ -115,6 +117,8 @@ export class GroupPage {
   private readonly injector = inject(Injector);
   private readonly shell = viewChild(MobileShell);
   private readonly toast = inject(ToastService);
+  private readonly realtime = inject(RealtimeService);
+  private latestMembersFetch = 0;
 
   readonly goBack = injectGoBack();
 
@@ -266,6 +270,13 @@ export class GroupPage {
       });
     });
 
+    this.realtime.events.pipe(takeUntilDestroyed()).subscribe((event) => {
+      if (event.type === 'member.joined' && event.groupId === this.groupId()) this.refetchMembers();
+    });
+    this.realtime.resynced.pipe(takeUntilDestroyed()).subscribe(() => {
+      this.refetchMembers();
+    });
+
     let lastSettled: number | null = null;
     effect(() => {
       const settled = this.settledOfGroup()();
@@ -387,6 +398,20 @@ export class GroupPage {
       me: state.me,
       scrollTop: shell.scrollTop(),
       settledVersion: untracked(this.settledOfGroup)(),
+    });
+  }
+
+  private refetchMembers(): void {
+    const groupId = this.groupId();
+    const fetchId = ++this.latestMembersFetch;
+    this.memberApi.listByGroup(groupId).subscribe({
+      next: (members) => {
+        if (fetchId !== this.latestMembersFetch || groupId !== this.groupId()) return;
+        this.groupState.update((state) =>
+          state.status === 'loaded' ? { ...state, members } : state,
+        );
+      },
+      error: () => undefined,
     });
   }
 
