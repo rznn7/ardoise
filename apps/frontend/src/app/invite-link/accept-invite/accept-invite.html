@@ -79,7 +79,7 @@
                     variant="inverted-outline"
                     size="xl"
                     type="button"
-                    (click)="naming.set(false)"
+                    (click)="setNaming(false)"
                   >
                     Back
                   </button>
@@ -90,7 +90,13 @@
                     <ng-icon hlm size="sm" name="lucideKeyRound" aria-hidden="true" />
                     <span>Log in to join {{ currentGroupName }}</span>
                   </button>
-                  <button hlmBtn variant="inverted-outline" size="xl" (click)="naming.set(true)">
+                  <button
+                    #joinButton
+                    hlmBtn
+                    variant="inverted-outline"
+                    size="xl"
+                    (click)="setNaming(true)"
+                  >
                     New here? Join with a passkey
                   </button>
                 </div>

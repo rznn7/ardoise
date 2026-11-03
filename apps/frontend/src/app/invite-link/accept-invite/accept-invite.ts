@@ -1,5 +1,16 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  type ElementRef,
+  inject,
+  Injector,
+  input,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { USER_NAME_MAX_LENGTH } from '@ardoise/shared';
 import { provideIcons } from '@ng-icons/core';
@@ -67,6 +78,9 @@ export class AcceptInvite {
   readonly state = signal<AcceptInviteState>('loading');
   readonly groupName = signal<string | null>(null);
   readonly naming = signal(false);
+  private readonly injector = inject(Injector);
+  private readonly nameInput = viewChild<ElementRef<HTMLInputElement>>('joinName');
+  private readonly joinButton = viewChild<ElementRef<HTMLButtonElement>>('joinButton');
   protected readonly nameMaxLength = USER_NAME_MAX_LENGTH;
 
   constructor() {
@@ -141,6 +155,16 @@ export class AcceptInvite {
         }
       },
     });
+  }
+
+  setNaming(naming: boolean): void {
+    this.naming.set(naming);
+    afterNextRender(
+      () => {
+        (naming ? this.nameInput() : this.joinButton())?.nativeElement.focus();
+      },
+      { injector: this.injector },
+    );
   }
 
   registerThenJoin(event: Event, name: string): void {

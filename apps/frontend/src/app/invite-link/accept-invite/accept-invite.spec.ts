@@ -224,6 +224,21 @@ describe(AcceptInvite.name, () => {
     expect(registerThenJoin).toHaveBeenCalledWith('x', undefined);
   });
 
+  it('moves focus to the name field, and back to the join button', async () => {
+    await renderLoggedOut();
+
+    await waitFor(() => {
+      expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Your name' }));
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+
+    await waitFor(() => {
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: 'New here? Join with a passkey' }),
+      );
+    });
+  });
+
   it('goes back to the two choices', async () => {
     await renderLoggedOut();
 
