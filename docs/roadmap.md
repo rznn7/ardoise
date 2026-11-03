@@ -91,6 +91,12 @@ A settlement overlays the balance calculation; it never mutates payments.
   personal settings (following the device by default), dates and amounts formatted for the chosen
   language.
 
+## Amount entry
+- [ ] **cash-register entry and inline math** — digits fill from the right (`1`, `2`, `3` → `1,23`), as
+  an A/B fork against today's free entry; arithmetic in the amount field (`12,50+8` → `20,50`). The
+  owner sees such fields in Tricount on iOS: check whether a web page can get that keyboard, or
+  whether it needs an in-app keypad.
+
 ## Admin
 - [x] **admin overview** — read-only overview of users and groups, user and group details,
   revoke invite links and sessions (`superpowers/specs/2026-10-27-admin-overview-design.md`).
