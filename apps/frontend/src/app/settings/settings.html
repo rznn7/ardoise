@@ -37,7 +37,10 @@
           </div>
 
           <hlm-sheet-content *brnSheetContent>
-            <form class="flex flex-col" (submit)="saveName($event, nameSheet.close.bind(nameSheet))">
+            <form
+              class="flex flex-col"
+              (submit)="saveName($event, nameSheet.close.bind(nameSheet))"
+            >
               <div hlmSheetHeader>
                 <h3 hlmSheetTitle>Your name</h3>
                 <p hlmSheetDescription>Shown to everyone in your groups.</p>
