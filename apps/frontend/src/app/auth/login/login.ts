@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { provideIcons } from '@ng-icons/core';
 import { lucideKeyRound, lucideRefreshCw } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
@@ -7,11 +8,11 @@ import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
 import { AuthService } from 'src/app/auth/auth.service';
 
-type LoginState = { state: 'idle' } | { state: 'loading' } | { state: 'error'; message: string };
+type LoginState = { state: 'idle' } | { state: 'loading' } | { state: 'error' };
 
 @Component({
   selector: 'app-login',
-  imports: [HlmButtonImports, HlmSpinnerImports, HlmIconImports],
+  imports: [TranslocoDirective, HlmButtonImports, HlmSpinnerImports, HlmIconImports],
   templateUrl: './login.html',
   providers: [provideIcons({ lucideRefreshCw, lucideKeyRound })],
 })
@@ -30,7 +31,7 @@ export class Login {
         void this.router.navigate(['/home']);
       },
       error: () => {
-        this.state.set({ state: 'error', message: 'Login failed.' });
+        this.state.set({ state: 'error' });
       },
     });
   }

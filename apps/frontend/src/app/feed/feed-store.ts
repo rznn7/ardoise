@@ -10,10 +10,13 @@ import {
   type SettlementResponse,
   type UpdatePaymentBody,
 } from '@ardoise/shared';
+import { marker } from '@jsverse/transloco-keys-manager/marker';
 import { defer, type Observable, of, switchMap } from 'rxjs';
 import { PaymentApiService } from 'src/app/payment/payment-api.service';
 import { DoneStore } from 'src/app/settlement/done-store';
 import { SettlementApiService } from 'src/app/settlement/settlement-api.service';
+import { LanguageService } from 'src/app/shared/i18n/language.service';
+import { type TranslationKey } from 'src/app/shared/i18n/translation-key';
 import { type More, PagedList } from 'src/app/shared/paged-list';
 import { RealtimeService } from 'src/app/shared/realtime/realtime.service';
 import { ToastService } from 'src/app/shared/toast.service';
@@ -83,6 +86,7 @@ export class FeedStore {
   private readonly settlementApi = inject(SettlementApiService);
   private readonly toast = inject(ToastService);
   private readonly done = inject(DoneStore);
+  private readonly language = inject(LanguageService);
   private readonly pages = new PagedList<FeedItem>(
     (groupId, cursor) => this.fetchSettled(groupId, cursor),
     keyOf,
@@ -196,7 +200,7 @@ export class FeedStore {
       },
       error: () => {
         settle();
-        this.toast.error("Couldn't save the payment");
+        this.toast.error(this.translate(marker('feed.saveFailed')));
       },
     });
   }
@@ -226,7 +230,7 @@ export class FeedStore {
       error: () => {
         this.confirmedUpdates.delete(id);
         settle();
-        this.toast.error("Couldn't update the payment");
+        this.toast.error(this.translate(marker('feed.updateFailed')));
       },
     });
   }
@@ -250,7 +254,7 @@ export class FeedStore {
       },
       error: () => {
         settle();
-        this.toast.error("Couldn't delete the payment");
+        this.toast.error(this.translate(marker('feed.deleteFailed')));
       },
     });
   }
@@ -292,7 +296,7 @@ export class FeedStore {
       },
       error: () => {
         settle();
-        this.toast.error("Couldn't record the repayment");
+        this.toast.error(this.translate(marker('feed.recordFailed')));
       },
     });
   }
@@ -319,7 +323,7 @@ export class FeedStore {
       error: () => {
         this.done.unhide(id);
         settle();
-        this.toast.error("Couldn't undo the repayment");
+        this.toast.error(this.translate(marker('feed.undoFailed')));
         this.loadFirst(groupId);
         this.done.loadFirst(groupId);
       },
@@ -456,5 +460,9 @@ export class FeedStore {
     this.settledMutations.update((counts) =>
       new Map(counts).set(groupId, (counts.get(groupId) ?? 0) + 1),
     );
+  }
+
+  private translate(key: TranslationKey): string {
+    return this.language.translator().translate(key);
   }
 }

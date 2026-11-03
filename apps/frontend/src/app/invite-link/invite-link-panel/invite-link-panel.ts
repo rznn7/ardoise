@@ -1,4 +1,5 @@
 import { Component, inject, input, type OnInit, output, signal } from '@angular/core';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { provideIcons } from '@ng-icons/core';
 import { lucideCheck, lucideCopy } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
@@ -16,7 +17,14 @@ const INVITE_EXPIRY_MS = 24 * 60 * 60 * 1000;
 
 @Component({
   selector: 'app-invite-link-panel',
-  imports: [HlmButtonImports, HlmIconImports, HlmFieldImports, HlmInputImports, AppTextImports],
+  imports: [
+    TranslocoDirective,
+    HlmButtonImports,
+    HlmIconImports,
+    HlmFieldImports,
+    HlmInputImports,
+    AppTextImports,
+  ],
   providers: [provideIcons({ lucideCopy, lucideCheck })],
   host: { class: 'flex flex-col gap-4' },
   templateUrl: './invite-link-panel.html',

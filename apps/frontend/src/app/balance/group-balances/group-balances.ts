@@ -4,6 +4,7 @@ import {
   type GroupMember,
   type SettlementResponse,
 } from '@ardoise/shared';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { provideIcons } from '@ng-icons/core';
 import { lucideChevronRight, lucideCircleCheck } from '@ng-icons/lucide';
 import { BrnSheetImports } from '@spartan-ng/brain/sheet';
@@ -42,6 +43,7 @@ type Selection =
 @Component({
   selector: 'app-group-balances',
   imports: [
+    TranslocoDirective,
     LoadMore,
     BalanceBar,
     BalanceIndicator,

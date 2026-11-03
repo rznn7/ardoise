@@ -1,11 +1,13 @@
-<app-mobile-shell bleed>
-  <app-hero-screen palette="violet" shape="sunrise">
-    <div class="flex flex-col gap-2">
-      <h1 appFigure>ardoise</h1>
-      <p appBody>Split expenses with friends.</p>
-    </div>
-    <div class="flex flex-col gap-3">
-      <router-outlet />
-    </div>
-  </app-hero-screen>
-</app-mobile-shell>
+<ng-container *transloco="let t">
+  <app-mobile-shell bleed>
+    <app-hero-screen palette="violet" shape="sunrise">
+      <div class="flex flex-col gap-2">
+        <h1 appFigure>ardoise</h1>
+        <p appBody>{{ t('auth.tagline') }}</p>
+      </div>
+      <div class="flex flex-col gap-3">
+        <router-outlet />
+      </div>
+    </app-hero-screen>
+  </app-mobile-shell>
+</ng-container>

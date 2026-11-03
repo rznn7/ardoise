@@ -1,86 +1,98 @@
-<hlm-sheet #sheet="hlmSheet">
-  <app-mobile-shell>
-    <div appShellHeader class="flex items-center justify-between bg-background px-4 pt-4 pb-3">
-      <h1 appTitle>ardoise</h1>
-      <div class="flex items-center gap-1">
-        @if (isAdmin()) {
+<ng-container *transloco="let t">
+  <hlm-sheet #sheet="hlmSheet">
+    <app-mobile-shell>
+      <div appShellHeader class="flex items-center justify-between bg-background px-4 pt-4 pb-3">
+        <h1 appTitle>ardoise</h1>
+        <div class="flex items-center gap-1">
+          @if (isAdmin()) {
+            <a
+              class="size-11 rounded-full"
+              hlmBtn
+              routerLink="/admin"
+              size="icon-lg"
+              variant="ghost"
+              [attr.aria-label]="t('home.admin')"
+            >
+              <ng-icon hlm name="lucideShield" size="sm" aria-hidden="true" />
+            </a>
+          }
           <a
-            aria-label="Admin"
             class="size-11 rounded-full"
             hlmBtn
-            routerLink="/admin"
+            routerLink="/settings"
             size="icon-lg"
             variant="ghost"
+            [attr.aria-label]="t('home.settings')"
           >
-            <ng-icon hlm name="lucideShield" size="sm" aria-hidden="true" />
+            <ng-icon hlm name="lucideSettings" size="sm" aria-hidden="true" />
           </a>
-        }
-        <a
-          aria-label="Settings"
-          class="size-11 rounded-full"
-          hlmBtn
-          routerLink="/settings"
-          size="icon-lg"
-          variant="ghost"
-        >
-          <ng-icon hlm name="lucideSettings" size="sm" aria-hidden="true" />
-        </a>
+        </div>
       </div>
-    </div>
 
-    @switch (state().status) {
-      @case ('loading') {
-        <app-page-state state="loading" />
-      }
-      @case ('error') {
-        <app-page-state
-          state="error"
-          heading="Couldn't load your groups"
-          description="Check your connection and try again."
-          (retry)="retry()"
-        />
-      }
-      @case ('loaded') {
-        @if (groups().length === 0) {
+      @switch (state().status) {
+        @case ('loading') {
+          <app-page-state state="loading" />
+        }
+        @case ('error') {
           <app-page-state
-            state="empty"
-            heading="No groups yet"
-            description="Create a group to start splitting expenses with friends."
-          >
-            <button appPageStateAction hlmBtn hlmSheetTrigger side="bottom" size="xl">
-              Create your first group
-            </button>
-          </app-page-state>
-        } @else {
-          <ul class="flex flex-col divide-y divide-border border-y border-border">
-            @for (group of groups(); track group.id) {
-              <li>
-                <a class="block" [routerLink]="['/group', group.id]">
-                  <app-list-row>
-                    <app-group-fade appListRowBackdrop [groupId]="group.id" />
-                    <span appListRowTitle>{{ group.name }}</span>
-                    <span appListRowTrailing data-testid="balance-slot">
-                      @let balance = balanceOf(group.id);
-                      @if (balance) {
-                        <app-balance-indicator [cents]="balance" [currency]="group.currencyCode" />
-                      }
-                    </span>
-                  </app-list-row>
-                </a>
-              </li>
-            }
-          </ul>
+            state="error"
+            [heading]="t('home.loadFailed')"
+            [description]="t('common.checkConnection')"
+            (retry)="retry()"
+          />
+        }
+        @case ('loaded') {
+          @if (groups().length === 0) {
+            <app-page-state
+              state="empty"
+              [heading]="t('home.empty.title')"
+              [description]="t('home.empty.description')"
+            >
+              <button appPageStateAction hlmBtn hlmSheetTrigger side="bottom" size="xl">
+                {{ t('home.empty.action') }}
+              </button>
+            </app-page-state>
+          } @else {
+            <ul class="flex flex-col divide-y divide-border border-y border-border">
+              @for (group of groups(); track group.id) {
+                <li>
+                  <a class="block" [routerLink]="['/group', group.id]">
+                    <app-list-row>
+                      <app-group-fade appListRowBackdrop [groupId]="group.id" />
+                      <span appListRowTitle>{{ group.name }}</span>
+                      <span appListRowTrailing data-testid="balance-slot">
+                        @let balance = balanceOf(group.id);
+                        @if (balance) {
+                          <app-balance-indicator
+                            [cents]="balance"
+                            [currency]="group.currencyCode"
+                          />
+                        }
+                      </span>
+                    </app-list-row>
+                  </a>
+                </li>
+              }
+            </ul>
+          }
         }
       }
-    }
 
-    <button appShellFab aria-label="Create a group" hlmBtn hlmSheetTrigger side="bottom" size="fab">
-      <ng-icon hlm name="lucidePlus" size="sm" aria-hidden="true" />
-      <span>New group</span>
-    </button>
-  </app-mobile-shell>
+      <button
+        appShellFab
+        hlmBtn
+        hlmSheetTrigger
+        side="bottom"
+        size="fab"
+        [attr.aria-label]="t('group.create.title')"
+      >
+        <ng-icon hlm name="lucidePlus" size="sm" aria-hidden="true" />
+        <span>{{ t('home.newGroup') }}</span>
+      </button>
+    </app-mobile-shell>
 
-  <hlm-sheet-content *brnSheetContent>
-    <app-create-group-sheet (created)="refresh()" (closed)="sheet.close()" />
-  </hlm-sheet-content>
-</hlm-sheet>
+    <hlm-sheet-content *brnSheetContent>
+      <app-create-group-sheet (created)="refresh()" (closed)="sheet.close()" />
+    </hlm-sheet-content>
+  </hlm-sheet>
+</ng-container>

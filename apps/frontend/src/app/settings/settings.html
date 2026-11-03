@@ -65,7 +65,7 @@
                   <button hlmBtn size="xl" type="submit" [disabled]="!canSave()">
                     @if (renameState() === 'busy') {
                       <hlm-spinner aria-hidden="true" />
-                      {{ t('settings.saving') }}
+                      {{ t('common.saving') }}
                     } @else {
                       {{ t('settings.save') }}
                     }

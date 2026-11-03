@@ -1,22 +1,25 @@
 import { Component, computed, input } from '@angular/core';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
 
 export const REFRESHING_HEIGHT = 56;
 
 @Component({
   selector: 'app-refresh-indicator',
-  imports: [HlmSpinnerImports],
+  imports: [TranslocoDirective, HlmSpinnerImports],
   template: `
-    @if (height() > 0) {
-      <div
-        role="status"
-        class="flex shrink-0 items-center justify-center overflow-hidden"
-        [attr.aria-label]="refreshing() ? 'Refreshing' : 'Pull to refresh'"
-        [style.height.px]="height()"
-      >
-        <hlm-spinner />
-      </div>
-    }
+    <ng-container *transloco="let t">
+      @if (height() > 0) {
+        <div
+          role="status"
+          class="flex shrink-0 items-center justify-center overflow-hidden"
+          [attr.aria-label]="refreshing() ? t('ui.refreshing') : t('ui.pullToRefresh')"
+          [style.height.px]="height()"
+        >
+          <hlm-spinner />
+        </div>
+      }
+    </ng-container>
   `,
 })
 export class RefreshIndicator {

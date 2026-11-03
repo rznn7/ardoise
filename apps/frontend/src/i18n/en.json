@@ -3,7 +3,11 @@
     "today": "Today",
     "yesterday": "Yesterday",
     "someone": "Someone",
-    "you": "You"
+    "you": "You",
+    "retry": "Retry",
+    "checkConnection": "Check your connection and try again.",
+    "saving": "Saving…",
+    "backToGroup": "Back to group"
   },
   "admin": {
     "dates": {
@@ -28,7 +32,18 @@
       "paysYou": "{name} pays you",
       "paidMe": "{name} paid me back",
       "pays": "{from} pays {to}"
-    }
+    },
+    "loadFailed": "Couldn't load balances",
+    "empty": {
+      "title": "Nothing to settle yet",
+      "description": "Add a payment with + to see who owes whom."
+    },
+    "allSettled": "All settled",
+    "repayments": "Repayments",
+    "done": "Done",
+    "notYet": "Not yet",
+    "undo": "Undo repayment",
+    "keep": "Keep it"
   },
   "payment": {
     "defaultTitle": "Payment, {date}",
@@ -63,7 +78,6 @@
     "nameHint": "Shown to everyone in your groups.",
     "yourName": "Your name",
     "saveFailed": "Couldn't save your name. Try again.",
-    "saving": "Saving…",
     "save": "Save",
     "theme": {
       "title": "Theme",
@@ -85,6 +99,123 @@
       "youPaid": "You paid {name} back",
       "paidYou": "{name} paid you back",
       "paid": "{from} paid {to} back"
+    },
+    "undone": {
+      "title": "This repayment was undone",
+      "description": "Balances already reflect it."
+    },
+    "loadFailed": "Couldn't load this repayment",
+    "confirmUndo": {
+      "title": "Undo this repayment?",
+      "description": "Everyone's balances will be updated."
     }
+  },
+  "auth": {
+    "tagline": "Split expenses with friends.",
+    "login": {
+      "action": "Login with passkey",
+      "busy": "Login in...",
+      "retry": "Login failed. Retry?"
+    }
+  },
+  "invite": {
+    "panel": {
+      "failed": "We couldn't generate an invite link. Try again.",
+      "retry": "Retry link",
+      "label": "Invite link",
+      "copied": "Copied",
+      "copy": "Copy",
+      "share": "Share",
+      "sharedViaCopy": "Link copied — paste it to share",
+      "done": "Done"
+    },
+    "accept": {
+      "invalid": {
+        "title": "This invite is no longer valid",
+        "description": "It may have expired or already been used. Ask whoever invited you for a fresh link."
+      },
+      "loadFailed": "Couldn't load this invite",
+      "invitedTo": "You're invited to",
+      "join": "Join {group}",
+      "optional": "Optional",
+      "nameHint": "Shown to everyone in your groups. You can change it later in Settings.",
+      "createPasskey": "Create passkey",
+      "loginToJoin": "Log in to join {group}",
+      "newHere": "New here? Join with a passkey",
+      "success": "You're in! — {group}",
+      "failed": "Something went wrong joining {group}.",
+      "joining": "Joining {group}",
+      "cancelled": "Passkey not completed — tap to try again"
+    }
+  },
+  "group": {
+    "create": {
+      "created": "Group created",
+      "title": "Create a group",
+      "name": "Group name",
+      "currency": "Currency",
+      "action": "Create",
+      "failed": "Couldn't create the group. Your details are saved — try again."
+    },
+    "forbidden": {
+      "title": "You can't open this group",
+      "description": "It may have been deleted, or you're not a member."
+    },
+    "backToGroups": "Back to groups",
+    "loadFailed": "Couldn't load this group",
+    "menu": "Group menu",
+    "view": "View",
+    "tabs": {
+      "payments": "Payments",
+      "balances": "Balances"
+    },
+    "feed": {
+      "loadFailed": "Couldn't load payments",
+      "empty": {
+        "title": "No payments yet",
+        "moderator": "Add the first one with +, or invite people from ⋯.",
+        "member": "Add the first one with +."
+      },
+      "repayment": "Repayment"
+    },
+    "addPayment": "Add a payment",
+    "invite": "Invite people",
+    "sheetTitle": "Group",
+    "balance": {
+      "youOwe": "You owe",
+      "owedToYou": "Owed to you",
+      "settledUp": "Settled up"
+    },
+    "justYou": "Just you so far",
+    "refreshFailed": "Couldn't refresh the group"
+  },
+  "ui": {
+    "loading": "Loading",
+    "loadingMore": "Loading more",
+    "loadMoreFailed": "Couldn't load more",
+    "stepper": {
+      "fewer": "Fewer shares for {name}",
+      "more": "More shares for {name}"
+    },
+    "refreshing": "Refreshing",
+    "pullToRefresh": "Pull to refresh"
+  },
+  "home": {
+    "admin": "Admin",
+    "settings": "Settings",
+    "loadFailed": "Couldn't load your groups",
+    "empty": {
+      "title": "No groups yet",
+      "description": "Create a group to start splitting expenses with friends.",
+      "action": "Create your first group"
+    },
+    "newGroup": "New group"
+  },
+  "feed": {
+    "saveFailed": "Couldn't save the payment",
+    "updateFailed": "Couldn't update the payment",
+    "deleteFailed": "Couldn't delete the payment",
+    "recordFailed": "Couldn't record the repayment",
+    "undoFailed": "Couldn't undo the repayment"
   }
 }

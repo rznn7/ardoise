@@ -3,7 +3,11 @@
     "today": "Aujourd’hui",
     "yesterday": "Hier",
     "someone": "Quelqu’un",
-    "you": "Vous"
+    "you": "Vous",
+    "retry": "Réessayer",
+    "checkConnection": "Vérifiez votre connexion et réessayez.",
+    "saving": "Enregistrement…",
+    "backToGroup": "Retour au groupe"
   },
   "admin": {
     "dates": {
@@ -28,7 +32,18 @@
       "paysYou": "{name} vous doit",
       "paidMe": "{name} m’a remboursé",
       "pays": "{from} doit à {to}"
-    }
+    },
+    "loadFailed": "Impossible de charger les soldes",
+    "empty": {
+      "title": "Rien à régler pour l’instant",
+      "description": "Ajoutez un paiement avec + pour voir qui doit quoi à qui."
+    },
+    "allSettled": "Tout est réglé",
+    "repayments": "Remboursements",
+    "done": "Réglés",
+    "notYet": "Pas encore",
+    "undo": "Annuler le remboursement",
+    "keep": "Le garder"
   },
   "payment": {
     "defaultTitle": "Paiement, {date}",
@@ -63,7 +78,6 @@
     "nameHint": "Visible par tous les membres de vos groupes.",
     "yourName": "Votre nom",
     "saveFailed": "Impossible d’enregistrer votre nom. Réessayez.",
-    "saving": "Enregistrement…",
     "save": "Enregistrer",
     "theme": {
       "title": "Thème",
@@ -85,6 +99,123 @@
       "youPaid": "Vous avez remboursé {name}",
       "paidYou": "{name} vous a remboursé",
       "paid": "{from} a remboursé {to}"
+    },
+    "undone": {
+      "title": "Ce remboursement a été annulé",
+      "description": "Les soldes en tiennent déjà compte."
+    },
+    "loadFailed": "Impossible de charger ce remboursement",
+    "confirmUndo": {
+      "title": "Annuler ce remboursement ?",
+      "description": "Les soldes de tout le monde seront mis à jour."
     }
+  },
+  "auth": {
+    "tagline": "Partagez vos dépenses entre amis.",
+    "login": {
+      "action": "Se connecter avec une clé d’accès",
+      "busy": "Connexion…",
+      "retry": "Échec de la connexion. Réessayer ?"
+    }
+  },
+  "invite": {
+    "panel": {
+      "failed": "Impossible de créer un lien d’invitation. Réessayez.",
+      "retry": "Réessayer",
+      "label": "Lien d’invitation",
+      "copied": "Copié",
+      "copy": "Copier",
+      "share": "Partager",
+      "sharedViaCopy": "Lien copié, collez-le pour le partager",
+      "done": "Terminé"
+    },
+    "accept": {
+      "invalid": {
+        "title": "Cette invitation n’est plus valable",
+        "description": "Elle a peut-être expiré ou déjà servi. Demandez un nouveau lien à la personne qui vous a invité."
+      },
+      "loadFailed": "Impossible de charger cette invitation",
+      "invitedTo": "Vous êtes invité à rejoindre",
+      "join": "Rejoindre {group}",
+      "optional": "Facultatif",
+      "nameHint": "Visible par tous les membres de vos groupes. Modifiable plus tard dans les Réglages.",
+      "createPasskey": "Créer une clé d’accès",
+      "loginToJoin": "Se connecter pour rejoindre {group}",
+      "newHere": "Nouveau ? Rejoindre avec une clé d’accès",
+      "success": "C’est fait ! Bienvenue dans {group}",
+      "failed": "Impossible de rejoindre {group}.",
+      "joining": "Vous rejoignez {group}",
+      "cancelled": "Clé d’accès non validée, touchez pour réessayer"
+    }
+  },
+  "group": {
+    "create": {
+      "created": "Groupe créé",
+      "title": "Créer un groupe",
+      "name": "Nom du groupe",
+      "currency": "Devise",
+      "action": "Créer",
+      "failed": "Impossible de créer le groupe. Vos informations sont conservées, réessayez."
+    },
+    "forbidden": {
+      "title": "Vous ne pouvez pas ouvrir ce groupe",
+      "description": "Il a peut-être été supprimé, ou vous n’en êtes pas membre."
+    },
+    "backToGroups": "Retour aux groupes",
+    "loadFailed": "Impossible de charger ce groupe",
+    "menu": "Menu du groupe",
+    "view": "Affichage",
+    "tabs": {
+      "payments": "Paiements",
+      "balances": "Soldes"
+    },
+    "feed": {
+      "loadFailed": "Impossible de charger les paiements",
+      "empty": {
+        "title": "Aucun paiement pour l’instant",
+        "moderator": "Ajoutez le premier avec +, ou invitez du monde depuis ⋯.",
+        "member": "Ajoutez le premier avec +."
+      },
+      "repayment": "Remboursement"
+    },
+    "addPayment": "Ajouter un paiement",
+    "invite": "Inviter des personnes",
+    "sheetTitle": "Groupe",
+    "balance": {
+      "youOwe": "Vous devez",
+      "owedToYou": "On vous doit",
+      "settledUp": "À jour"
+    },
+    "justYou": "Vous seul pour l’instant",
+    "refreshFailed": "Impossible d’actualiser le groupe"
+  },
+  "ui": {
+    "loading": "Chargement",
+    "loadingMore": "Chargement de la suite",
+    "loadMoreFailed": "Impossible de charger la suite",
+    "stepper": {
+      "fewer": "Moins de parts pour {name}",
+      "more": "Plus de parts pour {name}"
+    },
+    "refreshing": "Actualisation",
+    "pullToRefresh": "Tirer pour actualiser"
+  },
+  "home": {
+    "admin": "Administration",
+    "settings": "Réglages",
+    "loadFailed": "Impossible de charger vos groupes",
+    "empty": {
+      "title": "Aucun groupe pour l’instant",
+      "description": "Créez un groupe pour partager vos dépenses entre amis.",
+      "action": "Créer votre premier groupe"
+    },
+    "newGroup": "Nouveau groupe"
+  },
+  "feed": {
+    "saveFailed": "Impossible d’enregistrer le paiement",
+    "updateFailed": "Impossible de modifier le paiement",
+    "deleteFailed": "Impossible de supprimer le paiement",
+    "recordFailed": "Impossible d’enregistrer le remboursement",
+    "undoFailed": "Impossible d’annuler le remboursement"
   }
 }

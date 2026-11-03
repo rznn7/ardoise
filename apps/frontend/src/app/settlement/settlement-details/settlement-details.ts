@@ -17,6 +17,8 @@ import {
   type MeResponse,
   type SettlementResponse,
 } from '@ardoise/shared';
+import { TranslocoDirective } from '@jsverse/transloco';
+import { marker } from '@jsverse/transloco-keys-manager/marker';
 import { provideIcons } from '@ng-icons/core';
 import { lucideChevronLeft } from '@ng-icons/lucide';
 import { BrnSheetImports } from '@spartan-ng/brain/sheet';
@@ -60,6 +62,7 @@ const isNotAccessible = (error: unknown): boolean =>
 @Component({
   selector: 'app-settlement-details',
   imports: [
+    TranslocoDirective,
     RouterLink,
     MobileShellImports,
     GroupChip,
@@ -161,7 +164,7 @@ export class SettlementDetails {
   private leaveBecauseUndone(): void {
     if (this.leaving) return;
     this.leaving = true;
-    this.toast.message('This repayment was undone');
+    this.toast.message(this.language.translator().translate(marker('settlement.undone.title')));
     this.goBack(this.groupUrl());
   }
 

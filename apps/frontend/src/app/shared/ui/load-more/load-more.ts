@@ -9,6 +9,7 @@ import {
   output,
   viewChild,
 } from '@angular/core';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
 import { type More } from 'src/app/shared/paged-list';
@@ -17,27 +18,33 @@ import { AppTextImports } from 'src/app/shared/ui/text/text';
 @Component({
   selector: 'app-load-more',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [HlmButtonImports, HlmSpinnerImports, AppTextImports],
+  imports: [TranslocoDirective, HlmButtonImports, HlmSpinnerImports, AppTextImports],
   host: { class: 'flex flex-col' },
   template: `
-    @switch (state()) {
-      @case ('idle') {
-        <div #sentinel class="h-px"></div>
+    <ng-container *transloco="let t">
+      @switch (state()) {
+        @case ('idle') {
+          <div #sentinel class="h-px"></div>
+        }
+        @case ('loading') {
+          <div
+            role="status"
+            class="flex justify-center py-6"
+            [attr.aria-label]="t('ui.loadingMore')"
+          >
+            <hlm-spinner />
+          </div>
+        }
+        @case ('error') {
+          <div class="flex items-center justify-between gap-3 px-4 py-3">
+            <p appError>{{ t('ui.loadMoreFailed') }}</p>
+            <button hlmBtn variant="ghost" size="sm" type="button" (click)="retry.emit()">
+              {{ t('common.retry') }}
+            </button>
+          </div>
+        }
       }
-      @case ('loading') {
-        <div role="status" aria-label="Loading more" class="flex justify-center py-6">
-          <hlm-spinner />
-        </div>
-      }
-      @case ('error') {
-        <div class="flex items-center justify-between gap-3 px-4 py-3">
-          <p appError>Couldn't load more</p>
-          <button hlmBtn variant="ghost" size="sm" type="button" (click)="retry.emit()">
-            Retry
-          </button>
-        </div>
-      }
-    }
+    </ng-container>
   `,
 })
 export class LoadMore {
