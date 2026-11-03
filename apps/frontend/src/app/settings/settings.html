@@ -16,6 +16,56 @@
     </div>
 
     <div class="flex min-h-full flex-col">
+      <section class="flex flex-col gap-2 pt-6" aria-labelledby="profile-heading">
+        <h2 appEyebrow class="px-4" id="profile-heading">Profile</h2>
+        <hlm-sheet #nameSheet="hlmSheet" side="bottom">
+          <div class="border-y border-border">
+            <button
+              class="block w-full text-left"
+              hlmSheetTrigger
+              type="button"
+              (click)="startRename()"
+            >
+              <app-list-row>
+                <span appListRowTitle>Name</span>
+                <span appListRowTrailing class="flex items-center gap-1 text-muted-foreground">
+                  <span appMeta>{{ name() }}</span>
+                  <ng-icon hlm name="lucideChevronRight" size="sm" aria-hidden="true" />
+                </span>
+              </app-list-row>
+            </button>
+          </div>
+
+          <hlm-sheet-content *brnSheetContent>
+            <form class="flex flex-col" (submit)="saveName($event, nameSheet.close.bind(nameSheet))">
+              <div hlmSheetHeader>
+                <h3 hlmSheetTitle>Your name</h3>
+                <p hlmSheetDescription>Shown to everyone in your groups.</p>
+              </div>
+              <div class="flex flex-col gap-3 p-4 pb-8">
+                <input
+                  #nameInput
+                  aria-label="Your name"
+                  autocomplete="name"
+                  class="h-11"
+                  enterkeyhint="done"
+                  hlmInput
+                  [maxLength]="nameMaxLength"
+                  [readOnly]="renameState() === 'busy'"
+                  [value]="draft()"
+                  (input)="draft.set(nameInput.value)"
+                />
+                @if (renameState() === 'failed') {
+                  <p appError role="alert">Couldn't save your name. Try again.</p>
+                }
+                <button hlmBtn size="xl" type="submit" [disabled]="!canSave()">Save</button>
+              </div>
+            </form>
+          </hlm-sheet-content>
+        </hlm-sheet>
+        <p appMeta class="px-4">Shown to everyone in your groups.</p>
+      </section>
+
       <section class="flex flex-col gap-2 px-4 pt-6" aria-labelledby="theme-heading">
         <h2 appEyebrow id="theme-heading">Theme</h2>
         <div

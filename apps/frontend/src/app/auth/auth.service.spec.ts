@@ -3,6 +3,7 @@ import { type MeResponse } from '@ardoise/shared';
 import { firstValueFrom, of, throwError } from 'rxjs';
 import { AuthService } from 'src/app/auth/auth.service';
 import { AuthApiService } from 'src/app/auth/auth-api.service';
+import { UserApiService } from 'src/app/user/user-api.service';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const ME: MeResponse = { id: 1, name: 'Alice', role: 'user' };
@@ -16,7 +17,15 @@ describe('AuthService.currentUser', () => {
     me = vi.fn(() => of(ME));
     logout = vi.fn(() => of(undefined));
     TestBed.configureTestingModule({
-      providers: [{ provide: AuthApiService, useValue: { me, logout } }],
+      providers: [
+        { provide: AuthApiService, useValue: { me, logout } },
+        {
+          provide: UserApiService,
+          useValue: {
+            renameMe: ({ name }: { name: string }) => of({ ...ME, name }),
+          },
+        },
+      ],
     });
     auth = TestBed.inject(AuthService);
   });
@@ -52,5 +61,12 @@ describe('AuthService.currentUser', () => {
     await firstValueFrom(auth.currentUser());
     await firstValueFrom(auth.revalidate());
     expect(me).toHaveBeenCalledTimes(2);
+  });
+
+  it('rename replaces the current user', async () => {
+    await firstValueFrom(auth.currentUser());
+    await firstValueFrom(auth.rename('Ana'));
+    expect(await firstValueFrom(auth.currentUser())).toEqual({ ...ME, name: 'Ana' });
+    expect(me).toHaveBeenCalledTimes(1);
   });
 });

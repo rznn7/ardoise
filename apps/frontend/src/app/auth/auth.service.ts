@@ -12,18 +12,21 @@ import {
   from,
   map,
   type Observable,
+  of,
   shareReplay,
   Subject,
   switchMap,
   tap,
   throwError,
 } from 'rxjs';
+import { UserApiService } from 'src/app/user/user-api.service';
 
 import { AuthApiService } from './auth-api.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly authApi = inject(AuthApiService);
+  private readonly userApi = inject(UserApiService);
   private readonly signedOutSubject = new Subject<void>();
   private cachedUser: Observable<MeResponse> | null = null;
 
@@ -52,6 +55,14 @@ export class AuthService {
       ),
       tap(() => {
         this.forgetUser();
+      }),
+    );
+  }
+
+  rename(name: string): Observable<MeResponse> {
+    return this.userApi.renameMe({ name }).pipe(
+      tap((user) => {
+        this.cachedUser = of(user);
       }),
     );
   }
