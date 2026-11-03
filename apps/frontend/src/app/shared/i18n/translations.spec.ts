@@ -5,7 +5,9 @@ import { translatorFor } from 'src/test-providers';
 
 import { LANGUAGES } from './languages';
 
-type Tree = { readonly [key: string]: string | Tree };
+interface Tree {
+  readonly [key: string]: string | Tree;
+}
 
 const leaves = (tree: Tree, prefix = ''): [string, string][] =>
   Object.entries(tree).flatMap(([key, value]) =>
