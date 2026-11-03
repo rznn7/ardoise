@@ -7,7 +7,8 @@
     "retry": "Réessayer",
     "checkConnection": "Vérifiez votre connexion et réessayez.",
     "saving": "Enregistrement…",
-    "backToGroup": "Retour au groupe"
+    "backToGroup": "Retour au groupe",
+    "save": "Enregistrer"
   },
   "admin": {
     "dates": {
@@ -23,6 +24,50 @@
       "groups": "{count, plural, =0 {Aucun groupe} one {# groupe} other {# groupes}}",
       "payments": "{count, plural, one {# paiement} other {# paiements}}",
       "groupMeta": "{currency} · créé le {date} · {payments} · {spent} dépensés"
+    },
+    "title": "Administration",
+    "instance": "Instance {host}",
+    "overview": {
+      "loadFailed": "Impossible de charger la vue d’ensemble"
+    },
+    "users": "Utilisateurs",
+    "groups": "Groupes",
+    "badge": "Admin",
+    "members": "{count, plural, one {# membre} other {# membres}}",
+    "backToAdmin": "Retour à l’administration",
+    "revoke": "Révoquer",
+    "user": {
+      "gone": "Cet utilisateur n’existe plus",
+      "loadFailed": "Impossible de charger cet utilisateur",
+      "sessions": "Sessions",
+      "noSession": "Aucune session active",
+      "activeSession": "Session active",
+      "thisDevice": "Cet appareil",
+      "confirmRevoke": {
+        "title": "Déconnecter cette session ?",
+        "description": "Cet appareil devra utiliser la clé d’accès pour se reconnecter."
+      },
+      "moderator": "Modérateur",
+      "member": "Membre",
+      "signedInOn": "Connecté le {date}",
+      "joined": "Inscrit le {date}",
+      "revokeFailed": "Impossible de révoquer la session"
+    },
+    "group": {
+      "gone": "Ce groupe n’existe plus",
+      "members": "Membres",
+      "links": "Liens d’invitation",
+      "noLinks": "Aucun lien d’invitation",
+      "confirmRevoke": {
+        "title": "Révoquer ce lien ?",
+        "description": "Plus personne ne pourra l’utiliser pour rejoindre le groupe."
+      },
+      "singleUse": "Usage unique",
+      "multiUse": "Usage multiple",
+      "usedBy": "Utilisé par {name} · {date}",
+      "expired": "Expiré le {date}",
+      "revoked": "Révoqué le {date}",
+      "revokeFailed": "Impossible de révoquer le lien"
     }
   },
   "balance": {
@@ -59,7 +104,35 @@
       "exact": "Montants exacts"
     },
     "form": {
-      "percentTotal": "{entered} sur {target} %"
+      "percentTotal": "{entered} sur {target} %",
+      "amountPlaceholder": "0,00",
+      "amount": "Montant",
+      "next": "Suivant",
+      "title": "Titre",
+      "paidBy": "Payé par",
+      "date": "Date",
+      "split": {
+        "label": "Répartition",
+        "equal": "Égal",
+        "shares": "Parts",
+        "percent": "%",
+        "exact": "Exact"
+      },
+      "percentFor": "Pourcentage de {name}",
+      "amountFor": "Montant de {name}",
+      "of": "sur"
+    },
+    "details": {
+      "gone": {
+        "title": "Ce paiement n’existe plus",
+        "description": "Quelqu’un l’a peut-être supprimé."
+      },
+      "loadFailed": "Impossible de charger ce paiement",
+      "shares": "Parts",
+      "delete": "Supprimer",
+      "edit": "Modifier",
+      "confirmDelete": "Supprimer « {title} » ?",
+      "deleted": "Ce paiement a été supprimé"
     }
   },
   "settings": {
@@ -78,7 +151,6 @@
     "nameHint": "Visible par tous les membres de vos groupes.",
     "yourName": "Votre nom",
     "saveFailed": "Impossible d’enregistrer votre nom. Réessayez.",
-    "save": "Enregistrer",
     "theme": {
       "title": "Thème",
       "system": "Système",

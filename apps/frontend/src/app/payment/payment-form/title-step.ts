@@ -7,6 +7,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { provideIcons } from '@ng-icons/core';
 import { lucideChevronLeft } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
@@ -26,6 +27,7 @@ const TITLE_MAX_LENGTH = 255;
 @Component({
   selector: 'app-title-step',
   imports: [
+    TranslocoDirective,
     MobileShellImports,
     GroupChip,
     MoneyAmount,

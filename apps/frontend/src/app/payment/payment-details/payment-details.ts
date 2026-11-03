@@ -20,6 +20,8 @@ import {
   type PaymentResponse,
   type UpdatePaymentBody,
 } from '@ardoise/shared';
+import { TranslocoDirective } from '@jsverse/transloco';
+import { marker } from '@jsverse/transloco-keys-manager/marker';
 import { provideIcons } from '@ng-icons/core';
 import { lucideChevronLeft } from '@ng-icons/lucide';
 import { BrnSheetImports } from '@spartan-ng/brain/sheet';
@@ -107,6 +109,7 @@ const isNotAccessible = (error: unknown): boolean =>
 @Component({
   selector: 'app-payment-details',
   imports: [
+    TranslocoDirective,
     RouterLink,
     MobileShellImports,
     GroupChip,
@@ -170,7 +173,9 @@ export class PaymentDetails {
     return [...state.members.filter(isMe), ...state.members.filter((m) => !isMe(m))].map(
       (member) => ({
         memberId: member.id,
-        name: isMe(member) ? 'You' : member.name,
+        name: isMe(member)
+          ? this.language.translator().translate(marker('common.you'))
+          : member.name,
         amount: amounts.get(member.id) ?? null,
       }),
     );
@@ -240,7 +245,7 @@ export class PaymentDetails {
   private leaveBecauseDeleted(): void {
     if (this.leaving) return;
     this.leaving = true;
-    this.toast.message('This payment was deleted');
+    this.toast.message(this.language.translator().translate(marker('payment.details.deleted')));
     this.goBack(this.groupUrl());
   }
 

@@ -7,7 +7,8 @@
     "retry": "Retry",
     "checkConnection": "Check your connection and try again.",
     "saving": "Saving…",
-    "backToGroup": "Back to group"
+    "backToGroup": "Back to group",
+    "save": "Save"
   },
   "admin": {
     "dates": {
@@ -23,6 +24,50 @@
       "groups": "{count, plural, =0 {No group} one {# group} other {# groups}}",
       "payments": "{count, plural, one {# payment} other {# payments}}",
       "groupMeta": "{currency} · created {date} · {payments} · {spent} spent"
+    },
+    "title": "Admin",
+    "instance": "Instance {host}",
+    "overview": {
+      "loadFailed": "Couldn't load the overview"
+    },
+    "users": "Users",
+    "groups": "Groups",
+    "badge": "Admin",
+    "members": "{count, plural, one {# member} other {# members}}",
+    "backToAdmin": "Back to admin",
+    "revoke": "Revoke",
+    "user": {
+      "gone": "This user no longer exists",
+      "loadFailed": "Couldn't load this user",
+      "sessions": "Sessions",
+      "noSession": "No active session",
+      "activeSession": "Active session",
+      "thisDevice": "This device",
+      "confirmRevoke": {
+        "title": "Sign this session out?",
+        "description": "This device will need the passkey to sign in again."
+      },
+      "moderator": "Moderator",
+      "member": "Member",
+      "signedInOn": "Signed in {date}",
+      "joined": "Joined {date}",
+      "revokeFailed": "Couldn't revoke the session"
+    },
+    "group": {
+      "gone": "This group no longer exists",
+      "members": "Members",
+      "links": "Invite links",
+      "noLinks": "No invite links",
+      "confirmRevoke": {
+        "title": "Revoke this link?",
+        "description": "Nobody will be able to join with it any more."
+      },
+      "singleUse": "Single use",
+      "multiUse": "Multi use",
+      "usedBy": "Used by {name} · {date}",
+      "expired": "Expired {date}",
+      "revoked": "Revoked {date}",
+      "revokeFailed": "Couldn't revoke the link"
     }
   },
   "balance": {
@@ -59,7 +104,35 @@
       "exact": "Exact amounts"
     },
     "form": {
-      "percentTotal": "{entered} of {target} %"
+      "percentTotal": "{entered} of {target} %",
+      "amountPlaceholder": "0.00",
+      "amount": "Amount",
+      "next": "Next",
+      "title": "Title",
+      "paidBy": "Paid by",
+      "date": "Date",
+      "split": {
+        "label": "Split",
+        "equal": "Equally",
+        "shares": "Shares",
+        "percent": "%",
+        "exact": "Exact"
+      },
+      "percentFor": "{name} percent",
+      "amountFor": "{name} amount",
+      "of": "of"
+    },
+    "details": {
+      "gone": {
+        "title": "This payment no longer exists",
+        "description": "Someone may have deleted it."
+      },
+      "loadFailed": "Couldn't load this payment",
+      "shares": "Shares",
+      "delete": "Delete",
+      "edit": "Edit",
+      "confirmDelete": "Delete \"{title}\"?",
+      "deleted": "This payment was deleted"
     }
   },
   "settings": {
@@ -78,7 +151,6 @@
     "nameHint": "Shown to everyone in your groups.",
     "yourName": "Your name",
     "saveFailed": "Couldn't save your name. Try again.",
-    "save": "Save",
     "theme": {
       "title": "Theme",
       "system": "System",

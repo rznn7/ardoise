@@ -11,6 +11,8 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { type AdminGroup } from '@ardoise/shared';
+import { TranslocoDirective } from '@jsverse/transloco';
+import { marker } from '@jsverse/transloco-keys-manager/marker';
 import { provideIcons } from '@ng-icons/core';
 import { lucideChevronLeft } from '@ng-icons/lucide';
 import { BrnSheetImports } from '@spartan-ng/brain/sheet';
@@ -41,6 +43,7 @@ const capitalised = (text: string): string => text.charAt(0).toUpperCase() + tex
 @Component({
   selector: 'app-admin-group',
   imports: [
+    TranslocoDirective,
     RouterLink,
     MobileShellImports,
     ListRowImports,
@@ -97,19 +100,29 @@ export class AdminGroupPage {
   }
 
   protected linkTitle(link: AdminInviteLink): string {
-    return link.singleUse ? 'Single use' : 'Multi use';
+    const { translate } = this.language.translator();
+    return link.singleUse
+      ? translate(marker('admin.group.singleUse'))
+      : translate(marker('admin.group.multiUse'));
   }
 
   protected linkMeta(link: AdminInviteLink): string {
+    const tr = this.language.translator();
+    const on = (iso: string): string => shortDate(iso, tr.locale);
     switch (link.status) {
       case 'active':
-        return capitalised(expiresIn(link.expiresAt, new Date(), this.language.translator()));
+        return capitalised(expiresIn(link.expiresAt, new Date(), tr));
       case 'used':
-        return `Used by ${link.burnedByName ?? 'someone'} · ${shortDate(link.burnedAt ?? link.createdAt, this.language.translator().locale)}`;
+        return tr.translate(marker('admin.group.usedBy'), {
+          name: link.burnedByName ?? tr.translate(marker('payment.meta.someone')),
+          date: on(link.burnedAt ?? link.createdAt),
+        });
       case 'expired':
-        return `Expired ${shortDate(link.expiresAt, this.language.translator().locale)}`;
+        return tr.translate(marker('admin.group.expired'), { date: on(link.expiresAt) });
       case 'revoked':
-        return `Revoked ${shortDate(link.revokedAt ?? link.createdAt, this.language.translator().locale)}`;
+        return tr.translate(marker('admin.group.revoked'), {
+          date: on(link.revokedAt ?? link.createdAt),
+        });
     }
   }
 
@@ -128,7 +141,7 @@ export class AdminGroupPage {
           next.delete(link.id);
           return next;
         });
-        this.toast.error("Couldn't revoke the link");
+        this.toast.error(this.language.translator().translate(marker('admin.group.revokeFailed')));
       },
     });
   }

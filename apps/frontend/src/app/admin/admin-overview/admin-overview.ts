@@ -1,6 +1,8 @@
 import { Component, effect, inject, input, signal, untracked } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { type AdminOverview } from '@ardoise/shared';
+import { TranslocoDirective } from '@jsverse/transloco';
+import { marker } from '@jsverse/transloco-keys-manager/marker';
 import { provideIcons } from '@ng-icons/core';
 import { lucideChevronLeft, lucideChevronRight } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
@@ -27,6 +29,7 @@ const toTab = (value: string | undefined): AdminTab => (value === 'groups' ? 'gr
 @Component({
   selector: 'app-admin-overview',
   imports: [
+    TranslocoDirective,
     RouterLink,
     MobileShellImports,
     ListRowImports,
@@ -65,9 +68,9 @@ export class AdminOverviewPage {
   }
 
   protected groupMeta(group: AdminOverview['groups'][number]): string {
-    const members = group.memberCount === 1 ? '1 member' : `${String(group.memberCount)} members`;
-    const payments =
-      group.paymentCount === 1 ? '1 payment' : `${String(group.paymentCount)} payments`;
+    const { translate } = this.language.translator();
+    const members = translate(marker('admin.members'), { count: group.memberCount });
+    const payments = translate(marker('admin.dates.payments'), { count: group.paymentCount });
     return `${members} · ${payments} · ${group.currencyCode}`;
   }
 

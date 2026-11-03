@@ -7,6 +7,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
+import { TranslocoDirective } from '@jsverse/transloco';
 import { provideIcons } from '@ng-icons/core';
 import { lucideChevronLeft, lucideX } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
@@ -21,6 +22,7 @@ import { AppTextImports } from 'src/app/shared/ui/text/text';
 @Component({
   selector: 'app-amount-step',
   imports: [
+    TranslocoDirective,
     MobileShellImports,
     GroupChip,
     FigureInput,
