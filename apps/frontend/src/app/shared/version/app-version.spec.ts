@@ -47,9 +47,7 @@ describe('AppVersion', () => {
   });
 
   it('stays on dev when the file is missing', async () => {
-    const label = await labelAfterFetch(() =>
-      Promise.resolve(new Response('', { status: 404 })),
-    );
+    const label = await labelAfterFetch(() => Promise.resolve(new Response('', { status: 404 })));
     expect(label).toBe('Version dev');
   });
 

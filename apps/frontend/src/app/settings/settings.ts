@@ -46,7 +46,9 @@ export class Settings {
     this.goBack('/home');
   }
 
-  protected selectTheme(value: ThemePreference | readonly ThemePreference[] | null | undefined): void {
+  protected selectTheme(
+    value: ThemePreference | readonly ThemePreference[] | null | undefined,
+  ): void {
     const preference = typeof value === 'string' ? value : value?.[0];
     if (preference) this.theme.setPreference(preference);
   }
