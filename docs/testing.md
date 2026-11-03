@@ -35,6 +35,13 @@ the frontend typecheck.
   after the action rather than the call itself, when the fake allows it; the scenarios cover the
   real wiring.
 
+Translations are guarded before any test runs. `pnpm typecheck` fails when `fr.json` and `en.json`
+do not have the same keys, or when TS code uses a key that does not exist (`TranslationKey`).
+`pnpm lint` runs `transloco-validator` (valid JSON, no duplicate key) and keys-manager (a key used in
+a template but missing, or a key used nowhere; TS keys are wrapped in `marker()` so it sees them). In
+specs, a missing key throws. Component specs render the real English file, provided once in
+`src/test-providers.ts`; pure formatting functions are asserted in both languages.
+
 Assertions go through roles and visible text, never CSS classes, in every layer that touches the
 DOM. One exception: a building block in `shared/ui` may assert the classes it promises, since they
 are its visual contract. A feature spec never does; a layout bug in a feature is caught by the

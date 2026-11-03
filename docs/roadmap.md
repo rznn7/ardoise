@@ -86,10 +86,10 @@ A settlement overlays the balance calculation; it never mutates payments.
   with confirmation, running version; optional name when joining as a newcomer
   (`superpowers/specs/2026-11-03-personal-settings-design.md`).
 
-## Translation (en / fr)
-- [ ] **app in English and French** — every screen's copy in both languages, a language choice in
+## Translation (done)
+- [x] **app in English and French** — every screen's copy in both languages, a language choice in
   personal settings (following the device by default), dates and amounts formatted for the chosen
-  language.
+  language (`superpowers/specs/2026-11-03-translation-design.md`).
 
 ## Amount entry
 - [ ] **cash-register entry and inline math** — digits fill from the right (`1`, `2`, `3` → `1,23`), as
