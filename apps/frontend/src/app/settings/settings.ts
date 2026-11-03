@@ -9,6 +9,7 @@ import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmIconImports } from '@spartan-ng/helm/icon';
 import { HlmInputImports } from '@spartan-ng/helm/input';
 import { HlmSheetImports } from '@spartan-ng/helm/sheet';
+import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
 import { HlmToggleGroupImports } from '@spartan-ng/helm/toggle-group';
 import { AuthService } from 'src/app/auth/auth.service';
 import { injectGoBack } from 'src/app/shared/navigation/back';
@@ -34,6 +35,7 @@ type RequestState = 'idle' | 'busy' | 'failed';
     HlmIconImports,
     HlmToggleGroupImports,
     HlmInputImports,
+    HlmSpinnerImports,
   ],
   providers: [provideIcons({ lucideChevronLeft, lucideChevronRight })],
 })

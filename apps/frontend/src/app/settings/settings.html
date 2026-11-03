@@ -61,7 +61,14 @@
                 @if (renameState() === 'failed') {
                   <p appError role="alert">Couldn't save your name. Try again.</p>
                 }
-                <button hlmBtn size="xl" type="submit" [disabled]="!canSave()">Save</button>
+                <button hlmBtn size="xl" type="submit" [disabled]="!canSave()">
+                  @if (renameState() === 'busy') {
+                    <hlm-spinner aria-hidden="true" />
+                    Saving…
+                  } @else {
+                    Save
+                  }
+                </button>
               </div>
             </form>
           </hlm-sheet-content>
@@ -116,7 +123,12 @@
         [disabled]="signOutState() === 'busy'"
         (click)="signOut()"
       >
-        Sign out
+        @if (signOutState() === 'busy') {
+          <hlm-spinner aria-hidden="true" />
+          Signing out…
+        } @else {
+          Sign out
+        }
       </button>
       <button hlmBtn size="xl" type="button" variant="outline" (click)="signOutSheet.close()">
         Cancel

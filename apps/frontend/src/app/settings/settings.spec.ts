@@ -5,7 +5,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { type MeResponse } from '@ardoise/shared';
 import { screen, waitFor } from '@testing-library/angular';
 import userEvent from '@testing-library/user-event';
-import { type Observable, of, throwError } from 'rxjs';
+import { NEVER, type Observable, of, throwError } from 'rxjs';
 import { AuthService } from 'src/app/auth/auth.service';
 import { type ThemePreference, ThemeService } from 'src/app/shared/theme/theme.service';
 import { AppVersion } from 'src/app/shared/version/app-version';
@@ -103,6 +103,18 @@ describe('Settings', () => {
     expect(router.url).toBe('/settings');
   });
 
+  it('shows a spinner while signing out', async () => {
+    await setup({ logout: vi.fn<() => Observable<void>>().mockReturnValue(NEVER) });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+    await screen.findByRole('dialog');
+    await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
+
+    const button = await screen.findByRole<HTMLButtonElement>('button', { name: 'Signing out…' });
+    expect(button.disabled).toBe(true);
+    expect(button.querySelector('hlm-spinner')).toBeTruthy();
+  });
+
   it('shows the version', async () => {
     await setup();
 
@@ -165,6 +177,20 @@ describe('Settings', () => {
       expect(screen.queryByRole('dialog')).toBeNull();
     });
     expect(screen.getByRole('button', { name: /^Name/ }).textContent).toContain('Ana');
+  });
+
+  it('shows a spinner while saving', async () => {
+    await setup({
+      rename: vi.fn<(name: string) => Observable<MeResponse>>().mockReturnValue(NEVER),
+    });
+    await openNameSheet();
+
+    await typeName('Ana');
+    await userEvent.click(saveButton());
+
+    const button = await screen.findByRole<HTMLButtonElement>('button', { name: 'Saving…' });
+    expect(button.disabled).toBe(true);
+    expect(button.querySelector('hlm-spinner')).toBeTruthy();
   });
 
   it('keeps my edit when saving fails', async () => {
