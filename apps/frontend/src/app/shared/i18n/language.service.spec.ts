@@ -68,6 +68,24 @@ describe('LanguageService', () => {
     expect(service.active()).toBe('fr');
   });
 
+  it('formats with the device variant of the language', async () => {
+    const { service } = setup(['en-US']);
+    await service.ready();
+
+    expect(service.translator().locale).toBe('en-US');
+  });
+
+  it('follows a device region change even with an explicit language', async () => {
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, 'en');
+    const { service, device } = setup(['en-US']);
+    await service.ready();
+
+    device.mockReturnValue(['en-GB']);
+    window.dispatchEvent(new Event('languagechange'));
+
+    expect(service.translator().locale).toBe('en-GB');
+  });
+
   it('survives storage that throws', async () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('denied');

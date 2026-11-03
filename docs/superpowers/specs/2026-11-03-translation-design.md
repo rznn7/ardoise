@@ -109,9 +109,11 @@ A `LanguageService` in `src/app/shared/` (folder is the builder's call), modelle
 - An `effect` sets Transloco's active language and `document.documentElement.lang`.
 - `setPreference(preference)`.
 
-The supported languages live in one list (code, native name, formatting locale) that the picker, the
-resolver and the parity check all read. The formatting locale is separate from the code: English
-formats as `en-GB` (day before month, as today), French as `fr-FR`. Adding a language means adding a file and an entry.
+The supported languages live in one list (code, native name, fallback formatting locale) that the
+picker, the resolver and the parity check all read. Language and formats are separate, like on the
+OS: the formatting locale is the first device language whose primary subtag is the active language
+(`en-US`, `fr-CH`...), and only without one does it fall back to `en-GB` / `fr-FR`. It follows a
+device change live. There is no format override in Settings (owner, option 2). Adding a language means adding a file and an entry.
 
 ### Boot without flash
 

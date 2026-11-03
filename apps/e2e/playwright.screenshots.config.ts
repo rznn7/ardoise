@@ -6,7 +6,7 @@ export default defineConfig({
   reporter: [['list']],
   use: {
     ...devices['Desktop Chrome'],
-    locale: 'en-US',
+    locale: 'en-GB',
     baseURL: process.env['SCREENSHOTS_BASE_URL'] ?? 'http://localhost:4200',
     trace: 'retain-on-failure',
   },

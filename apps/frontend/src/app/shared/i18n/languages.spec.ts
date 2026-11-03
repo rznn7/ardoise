@@ -21,8 +21,14 @@ describe('resolveLanguage', () => {
 });
 
 describe('formatLocaleOf', () => {
-  it('formats English the British way and French the French way', () => {
-    expect(formatLocaleOf('en')).toBe('en-GB');
-    expect(formatLocaleOf('fr')).toBe('fr-FR');
+  it('formats with the device variant of the active language', () => {
+    expect(formatLocaleOf('en', ['en-US', 'fr-FR'])).toBe('en-US');
+    expect(formatLocaleOf('fr', ['en-US', 'fr-CH'])).toBe('fr-CH');
+  });
+
+  it('falls back to British English and France French without a device variant', () => {
+    expect(formatLocaleOf('en', ['fr-FR'])).toBe('en-GB');
+    expect(formatLocaleOf('fr', ['en-US'])).toBe('fr-FR');
+    expect(formatLocaleOf('fr', [])).toBe('fr-FR');
   });
 });

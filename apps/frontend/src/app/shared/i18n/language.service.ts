@@ -34,6 +34,7 @@ function writeStoredPreference(preference: LanguagePreference): void {
 export class LanguageService {
   private readonly transloco = inject(TranslocoService);
   private readonly document = inject(DOCUMENT);
+  private readonly deviceLanguages = signal<readonly string[]>(navigator.languages);
   private readonly preferenceState = signal<LanguagePreference>(readStoredPreference());
   private readonly activeState = signal<Language>(this.wanted());
   private pending: Promise<void>;
@@ -44,7 +45,7 @@ export class LanguageService {
   readonly translator = computed<Translator>(() => {
     const language = this.activeState();
     return {
-      locale: formatLocaleOf(language),
+      locale: formatLocaleOf(language, this.deviceLanguages()),
       translate: (key, params) => this.transloco.translate(key, params, language),
     };
   });
@@ -52,6 +53,7 @@ export class LanguageService {
   constructor() {
     this.pending = this.apply();
     window.addEventListener('languagechange', () => {
+      this.deviceLanguages.set(navigator.languages);
       if (this.preferenceState() === 'system') this.pending = this.apply();
     });
   }
@@ -68,7 +70,7 @@ export class LanguageService {
   }
 
   private wanted(): Language {
-    return resolveLanguage(this.preferenceState(), navigator.languages);
+    return resolveLanguage(this.preferenceState(), this.deviceLanguages());
   }
 
   private async apply(): Promise<void> {

@@ -28,8 +28,10 @@ export const resolveLanguage = (
   deviceLanguages: readonly string[],
 ): Language => (preference === 'system' ? deviceLanguage(deviceLanguages) : preference);
 
-export const formatLocaleOf = (language: Language): string =>
-  LANGUAGES.find(({ code }) => code === language)?.formatLocale ?? 'en-GB';
+export const formatLocaleOf = (language: Language, deviceLanguages: readonly string[]): string =>
+  deviceLanguages.find((tag) => primarySubtag(tag) === language) ??
+  LANGUAGES.find(({ code }) => code === language)?.formatLocale ??
+  'en-GB';
 
 export const isLanguagePreference = (value: unknown): value is LanguagePreference =>
   value === 'system' || LANGUAGES.some(({ code }) => code === value);

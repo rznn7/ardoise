@@ -159,3 +159,5 @@ With the frontend running (`pnpm dev:front`), `pnpm --filter @ardoise/e2e screen
 | 2026-11-03 | Language picker | Settings, under Theme: System / English / Français, native names, only "System" translated; per device | The owner's friends read French, the open-source project reads English |
 | 2026-11-03 | Decimal separator | Amount and percent fields show a point in English and a comma in French, accept both | Matches what each language reads; typing either never fails |
 | 2026-11-03 | French tone | Vous, sober; typographic apostrophe (’) | "Le vouvoiement fera plus sobre"; ICU treats ' as an escape |
+| 2026-11-03 | Formats | Dates and amounts use the device's variant of the active language (en-US → "Nov 3", "$12.00"; en-GB → "3 Nov", "US$12.00"), falling back to en-GB / fr-FR; no format override | Language and region are separate, as on the OS; the owner picked device-derived formats without a setting |
+

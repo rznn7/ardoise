@@ -24,4 +24,5 @@ Object.assign(globalThis, { EventSource: InertEventSource });
 beforeEach(() => {
   localStorage.clear();
   document.documentElement.lang = 'en';
+  vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['en-GB']);
 });

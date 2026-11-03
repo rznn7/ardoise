@@ -118,6 +118,8 @@ A settlement overlays the balance calculation; it never mutates payments.
 - [ ] **pull to refresh on touch** — on a phone the whole screen moves with the finger instead of the
   pull indicator alone; the refresh gesture does not work as intended. Missed in the feed pagination
   review.
+- [ ] **horizontal scroll on payment edit** — on a touch screen, the payment edit screen can scroll
+  sideways. Reported by the owner during the translation slice.
 - [x] **PWA** — manifest, app icon, standalone mode under a translucent status bar, reload onto a new
   deploy. iOS keyboard handling landed with payments.
 - [ ] **multi-device passkey** — lift the v1 single-passkey non-goal.

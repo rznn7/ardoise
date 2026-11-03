@@ -8,7 +8,7 @@ export default defineConfig({
   reporter: [['list']],
   use: {
     ...devices['Desktop Chrome'],
-    locale: 'en-US',
+    locale: 'en-GB',
     baseURL: 'http://localhost:4300',
     viewport: { width: 393, height: 852 },
     trace: 'retain-on-failure',

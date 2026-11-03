@@ -32,7 +32,7 @@ export default [
 export function translatorFor(language: Language): Translator {
   const transloco = TestBed.inject(TranslocoService);
   return {
-    locale: formatLocaleOf(language),
+    locale: formatLocaleOf(language, []),
     translate: (key, params) => {
       transloco.setActiveLang(language);
       return transloco.translate(key, params, language);
