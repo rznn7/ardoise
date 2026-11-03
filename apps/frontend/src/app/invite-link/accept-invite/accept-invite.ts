@@ -1,6 +1,18 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  type ElementRef,
+  inject,
+  Injector,
+  input,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { Router } from '@angular/router';
+import { USER_NAME_MAX_LENGTH } from '@ardoise/shared';
 import { provideIcons } from '@ng-icons/core';
 import {
   lucideCircleCheck,
@@ -10,6 +22,7 @@ import {
 } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmIconImports } from '@spartan-ng/helm/icon';
+import { HlmInputImports } from '@spartan-ng/helm/input';
 import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
 import { catchError, map, of, switchMap, tap } from 'rxjs';
 import { AuthService } from 'src/app/auth/auth.service';
@@ -46,6 +59,7 @@ const SUCCESS_DISPLAY_MS = 800;
     HlmButtonImports,
     HlmSpinnerImports,
     HlmIconImports,
+    HlmInputImports,
   ],
   providers: [
     provideIcons({ lucideKeyRound, lucideRefreshCw, lucideCircleCheck, lucideTriangleAlert }),
@@ -63,6 +77,11 @@ export class AcceptInvite {
 
   readonly state = signal<AcceptInviteState>('loading');
   readonly groupName = signal<string | null>(null);
+  readonly naming = signal(false);
+  private readonly injector = inject(Injector);
+  private readonly nameInput = viewChild<ElementRef<HTMLInputElement>>('joinName');
+  private readonly joinButton = viewChild<ElementRef<HTMLButtonElement>>('joinButton');
+  protected readonly nameMaxLength = USER_NAME_MAX_LENGTH;
 
   constructor() {
     effect(() => {
@@ -138,11 +157,22 @@ export class AcceptInvite {
     });
   }
 
-  registerThenJoin(): void {
+  setNaming(naming: boolean): void {
+    this.naming.set(naming);
+    afterNextRender(
+      () => {
+        (naming ? this.nameInput() : this.joinButton())?.nativeElement.focus();
+      },
+      { injector: this.injector },
+    );
+  }
+
+  registerThenJoin(event: Event, name: string): void {
+    event.preventDefault();
     const token = this.token();
     if (!token) return;
 
-    this.flow.registerThenJoin(token).subscribe({
+    this.flow.registerThenJoin(token, name.trim() || undefined).subscribe({
       next: () => {
         this.lastGroup.skipLaunchRedirect();
         this.onJoinSuccess();

@@ -230,7 +230,15 @@ async function reply(route: Route, apiReply: ApiReply): Promise<void> {
   }
 }
 
+export const VERSION = {
+  sha: 'a1b2c3d4e5f6',
+  date: '2026-11-03T10:00:00+01:00',
+};
+
 export async function mockApi(page: Page, mocks: ApiMocks): Promise<void> {
+  await page.route('**/version.json', (route) =>
+    route.fulfill({ json: VERSION }),
+  );
   await page.route('**/api/**', async (route) => {
     const request = route.request();
     const url = new URL(request.url());

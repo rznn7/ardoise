@@ -24,6 +24,7 @@ test('a moderator invites people from an existing group', async ({
   await bob
     .getByRole('button', { name: 'New here? Join with a passkey' })
     .click();
+  await bob.getByRole('button', { name: 'Create passkey' }).click();
   await expect(bob).toHaveURL(/\/home$/);
   await expect(bob.getByRole('link', { name: /Lisbon trip/ })).toBeVisible();
 });

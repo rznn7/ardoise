@@ -36,15 +36,17 @@ describe(AcceptInviteFlow.name, () => {
 
   it('registerThenJoin registers and does NOT log in', async () => {
     const login = vi.fn<() => Observable<void>>();
-    const register = vi.fn<(token: string) => Observable<void>>().mockReturnValue(of(undefined));
+    const register = vi
+      .fn<(token: string, name?: string) => Observable<void>>()
+      .mockReturnValue(of(undefined));
     TestBed.configureTestingModule({
       providers: [{ provide: AuthService, useValue: { login, register } }],
     });
     const flow = TestBed.inject(AcceptInviteFlow);
 
-    await firstValueFrom(flow.registerThenJoin('token'));
+    await firstValueFrom(flow.registerThenJoin('token', 'Ana'));
 
-    expect(register).toHaveBeenCalledWith('token');
+    expect(register).toHaveBeenCalledWith('token', 'Ana');
     expect(login).not.toHaveBeenCalled();
   });
 

@@ -18,6 +18,7 @@ test('a member with a session skips the login page', async ({
   await page
     .getByRole('button', { name: 'New here? Join with a passkey' })
     .click();
+  await page.getByRole('button', { name: 'Create passkey' }).click();
   await expect(page).toHaveURL(/\/home$/);
 
   await page.goto('/login');

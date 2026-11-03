@@ -81,10 +81,15 @@ A settlement overlays the balance calculation; it never mutates payments.
 - [x] **live subscription (frontend)** — EventSource subscription + reactive refresh
   (`superpowers/specs/2026-10-28-realtime-design.md`).
 
-## Personal settings
-- [ ] **settings page (frontend)** — personal settings screen; first entry is the theme
-  selector (system / light / dark) on top of the existing `ThemeService`.
-- [ ] **logout control (frontend)** — the auth flow supports logout; no UI exposes it yet.
+## Personal settings (done)
+- [x] **settings page** — reached from home: global name, theme (system / light / dark), sign out
+  with confirmation, running version; optional name when joining as a newcomer
+  (`superpowers/specs/2026-11-03-personal-settings-design.md`).
+
+## Translation (en / fr)
+- [ ] **app in English and French** — every screen's copy in both languages, a language choice in
+  personal settings (following the device by default), dates and amounts formatted for the chosen
+  language.
 
 ## Admin
 - [x] **admin overview** — read-only overview of users and groups, user and group details,
@@ -104,6 +109,9 @@ A settlement overlays the balance calculation; it never mutates payments.
     the edge (#18).
 - [ ] **route-change focus** — after each navigation, move focus to the page heading so screen
   readers and keyboard users land on the new screen (#19).
+- [ ] **pull to refresh on touch** — on a phone the whole screen moves with the finger instead of the
+  pull indicator alone; the refresh gesture does not work as intended. Missed in the feed pagination
+  review.
 - [x] **PWA** — manifest, app icon, standalone mode under a translucent status bar, reload onto a new
   deploy. iOS keyboard handling landed with payments.
 - [ ] **multi-device passkey** — lift the v1 single-passkey non-goal.

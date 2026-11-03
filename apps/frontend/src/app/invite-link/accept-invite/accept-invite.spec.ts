@@ -166,7 +166,7 @@ describe(AcceptInvite.name, () => {
     expect(registerThenJoin).not.toHaveBeenCalled();
   });
 
-  it('logged-out secondary action invokes registerThenJoin', async () => {
+  const renderLoggedOut = async () => {
     const preview = vi
       .fn<(token: string) => Observable<PreviewInviteLinkResponse>>()
       .mockReturnValue(of({ groupName: 'Trip to Lisbon' }));
@@ -175,8 +175,8 @@ describe(AcceptInvite.name, () => {
       .mockReturnValue(throwError(() => new HttpErrorResponse({ status: 401 })));
     const loginThenJoin = vi.fn<(token: string) => Observable<ConsumeInviteLinkResponse>>();
     const registerThenJoin = vi
-      .fn<(token: string) => Observable<ConsumeInviteLinkResponse>>()
-      .mockReturnValue(of({ groupId: 1, alreadyMember: false }));
+      .fn<(token: string, name?: string) => Observable<void>>()
+      .mockReturnValue(of(undefined));
     await render(AcceptInvite, {
       inputs: { token: 'x' },
       providers: [
@@ -186,13 +186,66 @@ describe(AcceptInvite.name, () => {
         { provide: Router, useValue: { navigate: vi.fn() } },
       ],
     });
-
     await userEvent.click(
       await screen.findByRole('button', { name: 'New here? Join with a passkey' }),
     );
+    return { loginThenJoin, registerThenJoin };
+  };
 
-    expect(registerThenJoin).toHaveBeenCalledWith('x');
+  it('asks for my name before the passkey', async () => {
+    const { registerThenJoin } = await renderLoggedOut();
+
+    const input = screen.getByRole<HTMLInputElement>('textbox', { name: 'Your name' });
+    expect(input.placeholder).toBe('Optional');
+    expect(input.maxLength).toBe(50);
+    expect(
+      screen.getByText('Shown to everyone in your groups. You can change it later in Settings.'),
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Create passkey' })).toBeTruthy();
+    expect(registerThenJoin).not.toHaveBeenCalled();
+  });
+
+  it('sends the trimmed name', async () => {
+    const { registerThenJoin, loginThenJoin } = await renderLoggedOut();
+
+    await userEvent.type(screen.getByRole('textbox', { name: 'Your name' }), '  Ana ');
+    await userEvent.click(screen.getByRole('button', { name: 'Create passkey' }));
+
+    expect(registerThenJoin).toHaveBeenCalledWith('x', 'Ana');
     expect(loginThenJoin).not.toHaveBeenCalled();
+  });
+
+  it('sends no name when left blank', async () => {
+    const { registerThenJoin } = await renderLoggedOut();
+
+    await userEvent.type(screen.getByRole('textbox', { name: 'Your name' }), '   ');
+    await userEvent.click(screen.getByRole('button', { name: 'Create passkey' }));
+
+    expect(registerThenJoin).toHaveBeenCalledWith('x', undefined);
+  });
+
+  it('moves focus to the name field, and back to the join button', async () => {
+    await renderLoggedOut();
+
+    await waitFor(() => {
+      expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Your name' }));
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+
+    await waitFor(() => {
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: 'New here? Join with a passkey' }),
+      );
+    });
+  });
+
+  it('goes back to the two choices', async () => {
+    await renderLoggedOut();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+
+    expect(screen.getByRole('button', { name: 'Log in to join Trip to Lisbon' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'New here? Join with a passkey' })).toBeTruthy();
   });
 
   it('success shows a brief success state, then navigates', async () => {
@@ -394,6 +447,7 @@ describe(AcceptInvite.name, () => {
     await userEvent.click(
       await screen.findByRole('button', { name: 'New here? Join with a passkey' }),
     );
+    await userEvent.click(screen.getByRole('button', { name: 'Create passkey' }));
 
     expect(skipLaunchRedirect).toHaveBeenCalled();
   });

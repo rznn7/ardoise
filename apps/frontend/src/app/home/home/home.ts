@@ -3,7 +3,7 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { type ExpenseGroupSummary } from '@ardoise/shared';
 import { provideIcons } from '@ng-icons/core';
-import { lucidePlus, lucideShield } from '@ng-icons/lucide';
+import { lucidePlus, lucideSettings, lucideShield } from '@ng-icons/lucide';
 import { BrnSheetImports } from '@spartan-ng/brain/sheet';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmIconImports } from '@spartan-ng/helm/icon';
@@ -43,7 +43,7 @@ type HomeState =
     BalanceIndicator,
   ],
   templateUrl: './home.html',
-  providers: [provideIcons({ lucidePlus, lucideShield })],
+  providers: [provideIcons({ lucidePlus, lucideSettings, lucideShield })],
 })
 export class Home {
   private readonly expenseGroupApi = inject(ExpenseGroupApiService);
