@@ -2,18 +2,30 @@
   <app-mobile-shell>
     <div appShellHeader class="flex items-center justify-between bg-background px-4 pt-4 pb-3">
       <h1 appTitle>ardoise</h1>
-      @if (isAdmin()) {
+      <div class="flex items-center gap-1">
+        @if (isAdmin()) {
+          <a
+            aria-label="Admin"
+            class="size-11 rounded-full"
+            hlmBtn
+            routerLink="/admin"
+            size="icon-lg"
+            variant="ghost"
+          >
+            <ng-icon hlm name="lucideShield" size="sm" aria-hidden="true" />
+          </a>
+        }
         <a
-          aria-label="Admin"
+          aria-label="Settings"
           class="size-11 rounded-full"
           hlmBtn
-          routerLink="/admin"
+          routerLink="/settings"
           size="icon-lg"
           variant="ghost"
         >
-          <ng-icon hlm name="lucideShield" size="sm" aria-hidden="true" />
+          <ng-icon hlm name="lucideSettings" size="sm" aria-hidden="true" />
         </a>
-      }
+      </div>
     </div>
 
     @switch (state().status) {
