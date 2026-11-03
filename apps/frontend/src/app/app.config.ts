@@ -6,6 +6,7 @@ import {
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { LanguageService } from 'src/app/shared/i18n/language.service';
 import { provideI18n } from 'src/app/shared/i18n/provide-i18n';
 import { withHistoryPageIds } from 'src/app/shared/navigation/back';
 import { ThemeService } from 'src/app/shared/theme/theme.service';
@@ -22,6 +23,7 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => {
       inject(ThemeService);
       inject(VersionWatcher).start();
+      return inject(LanguageService).ready();
     }),
   ],
 };

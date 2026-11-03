@@ -39,7 +39,7 @@ describe('translation files', () => {
   }
 
   it('translates through the real French file', () => {
-    expect(translatorFor('fr').translate('common.today')).toBe('Aujourd’hui');
+    expect(translatorFor('fr').translate('settings.title')).toBe('Réglages');
     expect(translatorFor('fr').locale).toBe('fr-FR');
   });
 });

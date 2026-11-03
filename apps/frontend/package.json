@@ -8,9 +8,9 @@
     "test": "ng test --watch=false",
     "test:watch": "ng test --watch",
     "test:cov": "ng test --watch=false --coverage",
-    "lint": "eslint src scripts && tsx scripts/check-component-css.ts",
+    "lint": "eslint src scripts && tsx scripts/check-component-css.ts && tsx scripts/check-unused-translations.ts && pnpm i18n:check",
     "backdrops": "tsx scripts/backdrops/generate.mts",
-    "i18n:check": "transloco-keys-manager find --emit-error-on-extra-keys"
+    "i18n:check": "transloco-keys-manager find"
   },
   "private": true,
   "dependencies": {

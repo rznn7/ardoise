@@ -1,13 +1,35 @@
 {
-  "common": {
-    "today": "Today",
-    "yesterday": "Yesterday",
-    "someone": "Someone"
-  },
   "settings": {
     "language": {
       "title": "Language",
       "system": "System"
+    },
+    "version": {
+      "dev": "Version dev",
+      "build": "Version {sha} · {day}"
+    },
+    "title": "Settings",
+    "back": "Back",
+    "profile": "Profile",
+    "name": "Name",
+    "nameHint": "Shown to everyone in your groups.",
+    "yourName": "Your name",
+    "saveFailed": "Couldn't save your name. Try again.",
+    "saving": "Saving…",
+    "save": "Save",
+    "theme": {
+      "title": "Theme",
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "signOut": {
+      "action": "Sign out",
+      "title": "Sign out?",
+      "description": "You'll need your passkey on this device to sign back in.",
+      "failed": "Couldn't sign out. Try again.",
+      "busy": "Signing out…",
+      "cancel": "Cancel"
     }
   }
 }

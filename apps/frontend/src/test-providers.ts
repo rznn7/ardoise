@@ -18,7 +18,11 @@ export default [
     TranslocoTestingModule.forRoot({
       langs: { en, fr },
       preloadLangs: true,
-      translocoConfig: { availableLangs: AVAILABLE_LANGS, defaultLang: 'en' },
+      translocoConfig: {
+        availableLangs: AVAILABLE_LANGS,
+        defaultLang: 'en',
+        reRenderOnLangChange: true,
+      },
     }),
   ),
   provideTranslocoMessageformat(),

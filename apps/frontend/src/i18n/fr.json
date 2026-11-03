@@ -1,13 +1,35 @@
 {
-  "common": {
-    "today": "Aujourd’hui",
-    "yesterday": "Hier",
-    "someone": "Quelqu’un"
-  },
   "settings": {
     "language": {
       "title": "Langue",
       "system": "Système"
+    },
+    "version": {
+      "dev": "Version dev",
+      "build": "Version {sha} · {day}"
+    },
+    "title": "Réglages",
+    "back": "Retour",
+    "profile": "Profil",
+    "name": "Nom",
+    "nameHint": "Visible par tous les membres de vos groupes.",
+    "yourName": "Votre nom",
+    "saveFailed": "Impossible d’enregistrer votre nom. Réessayez.",
+    "saving": "Enregistrement…",
+    "save": "Enregistrer",
+    "theme": {
+      "title": "Thème",
+      "system": "Système",
+      "light": "Clair",
+      "dark": "Sombre"
+    },
+    "signOut": {
+      "action": "Se déconnecter",
+      "title": "Se déconnecter ?",
+      "description": "Il vous faudra la clé d’accès de cet appareil pour vous reconnecter.",
+      "failed": "Impossible de vous déconnecter. Réessayez.",
+      "busy": "Déconnexion…",
+      "cancel": "Annuler"
     }
   }
 }

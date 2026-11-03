@@ -1,138 +1,176 @@
-<hlm-sheet #signOutSheet="hlmSheet" side="bottom" (closed)="resetSignOut()">
-  <app-mobile-shell>
-    <div appShellHeader class="flex items-center gap-3 bg-background px-4 py-2">
-      <button
-        aria-label="Back"
-        class="size-11 shrink-0 rounded-full"
-        hlmBtn
-        size="icon-lg"
-        type="button"
-        variant="ghost"
-        (click)="back()"
-      >
-        <ng-icon hlm name="lucideChevronLeft" size="sm" aria-hidden="true" />
-      </button>
-      <h1 appTitle>Settings</h1>
-    </div>
-
-    <div class="flex min-h-full flex-col">
-      <section class="flex flex-col gap-2 pt-6" aria-labelledby="profile-heading">
-        <h2 appEyebrow class="px-4" id="profile-heading">Profile</h2>
-        <hlm-sheet #nameSheet="hlmSheet" side="bottom">
-          <div class="border-y border-border">
-            <button
-              class="block w-full text-left"
-              hlmSheetTrigger
-              type="button"
-              (click)="startRename()"
-            >
-              <app-list-row>
-                <span appListRowTitle>Name</span>
-                <span appListRowTrailing class="flex items-center gap-1 text-muted-foreground">
-                  <span appMeta>{{ name() }}</span>
-                  <ng-icon hlm name="lucideChevronRight" size="sm" aria-hidden="true" />
-                </span>
-              </app-list-row>
-            </button>
-          </div>
-
-          <hlm-sheet-content *brnSheetContent>
-            <form
-              class="flex flex-col"
-              (submit)="saveName($event, nameSheet.close.bind(nameSheet))"
-            >
-              <div hlmSheetHeader>
-                <h3 hlmSheetTitle>Your name</h3>
-                <p hlmSheetDescription>Shown to everyone in your groups.</p>
-              </div>
-              <div class="flex flex-col gap-3 p-4 pb-8">
-                <input
-                  #nameInput
-                  aria-label="Your name"
-                  autocomplete="name"
-                  class="h-11"
-                  enterkeyhint="done"
-                  hlmInput
-                  [maxLength]="nameMaxLength"
-                  [readOnly]="renameState() === 'busy'"
-                  [value]="draft()"
-                  (input)="draft.set(nameInput.value)"
-                />
-                @if (renameState() === 'failed') {
-                  <p appError role="alert">Couldn't save your name. Try again.</p>
-                }
-                <button hlmBtn size="xl" type="submit" [disabled]="!canSave()">
-                  @if (renameState() === 'busy') {
-                    <hlm-spinner aria-hidden="true" />
-                    Saving…
-                  } @else {
-                    Save
-                  }
-                </button>
-              </div>
-            </form>
-          </hlm-sheet-content>
-        </hlm-sheet>
-        <p appMeta class="px-4">Shown to everyone in your groups.</p>
-      </section>
-
-      <section class="flex flex-col gap-2 px-4 pt-6" aria-labelledby="theme-heading">
-        <h2 appEyebrow id="theme-heading">Theme</h2>
-        <div
-          aria-labelledby="theme-heading"
-          class="w-full"
-          hlmToggleGroup
-          type="single"
-          variant="outline"
-          [nullable]="false"
-          [value]="theme.preference()"
-          (valueChange)="selectTheme($event)"
+<ng-container *transloco="let t">
+  <hlm-sheet #signOutSheet="hlmSheet" side="bottom" (closed)="resetSignOut()">
+    <app-mobile-shell>
+      <div appShellHeader class="flex items-center gap-3 bg-background px-4 py-2">
+        <button
+          class="size-11 shrink-0 rounded-full"
+          hlmBtn
+          size="icon-lg"
+          type="button"
+          variant="ghost"
+          [attr.aria-label]="t('settings.back')"
+          (click)="back()"
         >
-          <button class="h-11 flex-1" hlmToggleGroupItem value="system">System</button>
-          <button class="h-11 flex-1" hlmToggleGroupItem value="light">Light</button>
-          <button class="h-11 flex-1" hlmToggleGroupItem value="dark">Dark</button>
-        </div>
-      </section>
-
-      <div class="mt-8 border-y border-border">
-        <button class="block w-full text-left" hlmSheetTrigger type="button">
-          <app-list-row>
-            <span appListRowTitle class="text-destructive">Sign out</span>
-          </app-list-row>
+          <ng-icon hlm name="lucideChevronLeft" size="sm" aria-hidden="true" />
         </button>
+        <h1 appTitle>{{ t('settings.title') }}</h1>
       </div>
 
-      <p appMeta class="mt-auto px-4 pt-10 pb-4 text-center">{{ version.label() }}</p>
-    </div>
-  </app-mobile-shell>
+      <div class="flex min-h-full flex-col">
+        <section class="flex flex-col gap-2 pt-6" aria-labelledby="profile-heading">
+          <h2 appEyebrow class="px-4" id="profile-heading">{{ t('settings.profile') }}</h2>
+          <hlm-sheet #nameSheet="hlmSheet" side="bottom">
+            <div class="border-y border-border">
+              <button
+                class="block w-full text-left"
+                hlmSheetTrigger
+                type="button"
+                (click)="startRename()"
+              >
+                <app-list-row>
+                  <span appListRowTitle>{{ t('settings.name') }}</span>
+                  <span appListRowTrailing class="flex items-center gap-1 text-muted-foreground">
+                    <span appMeta>{{ name() }}</span>
+                    <ng-icon hlm name="lucideChevronRight" size="sm" aria-hidden="true" />
+                  </span>
+                </app-list-row>
+              </button>
+            </div>
 
-  <hlm-sheet-content *brnSheetContent>
-    <div hlmSheetHeader>
-      <h3 hlmSheetTitle>Sign out?</h3>
-      <p hlmSheetDescription>You'll need your passkey on this device to sign back in.</p>
-    </div>
-    <div class="flex flex-col gap-3 p-4 pb-8">
-      @if (signOutState() === 'failed') {
-        <p appError role="alert">Couldn't sign out. Try again.</p>
-      }
-      <button
-        hlmBtn
-        size="xl"
-        type="button"
-        variant="destructive"
-        [disabled]="signOutState() === 'busy'"
-        (click)="signOut()"
-      >
-        @if (signOutState() === 'busy') {
-          <hlm-spinner aria-hidden="true" />
-          Signing out…
-        } @else {
-          Sign out
+            <hlm-sheet-content *brnSheetContent>
+              <form
+                class="flex flex-col"
+                (submit)="saveName($event, nameSheet.close.bind(nameSheet))"
+              >
+                <div hlmSheetHeader>
+                  <h3 hlmSheetTitle>{{ t('settings.yourName') }}</h3>
+                  <p hlmSheetDescription>{{ t('settings.nameHint') }}</p>
+                </div>
+                <div class="flex flex-col gap-3 p-4 pb-8">
+                  <input
+                    #nameInput
+                    autocomplete="name"
+                    class="h-11"
+                    enterkeyhint="done"
+                    hlmInput
+                    [attr.aria-label]="t('settings.yourName')"
+                    [maxLength]="nameMaxLength"
+                    [readOnly]="renameState() === 'busy'"
+                    [value]="draft()"
+                    (input)="draft.set(nameInput.value)"
+                  />
+                  @if (renameState() === 'failed') {
+                    <p appError role="alert">{{ t('settings.saveFailed') }}</p>
+                  }
+                  <button hlmBtn size="xl" type="submit" [disabled]="!canSave()">
+                    @if (renameState() === 'busy') {
+                      <hlm-spinner aria-hidden="true" />
+                      {{ t('settings.saving') }}
+                    } @else {
+                      {{ t('settings.save') }}
+                    }
+                  </button>
+                </div>
+              </form>
+            </hlm-sheet-content>
+          </hlm-sheet>
+          <p appMeta class="px-4">{{ t('settings.nameHint') }}</p>
+        </section>
+
+        <section class="flex flex-col gap-2 px-4 pt-6" aria-labelledby="theme-heading">
+          <h2 appEyebrow id="theme-heading">{{ t('settings.theme.title') }}</h2>
+          <div
+            aria-labelledby="theme-heading"
+            class="w-full"
+            hlmToggleGroup
+            type="single"
+            variant="outline"
+            [nullable]="false"
+            [value]="theme.preference()"
+            (valueChange)="selectTheme($event)"
+          >
+            <button class="h-11 flex-1" hlmToggleGroupItem value="system">
+              {{ t('settings.theme.system') }}
+            </button>
+            <button class="h-11 flex-1" hlmToggleGroupItem value="light">
+              {{ t('settings.theme.light') }}
+            </button>
+            <button class="h-11 flex-1" hlmToggleGroupItem value="dark">
+              {{ t('settings.theme.dark') }}
+            </button>
+          </div>
+        </section>
+
+        <section class="flex flex-col gap-2 px-4 pt-6" aria-labelledby="language-heading">
+          <h2 appEyebrow id="language-heading">{{ t('settings.language.title') }}</h2>
+          <div
+            aria-labelledby="language-heading"
+            class="w-full"
+            hlmToggleGroup
+            type="single"
+            variant="outline"
+            [nullable]="false"
+            [value]="language.preference()"
+            (valueChange)="selectLanguage($event)"
+          >
+            <button class="h-11 flex-1" hlmToggleGroupItem value="system">
+              {{ t('settings.language.system') }}
+            </button>
+            @for (option of languages; track option.code) {
+              <button
+                class="h-11 flex-1"
+                hlmToggleGroupItem
+                [attr.lang]="option.code"
+                [value]="option.code"
+              >
+                {{ option.nativeName }}
+              </button>
+            }
+          </div>
+        </section>
+
+        <div class="mt-8 border-y border-border">
+          <button class="block w-full text-left" hlmSheetTrigger type="button">
+            <app-list-row>
+              <span appListRowTitle class="text-destructive">{{
+                t('settings.signOut.action')
+              }}</span>
+            </app-list-row>
+          </button>
+        </div>
+
+        <p appMeta class="mt-auto px-4 pt-10 pb-4 text-center">{{ version.label() }}</p>
+      </div>
+    </app-mobile-shell>
+
+    <hlm-sheet-content *brnSheetContent>
+      <div hlmSheetHeader>
+        <h3 hlmSheetTitle>{{ t('settings.signOut.title') }}</h3>
+        <p hlmSheetDescription>{{ t('settings.signOut.description') }}</p>
+      </div>
+      <div class="flex flex-col gap-3 p-4 pb-8">
+        @if (signOutState() === 'failed') {
+          <p appError role="alert">{{ t('settings.signOut.failed') }}</p>
         }
-      </button>
-      <button hlmBtn size="xl" type="button" variant="outline" (click)="signOutSheet.close()">
-        Cancel
-      </button>
-    </div>
-  </hlm-sheet-content>
-</hlm-sheet>
+        <button
+          hlmBtn
+          size="xl"
+          type="button"
+          variant="destructive"
+          [disabled]="signOutState() === 'busy'"
+          (click)="signOut()"
+        >
+          @if (signOutState() === 'busy') {
+            <hlm-spinner aria-hidden="true" />
+            {{ t('settings.signOut.busy') }}
+          } @else {
+            {{ t('settings.signOut.action') }}
+          }
+        </button>
+        <button hlmBtn size="xl" type="button" variant="outline" (click)="signOutSheet.close()">
+          {{ t('settings.signOut.cancel') }}
+        </button>
+      </div>
+    </hlm-sheet-content>
+  </hlm-sheet>
+</ng-container>
