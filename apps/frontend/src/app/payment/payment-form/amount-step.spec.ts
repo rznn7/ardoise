@@ -99,6 +99,58 @@ describe('AmountStep', () => {
     expect(nextButton().disabled).toBe(true);
   });
 
+  it('appends a digit wherever the caret sits', async () => {
+    await setup();
+    await userEvent.type(amountInput(), '123');
+
+    await userEvent.type(amountInput(), '5', {
+      skipClick: true,
+      initialSelectionStart: 1,
+      initialSelectionEnd: 1,
+    });
+
+    expect(amountInput().value).toBe('12.35');
+  });
+
+  it('drops the last digit wherever the caret sits', async () => {
+    await setup();
+    await userEvent.type(amountInput(), '123');
+
+    await userEvent.type(amountInput(), '{Backspace}', {
+      skipClick: true,
+      initialSelectionStart: 3,
+      initialSelectionEnd: 3,
+    });
+
+    expect(amountInput().value).toBe('0.12');
+  });
+
+  it('replaces the whole amount when it is all selected', async () => {
+    await setup();
+    await userEvent.type(amountInput(), '123');
+
+    await userEvent.type(amountInput(), '5', {
+      skipClick: true,
+      initialSelectionStart: 0,
+      initialSelectionEnd: 4,
+    });
+
+    expect(amountInput().value).toBe('0.05');
+  });
+
+  it('empties when the whole amount is selected and erased', async () => {
+    await setup();
+    await userEvent.type(amountInput(), '123');
+
+    await userEvent.type(amountInput(), '{Backspace}', {
+      skipClick: true,
+      initialSelectionStart: 0,
+      initialSelectionEnd: 4,
+    });
+
+    expect(amountInput().value).toBe('');
+  });
+
   it('continues from the right in edit mode', async () => {
     const { draft } = await setup();
     draft.mode.set('edit');

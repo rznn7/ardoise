@@ -21,6 +21,14 @@ import { GroupChip } from 'src/app/shared/ui/group-chip/group-chip';
 import { MobileShellImports } from 'src/app/shared/ui/mobile-shell/mobile-shell';
 import { AppTextImports } from 'src/app/shared/ui/text/text';
 
+const editedText = (event: Event, value: string, previous: string): string => {
+  if (!(event instanceof InputEvent)) return value;
+  const { inputType, data } = event;
+  if (inputType === 'insertText' && data !== null && value !== data) return previous + data;
+  if (inputType.startsWith('deleteContent') && value !== '') return previous.slice(0, -1);
+  return value;
+};
+
 @Component({
   selector: 'app-amount-step',
   imports: [
@@ -51,11 +59,12 @@ export class AmountStep {
     });
   }
 
-  protected typeAmount(): void {
+  protected typeAmount(event: Event): void {
     const input = this.amountInput().nativeElement;
+    const previous = this.draft.amountText();
     const text = cashRegisterText(
-      input.value,
-      this.draft.amountText(),
+      editedText(event, input.value, previous),
+      previous,
       this.language.translator().locale,
     );
     this.draft.amountText.set(text);

@@ -45,7 +45,7 @@
             [value]="draft.amountText()"
             (click)="caretToEnd()"
             (focus)="caretToEnd()"
-            (input)="typeAmount()"
+            (input)="typeAmount($event)"
           />
           <span appTitle>{{ draft.group()?.currencyCode }}</span>
         </div>
