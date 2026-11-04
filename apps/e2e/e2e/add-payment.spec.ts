@@ -49,7 +49,7 @@ test('a member adds a payment split by shares, leaving one member out', async ({
   }
   await openGroup(alice, 'Lisbon trip');
 
-  await startPayment(alice, '30', 'Groceries');
+  await startPayment(alice, '30,00', 'Groceries');
   await alice.getByRole('button', { name: 'Shares' }).click();
   await alice.getByRole('button', { name: 'More shares for You' }).click();
   await alice

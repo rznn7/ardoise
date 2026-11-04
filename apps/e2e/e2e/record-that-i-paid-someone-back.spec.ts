@@ -19,7 +19,7 @@ test('a member records that they paid someone back', async ({
   const bob = await newUserPage();
   await joinWithNewPasskey(bob, token);
   await openGroup(bob, 'Lisbon trip');
-  await addPayment(bob, '30', 'Dinner');
+  await addPayment(bob, '30,00', 'Dinner');
   await alice.reload();
   await openGroup(alice, 'Lisbon trip');
 

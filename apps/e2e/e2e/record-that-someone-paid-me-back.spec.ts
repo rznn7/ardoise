@@ -19,7 +19,7 @@ test('a member records that someone paid them back', async ({
   await joinWithNewPasskey(bob, token);
   await alice.reload();
   await openGroup(alice, 'Lisbon trip');
-  await addPayment(alice, '30', 'Dinner');
+  await addPayment(alice, '30,00', 'Dinner');
 
   await confirmRepayment(alice, /^user-.* pays you/, /^user-.* paid me back$/);
 

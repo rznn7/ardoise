@@ -12,7 +12,7 @@ test('a member deletes a payment', async ({ passkeyPage: page }) => {
   await joinWithNewPasskey(page, token);
   await openGroup(page, 'Lisbon trip');
   await addPayment(page, '3,20', 'Coffee');
-  await addPayment(page, '18', 'Museum');
+  await addPayment(page, '18,00', 'Museum');
 
   await feedRow(page, 'Coffee').getByRole('link').click();
   await page.getByRole('button', { name: 'Delete' }).click();

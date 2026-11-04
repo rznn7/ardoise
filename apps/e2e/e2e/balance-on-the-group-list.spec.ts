@@ -11,7 +11,7 @@ test('a member sees their balance on the group list', async ({
   const bob = await newUserPage();
   await joinWithNewPasskey(bob, token);
   await openGroup(bob, 'Lisbon trip');
-  await addPayment(bob, '30', 'Dinner');
+  await addPayment(bob, '30,00', 'Dinner');
 
   await alice.reload();
 

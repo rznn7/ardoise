@@ -13,7 +13,7 @@ test('a member backs out of a group opened from its link and stays in the app', 
   const { token } = await seedGroupWithInvite('Lisbon trip');
   await joinWithNewPasskey(member, token);
   await openGroup(member, 'Lisbon trip');
-  await addPayment(member, '12', 'Taxi');
+  await addPayment(member, '12,00', 'Taxi');
 
   const page = await member.context().newPage();
   await page.goto(member.url());

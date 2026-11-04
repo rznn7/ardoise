@@ -18,7 +18,7 @@ test('a member undoes a repayment from the balances', async ({
   const bob = await newUserPage();
   await joinWithNewPasskey(bob, token);
   await openGroup(bob, 'Lisbon trip');
-  await addPayment(bob, '30', 'Dinner');
+  await addPayment(bob, '30,00', 'Dinner');
   await alice.reload();
   await openGroup(alice, 'Lisbon trip');
   await confirmRepayment(alice, /^You pay user-/, /^I paid user-.* back$/);
