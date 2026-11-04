@@ -12,7 +12,9 @@ import { provideIcons } from '@ng-icons/core';
 import { lucideChevronLeft, lucideX } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmIconImports } from '@spartan-ng/helm/icon';
+import { cashRegisterText } from 'src/app/payment/money-input';
 import { PaymentDraft } from 'src/app/payment/payment-draft';
+import { LanguageService } from 'src/app/shared/i18n/language.service';
 import { injectGoBack } from 'src/app/shared/navigation/back';
 import { FigureInput } from 'src/app/shared/ui/figure-input/figure-input';
 import { GroupChip } from 'src/app/shared/ui/group-chip/group-chip';
@@ -36,6 +38,7 @@ import { AppTextImports } from 'src/app/shared/ui/text/text';
 export class AmountStep {
   protected readonly draft = inject(PaymentDraft);
   private readonly router = inject(Router);
+  private readonly language = inject(LanguageService);
   private readonly goBack = injectGoBack();
   private readonly amountInput = viewChild.required<ElementRef<HTMLInputElement>>('amountInput');
 
@@ -46,6 +49,23 @@ export class AmountStep {
     afterNextRender(() => {
       this.amountInput().nativeElement.focus();
     });
+  }
+
+  protected typeAmount(): void {
+    const input = this.amountInput().nativeElement;
+    const text = cashRegisterText(
+      input.value,
+      this.draft.amountText(),
+      this.language.translator().locale,
+    );
+    this.draft.amountText.set(text);
+    input.value = text;
+    this.caretToEnd();
+  }
+
+  protected caretToEnd(): void {
+    const input = this.amountInput().nativeElement;
+    input.setSelectionRange(input.value.length, input.value.length);
   }
 
   protected cancel(): void {

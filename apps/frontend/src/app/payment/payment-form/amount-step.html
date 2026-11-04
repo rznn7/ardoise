@@ -40,10 +40,12 @@
             autocomplete="off"
             enterkeyhint="next"
             id="payment-amount"
-            inputmode="decimal"
+            inputmode="numeric"
             [placeholder]="t('payment.form.amountPlaceholder')"
             [value]="draft.amountText()"
-            (input)="draft.amountText.set(amountInput.value)"
+            (click)="caretToEnd()"
+            (focus)="caretToEnd()"
+            (input)="typeAmount()"
           />
           <span appTitle>{{ draft.group()?.currencyCode }}</span>
         </div>
