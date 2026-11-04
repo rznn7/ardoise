@@ -42,6 +42,16 @@ export const formatAmountInput = (cents: number, locale: string): string => {
   return `${String(whole)}${decimalSeparator(locale)}${fraction}`;
 };
 
+const MAX_CENTS_DIGITS = String(MAX_CENTS).length;
+
+export const cashRegisterText = (typed: string, previous: string, locale: string): string => {
+  const digits = typed.replace(/\D/g, '').replace(/^0+/, '');
+  if (digits === '') return '';
+  const cents = Number(digits);
+  if (digits.length > MAX_CENTS_DIGITS || cents > MAX_CENTS) return previous;
+  return formatAmountInput(cents, locale);
+};
+
 export const formatPercentInput = (basisPoints: number, locale: string): string => {
   const whole = Math.floor(basisPoints / 100);
   const fraction = String(basisPoints % 100)
