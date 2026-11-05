@@ -17,7 +17,7 @@ test('details close when someone deletes the payment', async ({
   await joinWithNewPasskey(bob, token);
   await openGroup(alice, 'Lisbon trip');
   await openGroup(bob, 'Lisbon trip');
-  await addPayment(bob, '24', 'Taxi');
+  await addPayment(bob, '24,00', 'Taxi');
   await feedRow(alice, 'Taxi').getByRole('link').click();
   await expect(alice.getByRole('button', { name: 'Delete' })).toBeVisible();
 

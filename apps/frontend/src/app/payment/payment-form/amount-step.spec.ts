@@ -55,10 +55,10 @@ const nextButton = (): HTMLButtonElement =>
   screen.getByRole<HTMLButtonElement>('button', { name: 'Next' });
 
 describe('AmountStep', () => {
-  it('focuses a decimal amount field labelled Amount on arrival', async () => {
+  it('focuses a numeric amount field labelled Amount on arrival', async () => {
     await setup();
 
-    expect(amountInput().getAttribute('inputmode')).toBe('decimal');
+    expect(amountInput().getAttribute('inputmode')).toBe('numeric');
     await waitFor(() => {
       expect(document.activeElement).toBe(amountInput());
     });
@@ -75,21 +75,97 @@ describe('AmountStep', () => {
 
     if (text !== '') await userEvent.type(amountInput(), text);
 
+    expect(amountInput().value).toBe('');
     expect(nextButton().disabled).toBe(true);
   });
 
-  it('enables Next for a comma decimal', async () => {
+  it('fills digits from the right', async () => {
     const { draft } = await setup();
 
-    await userEvent.type(amountInput(), '24,5');
+    await userEvent.type(amountInput(), '123');
 
-    expect(draft.amountCents()).toBe(2450);
+    expect(amountInput().value).toBe('1.23');
+    expect(draft.amountCents()).toBe(123);
     expect(nextButton().disabled).toBe(false);
+    expect(amountInput().selectionStart).toBe(4);
+  });
+
+  it('empties on backspace and disables Next', async () => {
+    await setup();
+
+    await userEvent.type(amountInput(), '12{Backspace}{Backspace}');
+
+    expect(amountInput().value).toBe('');
+    expect(nextButton().disabled).toBe(true);
+  });
+
+  it('appends a digit wherever the caret sits', async () => {
+    await setup();
+    await userEvent.type(amountInput(), '123');
+
+    await userEvent.type(amountInput(), '5', {
+      skipClick: true,
+      initialSelectionStart: 1,
+      initialSelectionEnd: 1,
+    });
+
+    expect(amountInput().value).toBe('12.35');
+  });
+
+  it('drops the last digit wherever the caret sits', async () => {
+    await setup();
+    await userEvent.type(amountInput(), '123');
+
+    await userEvent.type(amountInput(), '{Backspace}', {
+      skipClick: true,
+      initialSelectionStart: 3,
+      initialSelectionEnd: 3,
+    });
+
+    expect(amountInput().value).toBe('0.12');
+  });
+
+  it('replaces the whole amount when it is all selected', async () => {
+    await setup();
+    await userEvent.type(amountInput(), '123');
+
+    await userEvent.type(amountInput(), '5', {
+      skipClick: true,
+      initialSelectionStart: 0,
+      initialSelectionEnd: 4,
+    });
+
+    expect(amountInput().value).toBe('0.05');
+  });
+
+  it('empties when the whole amount is selected and erased', async () => {
+    await setup();
+    await userEvent.type(amountInput(), '123');
+
+    await userEvent.type(amountInput(), '{Backspace}', {
+      skipClick: true,
+      initialSelectionStart: 0,
+      initialSelectionEnd: 4,
+    });
+
+    expect(amountInput().value).toBe('');
+  });
+
+  it('continues from the right in edit mode', async () => {
+    const { draft } = await setup();
+    draft.mode.set('edit');
+    draft.amountText.set('12.50');
+    TestBed.tick();
+
+    await userEvent.type(amountInput(), '3');
+
+    expect(amountInput().value).toBe('125.03');
+    expect(draft.amountCents()).toBe(12503);
   });
 
   it('goes to the title step on Next', async () => {
     const { router } = await setup();
-    await userEvent.type(amountInput(), '24,5');
+    await userEvent.type(amountInput(), '2450');
 
     await userEvent.click(nextButton());
 
@@ -101,7 +177,7 @@ describe('AmountStep', () => {
   it('goes to the title step on Enter', async () => {
     const { router } = await setup();
 
-    await userEvent.type(amountInput(), '24,5{Enter}');
+    await userEvent.type(amountInput(), '2450{Enter}');
 
     await waitFor(() => {
       expect(router.url).toBe('/group/7/payments/new/title');

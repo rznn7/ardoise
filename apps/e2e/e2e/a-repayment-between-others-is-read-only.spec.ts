@@ -20,7 +20,7 @@ test('a repayment between two other members is read only', async ({
   const carol = await newUserPage();
   await joinWithNewPasskey(carol, token);
   await openGroup(bob, 'Lisbon trip');
-  await addPayment(bob, '30', 'Dinner');
+  await addPayment(bob, '30,00', 'Dinner');
   await alice.reload();
   await openGroup(alice, 'Lisbon trip');
   await confirmRepayment(alice, /^You pay user-/, /^I paid user-.* back$/);

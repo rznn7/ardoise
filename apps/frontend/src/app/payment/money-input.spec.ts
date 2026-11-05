@@ -2,6 +2,7 @@ import { translatorFor } from 'src/test-providers';
 import { describe, expect, it } from 'vitest';
 
 import {
+  cashRegisterText,
   defaultTitle,
   formatAmountInput,
   formatPercentInput,
@@ -89,5 +90,35 @@ describe('formatting', () => {
   it('builds the default title in the creator language', () => {
     expect(defaultTitle(new Date(2026, 9, 26), translatorFor('en'))).toBe('Payment, 26 Oct');
     expect(defaultTitle(new Date(2026, 10, 3), translatorFor('fr'))).toBe('Paiement, 3 nov.');
+  });
+});
+
+describe('cashRegisterText', () => {
+  it.each([
+    ['1', '', '0.01'],
+    ['0.012', '0.01', '0.12'],
+    ['0.123', '0.12', '1.23'],
+    ['1.230', '1.23', '12.30'],
+    ['1.2', '1.23', '0.12'],
+    ['0.0', '0.01', ''],
+    ['0', '', ''],
+    ['abc', '', ''],
+    ['', '0.01', ''],
+    ['1.23,', '1.23', '1.23'],
+    ['1.23a', '1.23', '1.23'],
+    ['24,50', '', '24.50'],
+    ['24,5', '', '2.45'],
+    ['12.503', '12.50', '125.03'],
+  ])('turns %j (was %j) into %j', (typed, previous, expected) => {
+    expect(cashRegisterText(typed, previous, 'en')).toBe(expected);
+  });
+
+  it('writes a French comma', () => {
+    expect(cashRegisterText('0,123', '0,12', 'fr')).toBe('1,23');
+  });
+
+  it('accepts the largest amount and refuses one digit more', () => {
+    expect(cashRegisterText('2147483647', '', 'en')).toBe('21474836.47');
+    expect(cashRegisterText('21474836.479', '21474836.47', 'en')).toBe('21474836.47');
   });
 });

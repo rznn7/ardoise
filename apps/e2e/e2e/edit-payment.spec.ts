@@ -15,7 +15,7 @@ test("a member edits a payment's payer", async ({
   await joinWithNewPasskey(alice, token);
   await joinWithNewPasskey(await newUserPage(), token);
   await openGroup(alice, 'Lisbon trip');
-  await addPayment(alice, '12', 'Taxi');
+  await addPayment(alice, '12,00', 'Taxi');
 
   await feedRow(alice, 'Taxi').getByRole('link').click();
   await expect(alice.getByRole('heading', { name: 'Taxi' })).toBeVisible();

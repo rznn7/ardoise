@@ -733,6 +733,15 @@ export const CELLS: ScreenshotCell[] = [
   },
   {
     route: 'payment-amount',
+    state: 'empty',
+    path: `${GROUP_PATH}/payments/new/amount`,
+    mocks: groupMocks,
+    ready: async (page) => {
+      await expect(page.getByLabel('Amount')).toBeFocused();
+    },
+  },
+  {
+    route: 'payment-amount',
     state: 'typed',
     path: `${GROUP_PATH}/payments/new/amount`,
     mocks: groupMocks,

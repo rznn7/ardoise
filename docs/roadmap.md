@@ -92,10 +92,12 @@ A settlement overlays the balance calculation; it never mutates payments.
   language (`superpowers/specs/2026-11-03-translation-design.md`).
 
 ## Amount entry
-- [ ] **cash-register entry and inline math** — digits fill from the right (`1`, `2`, `3` → `1,23`), as
-  an A/B fork against today's free entry; arithmetic in the amount field (`12,50+8` → `20,50`). The
-  owner sees such fields in Tricount on iOS: check whether a web page can get that keyboard, or
-  whether it needs an in-app keypad.
+- [x] **cash-register entry** — the payment total fills from the right (`1`, `2`, `3` → `1,23`) on
+  the iOS digit pad; per-person amounts keep free entry; picked outright, no fork
+  (`superpowers/specs/2026-11-04-amount-entry-design.md`).
+- [ ] **inline math and a validate key** — arithmetic in the amount field (`12,50+8` → `20,50`); a
+  key to validate under the thumb. iOS's digit and decimal pads have no return key and a web page
+  cannot add one: it needs a button riding above the keyboard or an in-app keypad.
 
 ## Admin
 - [x] **admin overview** — read-only overview of users and groups, user and group details,

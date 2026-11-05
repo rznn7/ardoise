@@ -14,7 +14,7 @@ test("home follows another member's payment", async ({
   const groupRow = alice.getByRole('link', { name: /Lisbon trip/ });
   await expect(groupRow).toBeVisible();
 
-  await addPayment(bob, '30', 'Dinner');
+  await addPayment(bob, '30,00', 'Dinner');
 
   await expect(groupRow).toContainText('−€15.00');
 });

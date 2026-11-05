@@ -16,7 +16,7 @@ test('the balance updates after adding a payment', async ({
   await joinWithNewPasskey(await newUserPage(), token);
   await openGroup(alice, 'Lisbon trip');
 
-  await addPayment(alice, '30', 'Dinner');
+  await addPayment(alice, '30,00', 'Dinner');
 
   await expect(heroBalance(alice, /Owed to you/)).toContainText('€15.00');
 });

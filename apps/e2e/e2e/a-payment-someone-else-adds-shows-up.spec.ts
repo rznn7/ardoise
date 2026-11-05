@@ -19,12 +19,12 @@ test('a payment someone else adds shows up without a refresh', async ({
   await openGroup(alice, 'Lisbon trip');
   await openGroup(bob, 'Lisbon trip');
 
-  await addPayment(bob, '24', 'Taxi');
+  await addPayment(bob, '24,00', 'Taxi');
 
   await expect(feedRow(alice, 'Taxi')).toBeVisible();
   await expect(heroBalance(alice, /You owe/)).toContainText('€12.00');
 
-  await addPayment(bob, '10', 'Coffee');
+  await addPayment(bob, '10,00', 'Coffee');
 
   await expect(feedRow(alice, 'Coffee')).toBeVisible();
   await expect(heroBalance(alice, /You owe/)).toContainText('€17.00');
