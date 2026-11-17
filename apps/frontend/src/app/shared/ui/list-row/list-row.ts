@@ -1,5 +1,14 @@
-import { ChangeDetectionStrategy, Component, contentChild, Directive } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  contentChild,
+  Directive,
+  input,
+} from '@angular/core';
 import { HlmItemImports } from '@spartan-ng/helm/item';
+
+export type ListRowSize = 'default' | 'large';
 
 @Directive({ selector: '[appListRowLeading]' })
 export class ListRowLeading {}
@@ -25,7 +34,12 @@ export class ListRowBackdrop {}
   imports: [HlmItemImports],
   host: { class: 'block' },
   template: `
-    <div hlmItem class="relative min-h-11 overflow-hidden rounded-none px-4 py-3">
+    <div
+      hlmItem
+      class="relative overflow-hidden rounded-none px-4 py-3"
+      [class.min-h-11]="!large()"
+      [class.min-h-16]="large()"
+    >
       <ng-content select="[appListRowBackdrop]" />
       <div class="relative flex shrink-0 items-center empty:hidden">
         <ng-content select="[appListRowLeading]" />
@@ -41,6 +55,8 @@ export class ListRowBackdrop {}
   `,
 })
 export class ListRow {
+  readonly size = input<ListRowSize>('default');
+  protected readonly large = computed(() => this.size() === 'large');
   protected readonly backdrop = contentChild(ListRowBackdrop);
 }
 
