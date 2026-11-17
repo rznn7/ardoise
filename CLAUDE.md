@@ -91,7 +91,7 @@ Everything is written in English: code, issues, specs, PRs, commits, docs. Commi
 4. **Build without stopping**: `/to-tickets` splits a slice into sub-issues when it outgrows one session, then `/implement`. Interrupt only for an unclear domain rule or a convention that would need breaking.
 5. **PR**: `pnpm verify` green, screenshots of every screen and state in light and dark (393×852, plus 360/375 where they differ), forks side by side, `Closes #n`.
 
-Branch off `main` for any change. CI (`.github/workflows/ci.yml`) runs the same steps as `pnpm verify`. `@claude` in an issue, PR or review comment runs the agent (`.github/workflows/claude.yml`): it works on a `claude/` branch and opens a PR, never merges.
+Branch off `main` for any change. CI (`.github/workflows/ci.yml`) runs the same steps as `pnpm verify`. `@claude` in an issue, PR or review comment runs the agent (`.github/workflows/claude.yml`): it works on a `claude/` branch and never merges. Working from an issue, the agent opens the PR itself with `gh pr create` (body written with the `pr` skill, `Closes #n`) instead of leaving a "Create PR" link, then links the PR in its progress comment.
 
 ## Agent skills
 
