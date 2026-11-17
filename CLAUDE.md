@@ -83,7 +83,7 @@ Strategy and coverage are in `docs/testing.md`. Breadth goes in the fast layers;
 
 ## Workflow
 
-Everything is written in English: code, issues, specs, PRs, commits, docs.
+Everything is written in English: code, issues, specs, PRs, commits, docs. Commit messages are a single line. Code carries no comments: naming and structure explain it.
 
 1. **Slices are whole features** (backend, frontend, tests), one GitHub issue each. The backlog is the open issues.
 2. **Spec first**: `/to-spec` publishes it as an issue: screens, states, flows, edge cases, tap count of the main action. The owner approves by labelling it `ready-for-agent`.
@@ -91,7 +91,7 @@ Everything is written in English: code, issues, specs, PRs, commits, docs.
 4. **Build without stopping**: `/to-tickets` splits a slice into sub-issues when it outgrows one session, then `/implement`. Interrupt only for an unclear domain rule or a convention that would need breaking.
 5. **PR**: `pnpm verify` green, screenshots of every screen and state in light and dark (393×852, plus 360/375 where they differ), forks side by side, `Closes #n`.
 
-Branch off `main` for any change. CI (`.github/workflows/ci.yml`) runs the same steps as `pnpm verify`.
+Branch off `main` for any change. CI (`.github/workflows/ci.yml`) runs the same steps as `pnpm verify`. `@claude` in an issue, PR or review comment runs the agent (`.github/workflows/claude.yml`): it works on a `claude/` branch and opens a PR, never merges.
 
 ## Agent skills
 
