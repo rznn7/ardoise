@@ -59,6 +59,7 @@ Current app-level blocks:
 - `group-chip`: small chip with the group's colour and name, so the target group is always visible in the add/edit flow and details.
 - `figure-input`: the large amount field (`appFigureInput`) of the add flow's first step.
 - `stepper`: − / + with the value between, 44px buttons, for share weights.
+- `list-row`: a list row with leading, title, meta, trailing and an optional colour backdrop; the title truncates, the trailing never shrinks, content is vertically centred. Two sizes: `default` (44px minimum, every dense list) and `large` (64px minimum, home's group rows only: the app's main navigation, a deliberate step above the 44px tap target).
 - `balance-bar`: one member's balance as an ink bar on a centre axis, left when they owe, right when they're owed, scaled to the group's largest balance.
 
 ## Template rules

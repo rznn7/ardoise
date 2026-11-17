@@ -82,4 +82,27 @@ describe('ListRow', () => {
 
     expect(screen.getByText('€42.50').closest('.shrink-0')!.className).toContain('ml-auto');
   });
+
+  it('gives the default size a 44px minimum height', async () => {
+    await render(RowHost);
+
+    const row = screen.getByText('L').closest('[hlmItem]')!;
+    expect(row.classList).toContain('min-h-11');
+    expect(row.classList).not.toContain('min-h-16');
+  });
+
+  it('gives the large size a 64px minimum height', async () => {
+    await render(
+      `<app-list-row size="large">
+        <span appListRowTitle>Title</span>
+        <span appListRowTrailing>€42.50</span>
+      </app-list-row>`,
+      { imports: [...ListRowImports] },
+    );
+
+    const row = screen.getByText('Title').closest('[hlmItem]')!;
+    expect(row.classList).toContain('min-h-16');
+    expect(row.classList).not.toContain('min-h-11');
+    expect(row.className).toContain('items-center');
+  });
 });
