@@ -1,6 +1,6 @@
 # Ardoise — Design system
 
-The living reference for every screen. Read before building UI. Origin and rationale: `superpowers/specs/2026-10-25-design-system-and-workflow-design.md`.
+The living reference for every screen. Read before building UI.
 
 ## Visual direction
 
@@ -26,7 +26,7 @@ The living reference for every screen. Read before building UI. Origin and ratio
 5. **Feels instant.** Skeletons, not spinners. Optimistic updates for user actions, rolled back with a message if the server refuses.
 6. **Mobile only, full screen real estate.**
 
-Reference flow, add payment (4 taps: **+ → Next → Next → Save**, amount and title typed in between). Full spec in `superpowers/specs/2026-10-26-payments-design.md`.
+Reference flow, add payment (4 taps: **+ → Next → Next → Save**, amount and title typed in between).
 
 1. The app opens on the last group used (once per launch); its hero makes the group obvious.
 2. **+** → amount, focused, numeric keypad up, group chip in the top bar. **Next**.
@@ -113,11 +113,11 @@ Generated light rays with heavy grain, VoidZero-inspired.
 
 ## Workflow
 
-1. **Slices are whole features**: backend, frontend and tests in one run.
-2. **Checkpoint 1, spec**: screens, states, flows, edge cases, tap count of the main action. Approved before building.
+1. **Slices are whole features**: backend, frontend and tests in one run, one GitHub issue each.
+2. **Checkpoint 1, spec**: `/to-spec` publishes it as an issue: screens, states, flows, edge cases, tap count of the main action. The owner approves by labelling it `ready-for-agent`.
 3. **UX forks get two versions** behind the dev-only A/B toggle. The owner tries both in a desktop browser's mobile view. Before merge, the losing variant and its toggle registration are deleted. The pick goes in the log below.
 4. **Build without stopping**; interrupt only for an unclear domain rule or a convention that would need breaking. Every slice adds or extends Playwright scenarios (`apps/e2e/e2e/`) for its use cases.
-5. **Checkpoint 2, PR**: `pnpm verify` green; screenshots of every screen in every state, light and dark, full set at 393×852, 360/375 only where they differ; forks side by side.
+5. **Checkpoint 2, PR**: `pnpm verify` green; screenshots of every screen in every state, light and dark, full set at 393×852, 360/375 only where they differ; forks side by side. The PR closes its issue.
 
 ### How to add an A/B fork
 

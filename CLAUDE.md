@@ -11,7 +11,7 @@ apps/backend    NestJS, hexagonal, one folder per bounded context
 apps/frontend   Angular standalone components, spartan.ng helm UI in libs/ui, Tailwind 4
 apps/e2e        Playwright: full-stack scenarios (e2e/) and the screenshot matrix (screenshots/)
 libs/shared     Zod contracts (@ardoise/shared), consumed from src by tsc/vitest/Angular, from dist by the backend build
-docs/           design.md (design system, UX, workflow), domain.md (entities, rules), testing.md (test strategy, coverage), roadmap.md (feature slices), superpowers/specs + plans
+docs/           design.md (design system, UX, workflow), domain.md (entities, rules), testing.md (test strategy, coverage), agents/ (skill config)
 ```
 
 ## Commands
@@ -83,10 +83,26 @@ Strategy and coverage are in `docs/testing.md`. Breadth goes in the fast layers;
 
 ## Workflow
 
-1. **Slices are whole features** (backend, frontend, tests), listed in `docs/roadmap.md`.
-2. **Spec first**: screens, states, flows, edge cases, tap count of the main action, in `docs/superpowers/specs/`. The owner approves before building.
+Everything is written in English: code, issues, specs, PRs, commits, docs.
+
+1. **Slices are whole features** (backend, frontend, tests), one GitHub issue each. The backlog is the open issues.
+2. **Spec first**: `/to-spec` publishes it as an issue: screens, states, flows, edge cases, tap count of the main action. The owner approves by labelling it `ready-for-agent`.
 3. **UX forks**: build both behind the dev-only A/B toggle; the owner picks; delete the loser before merge and log the pick in `docs/design.md`.
-4. **Build without stopping**: plan in `docs/superpowers/plans/`, then code and commits. Interrupt only for an unclear domain rule or a convention that would need breaking.
-5. **PR**: `pnpm verify` green, screenshots of every screen and state in light and dark (393×852, plus 360/375 where they differ), forks side by side.
+4. **Build without stopping**: `/to-tickets` splits a slice into sub-issues when it outgrows one session, then `/implement`. Interrupt only for an unclear domain rule or a convention that would need breaking.
+5. **PR**: `pnpm verify` green, screenshots of every screen and state in light and dark (393×852, plus 360/375 where they differ), forks side by side, `Closes #n`.
 
 Branch off `main` for any change. CI (`.github/workflows/ci.yml`) runs the same steps as `pnpm verify`.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on `rznn7/ardoise`, through `gh`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five default roles: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `docs/domain.md`, plus `GLOSSARY.md` and `docs/adr/` at the root once they exist. See `docs/agents/domain.md`.
